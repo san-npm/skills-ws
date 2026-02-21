@@ -1,0 +1,124 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import type { Skill } from "@/lib/skills";
+import { categoryColors } from "@/lib/skills";
+
+export default function SkillsGrid({
+  skills,
+  categories,
+}: {
+  skills: Skill[];
+  categories: string[];
+}) {
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "/" && !(e.target instanceof HTMLInputElement)) {
+        e.preventDefault();
+        document.getElementById("search-input")?.focus();
+      }
+      if (e.key === "Escape") {
+        setSearch("");
+        (document.getElementById("search-input") as HTMLInputElement)?.blur();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  const filtered = skills.filter((s) => {
+    const matchFilter = filter === "all" || s.category === filter;
+    const matchSearch =
+      !search ||
+      s.name.toLowerCase().includes(search.toLowerCase()) ||
+      s.description.toLowerCase().includes(search.toLowerCase());
+    return matchFilter && matchSearch;
+  });
+
+  return (
+    <>
+      <div className="mb-8">
+        <input
+          id="search-input"
+          type="text"
+          placeholder="Search skills...  /"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full bg-bg-card border border-border rounded-lg px-5 py-3.5 text-text-main font-mono text-sm outline-none transition-colors focus:border-accent placeholder:text-text-muted"
+          autoComplete="off"
+        />
+      </div>
+
+      <div className="flex gap-2 mb-8 flex-wrap">
+        <button
+          onClick={() => setFilter("all")}
+          className={`px-4 py-2 rounded-md font-mono text-sm border transition-all cursor-pointer ${
+            filter === "all"
+              ? "border-accent text-accent bg-accent/5"
+              : "border-border text-text-dim hover:border-border-hover hover:text-text-main bg-bg-card"
+          }`}
+        >
+          All
+        </button>
+        {categories.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setFilter(cat)}
+            className={`px-4 py-2 rounded-md font-mono text-sm border transition-all cursor-pointer capitalize ${
+              filter === cat
+                ? "border-accent text-accent bg-accent/5"
+                : "border-border text-text-dim hover:border-border-hover hover:text-text-main bg-bg-card"
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid gap-3">
+        {filtered.length === 0 ? (
+          <div className="text-center py-12 text-text-muted">
+            No skills found
+          </div>
+        ) : (
+          filtered.map((skill, i) => (
+            <Link
+              key={skill.name}
+              href={`/skills/${skill.name}`}
+              className="bg-bg-card border border-border rounded-xl px-6 py-5 grid grid-cols-[auto_1fr_auto] items-start gap-4 transition-all hover:border-border-hover hover:bg-bg-hover hover:-translate-y-px no-underline text-inherit animate-fade-in"
+              style={{ animationDelay: `${i * 50}ms` }}
+            >
+              <div className="text-[28px] w-11 h-11 flex items-center justify-center bg-bg rounded-lg border border-border max-sm:hidden">
+                {skill.icon}
+              </div>
+              <div className="min-w-0">
+                <div className="text-base font-semibold text-text-main mb-1.5 font-sans">
+                  {skill.name}
+                </div>
+                <div className="text-[13px] text-text-dim leading-relaxed font-sans">
+                  {skill.description}
+                </div>
+              </div>
+              <div className="flex flex-col items-end gap-2 sm:min-w-fit max-sm:flex-row max-sm:items-center">
+                <span
+                  className={`text-[11px] uppercase tracking-wide font-medium px-2.5 py-1 rounded ${
+                    categoryColors[skill.category]?.text ?? "text-text-dim"
+                  } ${categoryColors[skill.category]?.bg ?? "bg-border/10"}`}
+                >
+                  {skill.category}
+                </span>
+                <span className="text-[11px] text-text-muted">
+                  v{skill.version}
+                </span>
+              </div>
+            </Link>
+          ))
+        )}
+      </div>
+    </>
+  );
+}

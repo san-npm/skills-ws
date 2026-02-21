@@ -1,0 +1,90 @@
+{
+  "version": "1.0.0",
+  "name": "Clawdberg Skills",
+  "description": "Agent Skills by Dr Clawdberg — for OpenClaw and beyond",
+  "repository": "https://github.com/clementfrmd/clawdberg-skills",
+  "website": "https://skills.ws",
+  "skills": [
+    {
+      "name": "seo-geo",
+      "version": "1.0.0",
+      "description": "SEO & GEO (Generative Engine Optimization) for websites. Optimize for AI search engines and traditional search.",
+      "icon": "🔍",
+      "color": "10B981",
+      "category": "marketing",
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+    },
+    {
+      "name": "content-strategy",
+      "version": "1.0.0",
+      "description": "Plan content strategy, decide what to create, figure out what topics to cover for SaaS and software products.",
+      "icon": "📝",
+      "color": "6366F1",
+      "category": "marketing",
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+    },
+    {
+      "name": "copywriting",
+      "version": "1.0.0",
+      "description": "Write, rewrite, or improve marketing copy for any page — homepage, landing, pricing, feature, about, or product pages.",
+      "icon": "✍️",
+      "color": "F59E0B",
+      "category": "marketing",
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+    },
+    {
+      "name": "page-cro",
+      "version": "1.0.0",
+      "description": "Optimize, improve, or increase conversions on any marketing page — homepage, landing, pricing, feature pages.",
+      "icon": "📈",
+      "color": "EF4444",
+      "category": "conversion",
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+    },
+    {
+      "name": "email-sequence",
+      "version": "1.0.0",
+      "description": "Create or optimize email sequences, drip campaigns, automated flows, and lifecycle email programs.",
+      "icon": "📧",
+      "color": "8B5CF6",
+      "category": "marketing",
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+    },
+    {
+      "name": "ethereum-wingman",
+      "version": "1.0.0",
+      "description": "Ethereum development tutor and builder for Scaffold-ETH 2 projects. Build dApps, smart contracts, DeFi.",
+      "icon": "⟠",
+      "color": "627EEA",
+      "category": "web3",
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+    },
+    {
+      "name": "ui-ux-pro-max",
+      "version": "1.0.0",
+      "description": "UI/UX design intelligence. 50 styles, 21 palettes, 50 font pairings. Plan, build, review, fix any UI.",
+      "icon": "🎨",
+      "color": "EC4899",
+      "category": "design",
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+    },
+    {
+      "name": "paid-ads",
+      "version": "1.0.0",
+      "description": "Paid advertising campaigns on Google Ads, Meta, LinkedIn, Twitter/X. Strategy, copy, targeting, optimization.",
+      "icon": "💰",
+      "color": "F97316",
+      "category": "marketing",
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+    },
+    {
+      "name": "signup-flow-cro",
+      "version": "1.0.0",
+      "description": "Optimize signup, registration, account creation, or trial activation flows for higher conversion.",
+      "icon": "🚀",
+      "color": "14B8A6",
+      "category": "conversion",
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+    }
+  ]
+}
