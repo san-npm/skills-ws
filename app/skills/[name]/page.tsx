@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { getSkills, getSkill, categoryColors } from "@/lib/skills";
 import InstallBox from "@/components/InstallBox";
+import SkillContent from "@/components/SkillContent";
 
 export function generateStaticParams() {
   return getSkills().map((s) => ({ name: s.name }));
@@ -45,7 +46,7 @@ export default function SkillPage({ params }: { params: { name: string } }) {
           <h1 className="text-2xl font-bold font-sans text-text-main mb-2">
             {skill.name}
           </h1>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 mb-4">
             <span
               className={`text-[11px] uppercase tracking-wide font-medium px-2.5 py-1 rounded ${colors.text} ${colors.bg}`}
             >
@@ -53,54 +54,16 @@ export default function SkillPage({ params }: { params: { name: string } }) {
             </span>
             <span className="text-[11px] text-text-muted">v{skill.version}</span>
           </div>
+          <p className="text-text-dim font-sans leading-relaxed text-[15px]">
+            {skill.description}
+          </p>
         </div>
 
-        <p className="text-text-dim font-sans leading-relaxed mb-8">
-          {skill.description}
-        </p>
-
-        {skill.features && skill.features.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xs uppercase tracking-wider text-text-muted mb-4">
-              What it does
-            </h2>
-            <ul className="space-y-2.5">
-              {skill.features.map((feature, i) => (
-                <li key={i} className="flex items-start gap-3 text-[13px] text-text-dim font-sans leading-relaxed">
-                  <span className="w-1 h-1 rounded-full bg-accent mt-2 shrink-0" />
-                  {feature}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {skill.useCases && skill.useCases.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xs uppercase tracking-wider text-text-muted mb-4">
-              Use cases
-            </h2>
-            <div className="grid gap-2">
-              {skill.useCases.map((useCase, i) => (
-                <div key={i} className="bg-bg border border-border rounded-lg px-4 py-3 text-[13px] text-text-dim font-sans">
-                  {useCase}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         <div className="mb-8">
-          <h2 className="text-xs uppercase tracking-wider text-text-muted mb-3">
-            Install
-          </h2>
           <InstallBox command={`npx skillsadd commit-skills --skill ${skill.name}`} />
         </div>
 
-        <div>
-          <h2 className="text-xs uppercase tracking-wider text-text-muted mb-3">
-            Platforms
-          </h2>
+        <div className="mb-8">
           <div className="flex gap-2 flex-wrap">
             {skill.platforms.map((p) => (
               <span
@@ -112,6 +75,13 @@ export default function SkillPage({ params }: { params: { name: string } }) {
             ))}
           </div>
         </div>
+
+        {skill.content && (
+          <>
+            <hr className="border-border my-8" />
+            <SkillContent content={skill.content} />
+          </>
+        )}
       </div>
 
       <script

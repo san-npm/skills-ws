@@ -9,6 +9,7 @@ export interface Skill {
   platforms: string[];
   features?: string[];
   useCases?: string[];
+  content?: string;
 }
 
 export interface SkillsConfig {
