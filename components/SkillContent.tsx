@@ -10,42 +10,42 @@ export default function SkillContent({ content }: { content: string }) {
         remarkPlugins={[remarkGfm]}
         components={{
           h1: ({ children }) => (
-            <h1 className="text-xl font-bold text-text-main mt-8 mb-4 font-sans">{children}</h1>
+            <h1 className="text-xl font-bold text-text-main mt-10 mb-4 font-sans">{children}</h1>
           ),
           h2: ({ children }) => (
-            <h2 className="text-lg font-semibold text-text-main mt-8 mb-3 font-sans">{children}</h2>
+            <h2 className="text-lg font-semibold text-text-main mt-10 mb-3 pb-2 border-b border-border/50 font-sans">{children}</h2>
           ),
           h3: ({ children }) => (
-            <h3 className="text-base font-semibold text-text-main mt-6 mb-2 font-sans">{children}</h3>
+            <h3 className="text-[15px] font-semibold text-text-main mt-6 mb-2 font-sans">{children}</h3>
           ),
           h4: ({ children }) => (
             <h4 className="text-sm font-semibold text-text-main mt-4 mb-2 font-sans">{children}</h4>
           ),
-          p: ({ children }) => <p className="mb-3">{children}</p>,
+          p: ({ children }) => <p className="mb-3 leading-relaxed">{children}</p>,
           ul: ({ children }) => <ul className="mb-4 space-y-1.5 list-none">{children}</ul>,
           ol: ({ children }) => <ol className="mb-4 space-y-1.5 list-decimal pl-5">{children}</ol>,
           li: ({ children }) => (
             <li className="flex items-start gap-2">
               <span className="w-1 h-1 rounded-full bg-accent mt-2.5 shrink-0" />
-              <span>{children}</span>
+              <span className="flex-1 min-w-0">{children}</span>
             </li>
           ),
           code: ({ className, children }) => {
             const isBlock = className?.includes("language-");
             if (isBlock) {
               return (
-                <code className="block bg-bg border border-border rounded-lg p-4 text-[13px] font-mono text-text-main overflow-x-auto mb-4">
+                <code className="block bg-[#060606] border border-border rounded-lg p-4 text-[12px] font-mono text-text-main overflow-x-auto whitespace-pre leading-5">
                   {children}
                 </code>
               );
             }
             return (
-              <code className="bg-bg border border-border rounded px-1.5 py-0.5 text-[13px] font-mono text-accent">
+              <code className="bg-[#060606] border border-border/60 rounded px-1.5 py-0.5 text-[12px] font-mono text-accent break-all">
                 {children}
               </code>
             );
           },
-          pre: ({ children }) => <pre className="mb-4">{children}</pre>,
+          pre: ({ children }) => <pre className="mb-4 overflow-x-auto">{children}</pre>,
           a: ({ href, children }) => (
             <a href={href} target="_blank" className="text-accent hover:underline">
               {children}
@@ -58,19 +58,32 @@ export default function SkillContent({ content }: { content: string }) {
             </blockquote>
           ),
           table: ({ children }) => (
-            <div className="overflow-x-auto mb-4">
-              <table className="w-full text-[13px] border-collapse">{children}</table>
+            <div className="overflow-x-auto mb-5 rounded-lg border border-border">
+              <table className="w-full text-[12px] border-collapse min-w-[500px]">{children}</table>
             </div>
           ),
+          thead: ({ children }) => (
+            <thead className="bg-[#0f0f0f]">{children}</thead>
+          ),
           th: ({ children }) => (
-            <th className="text-left text-text-main font-semibold px-3 py-2 border-b border-border">
+            <th className="text-left text-text-main font-semibold px-3 py-2.5 border-b border-border whitespace-nowrap">
               {children}
             </th>
           ),
           td: ({ children }) => (
-            <td className="px-3 py-2 border-b border-border/50">{children}</td>
+            <td className="px-3 py-2 border-b border-border/30 text-text-dim align-top">
+              {children}
+            </td>
           ),
-          hr: () => <hr className="border-border my-6" />,
+          tr: ({ children }) => (
+            <tr className="hover:bg-[#0a0a0a] transition-colors">{children}</tr>
+          ),
+          hr: () => <hr className="border-border my-8" />,
+          input: ({ checked }) => (
+            <span className={`inline-block w-3.5 h-3.5 rounded border mr-2 align-middle ${checked ? 'bg-accent border-accent' : 'border-border'}`}>
+              {checked && <span className="block w-full h-full text-center text-[10px] text-bg leading-[14px]">✓</span>}
+            </span>
+          ),
         }}
       >
         {content}
