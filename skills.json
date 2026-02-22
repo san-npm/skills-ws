@@ -85,6 +85,105 @@
       "color": "14B8A6",
       "category": "conversion",
       "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+    },
+    {
+      "name": "popup-cro",
+      "version": "1.0.0",
+      "description": "Create or optimize popups, modals, overlays, slide-ins, and banners for conversion. Exit intent, lead capture, announcements.",
+      "icon": "💬",
+      "color": "A855F7",
+      "category": "conversion",
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+    },
+    {
+      "name": "programmatic-seo",
+      "version": "1.0.0",
+      "description": "Create SEO-driven pages at scale using templates and data. Directory pages, location pages, comparison pages.",
+      "icon": "🏗️",
+      "color": "0EA5E9",
+      "category": "marketing",
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+    },
+    {
+      "name": "growth-hacking",
+      "version": "1.0.0",
+      "description": "Growth hacking strategies and tactics. Viral loops, referral programs, activation funnels, retention hooks.",
+      "icon": "📊",
+      "color": "22C55E",
+      "category": "marketing",
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+    },
+    {
+      "name": "landing-page-builder",
+      "version": "1.0.0",
+      "description": "Build high-converting landing pages from scratch. Copy, layout, CTAs, social proof, and responsive design.",
+      "icon": "🏠",
+      "color": "3B82F6",
+      "category": "design",
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+    },
+    {
+      "name": "lead-scoring",
+      "version": "1.0.0",
+      "description": "Design and implement lead scoring models. Qualify leads based on behavior, demographics, and engagement.",
+      "icon": "🎯",
+      "color": "DC2626",
+      "category": "conversion",
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+    },
+    {
+      "name": "local-seo",
+      "version": "1.0.0",
+      "description": "Local SEO optimization. Google Business Profile, local citations, reviews, location pages, map pack ranking.",
+      "icon": "📍",
+      "color": "059669",
+      "category": "marketing",
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+    },
+    {
+      "name": "marketing-analytics",
+      "version": "1.0.0",
+      "description": "Marketing analytics setup and optimization. GA4, attribution, dashboards, KPIs, funnel analysis.",
+      "icon": "📉",
+      "color": "7C3AED",
+      "category": "marketing",
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+    },
+    {
+      "name": "crm-builder",
+      "version": "1.0.0",
+      "description": "Design and implement CRM workflows. Pipeline management, automation, lead nurturing, deal tracking.",
+      "icon": "🗂️",
+      "color": "2563EB",
+      "category": "conversion",
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+    },
+    {
+      "name": "sales-funnel",
+      "version": "1.0.0",
+      "description": "Design and optimize sales funnels. TOFU/MOFU/BOFU content, qualification stages, conversion paths.",
+      "icon": "🔻",
+      "color": "D946EF",
+      "category": "conversion",
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+    },
+    {
+      "name": "smart-contract-auditor",
+      "version": "1.0.0",
+      "description": "Audit Solidity smart contracts for vulnerabilities, gas optimization, and best practices.",
+      "icon": "🛡️",
+      "color": "F59E0B",
+      "category": "web3",
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+    },
+    {
+      "name": "social-media-kit",
+      "version": "1.0.0",
+      "description": "Create social media content kits. Platform-specific posts, hashtag strategies, content calendars, engagement tactics.",
+      "icon": "📱",
+      "color": "E11D48",
+      "category": "marketing",
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
     }
   ]
 }
