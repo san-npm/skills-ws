@@ -76,6 +76,26 @@ export default function SkillPage({ params }: { params: { name: string } }) {
           </div>
         </div>
 
+        <div className="flex items-center gap-4 text-[12px] text-text-muted mt-4">
+          {skill.vtUrl && (
+            <a
+              href={skill.vtUrl}
+              target="_blank"
+              className="flex items-center gap-1.5 hover:text-accent transition-colors"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+              VirusTotal scan
+            </a>
+          )}
+          <a
+            href={`https://github.com/san-npm/skills-ws`}
+            target="_blank"
+            className="flex items-center gap-1.5 hover:text-accent transition-colors"
+          >
+            Source code
+          </a>
+        </div>
+
         {skill.content && (
           <>
             <hr className="border-border my-8" />

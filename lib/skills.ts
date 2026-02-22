@@ -10,6 +10,7 @@ export interface Skill {
   features?: string[];
   useCases?: string[];
   content?: string;
+  vtUrl?: string;
 }
 
 export interface SkillsConfig {
