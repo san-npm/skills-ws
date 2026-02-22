@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getSkills } from "@/lib/skills";
 
 export const metadata: Metadata = {
   title: "CLI Reference — skills.ws",
@@ -6,6 +7,8 @@ export const metadata: Metadata = {
 };
 
 export default function CliPage() {
+  const skillCount = getSkills().length;
+
   return (
     <div className="max-w-[700px] mx-auto px-6 py-16">
       <h1 className="text-2xl font-bold font-sans text-text-main mb-8">CLI Reference</h1>
@@ -17,7 +20,7 @@ export default function CliPage() {
           <span className="text-text-main">npx skills-ws</span>
         </div>
         <p className="text-[14px] text-text-dim font-sans leading-relaxed">
-          Installs all 18 skills into your project. Works with any SKILL.md-compatible agent.
+          Installs all {skillCount} skills into your project. Works with any SKILL.md-compatible agent.
         </p>
       </section>
 

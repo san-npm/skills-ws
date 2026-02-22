@@ -21,9 +21,9 @@ export default function SkillsGrid({
         e.preventDefault();
         document.getElementById("search-input")?.focus();
       }
-      if (e.key === "Escape") {
+      if (e.key === "Escape" && e.target instanceof HTMLInputElement && e.target.id === "search-input") {
         setSearch("");
-        (document.getElementById("search-input") as HTMLInputElement)?.blur();
+        e.target.blur();
       }
     };
     window.addEventListener("keydown", handler);
