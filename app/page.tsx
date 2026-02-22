@@ -35,7 +35,7 @@ export default function Home() {
         </p>
 
         <div className="relative z-10">
-          <InstallBox command="curl -fsSL https://skills-ws.vercel.app/install.sh | bash" />
+          <InstallBox command="npx skillsadd" />
         </div>
 
         <div className="relative z-10 flex justify-center gap-5 mt-8 mb-12 flex-wrap">

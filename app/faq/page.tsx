@@ -33,11 +33,11 @@ const faqs = [
   },
   {
     q: "How do I install skills?",
-    a: <>Run <Code>curl -fsSL https://skills-ws.vercel.app/install.sh | bash</Code> to install all skills, or add <Code>--skill name</Code> to install a specific one.</>,
+    a: <>Run <Code>npx skillsadd</Code> to install all skills, or add <Code>--skill name</Code> to install a specific one.</>,
   },
   {
     q: "Can I install individual skills?",
-    a: <>Yes. Use the --skill flag: <Code>curl -fsSL https://skills-ws.vercel.app/install.sh | bash -s -- --skill seo-geo</Code></>,
+    a: <>Yes. Use the --skill flag: <Code>npx skillsadd --skill seo-geo</Code></>,
   },
   {
     q: "How often are skills updated?",
