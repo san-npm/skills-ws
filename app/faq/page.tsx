@@ -6,6 +6,10 @@ export const metadata: Metadata = {
   description: "Frequently asked questions about agent skills — installation, security, compatibility, and more.",
 };
 
+const Code = ({ children }: { children: React.ReactNode }) => (
+  <code className="bg-[#0a0a0a] border border-[#222] rounded px-1.5 py-0.5 text-[13px] font-mono text-[#00ff88]">{children}</code>
+);
+
 const faqs = [
   {
     q: "What are agent skills?",
@@ -17,7 +21,7 @@ const faqs = [
   },
   {
     q: "Who built these skills?",
-    a: 'All skills are built in-house by <a href="https://openletz.com" target="_blank" class="text-accent hover:underline">Commit Media</a>. No third-party code, no community contributions mixed in. Every skill is written, tested, and maintained by us.',
+    a: <>All skills are built in-house by <a href="https://openletz.com" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">Commit Media</a>. No third-party code, no community contributions mixed in. Every skill is written, tested, and maintained by us.</>,
   },
   {
     q: "Are the skills secure?",
@@ -29,11 +33,11 @@ const faqs = [
   },
   {
     q: "How do I install skills?",
-    a: 'Run <code class="bg-[#0a0a0a] border border-[#222] rounded px-1.5 py-0.5 text-[13px] font-mono text-[#00ff88]">npx skillsadd commit-skills</code> to install all skills, or add <code class="bg-[#0a0a0a] border border-[#222] rounded px-1.5 py-0.5 text-[13px] font-mono text-[#00ff88]">--skill name</code> to install a specific one.',
+    a: <>Run <Code>npx skillsadd commit-skills</Code> to install all skills, or add <Code>--skill name</Code> to install a specific one.</>,
   },
   {
     q: "Can I install individual skills?",
-    a: 'Yes. Use the --skill flag: <code class="bg-[#0a0a0a] border border-[#222] rounded px-1.5 py-0.5 text-[13px] font-mono text-[#00ff88]">npx skillsadd commit-skills --skill seo-geo</code>',
+    a: <>Yes. Use the --skill flag: <Code>npx skillsadd commit-skills --skill seo-geo</Code></>,
   },
   {
     q: "How often are skills updated?",
@@ -41,7 +45,7 @@ const faqs = [
   },
   {
     q: "Can I request a new skill?",
-    a: 'Yes. Open an issue on <a href="https://github.com/san-npm/skills-ws/issues" target="_blank" class="text-accent hover:underline">GitHub</a> describing the skill you need and the use case.',
+    a: <>Yes. Open an issue on <a href="https://github.com/san-npm/skills-ws/issues" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">GitHub</a> describing the skill you need and the use case.</>,
   },
   {
     q: "What categories are available?",

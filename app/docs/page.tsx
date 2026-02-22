@@ -106,7 +106,7 @@ export default function DocsPage() {
           </li>
           <li className="flex items-start gap-2">
             <span className="w-1 h-1 rounded-full bg-green-500 mt-2.5 shrink-0" />
-            <span>Source code available on <a href="https://github.com/san-npm/skills-ws" target="_blank" className="text-accent hover:underline">GitHub</a></span>
+            <span>Source code available on <a href="https://github.com/san-npm/skills-ws" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">GitHub</a></span>
           </li>
         </ul>
       </section>

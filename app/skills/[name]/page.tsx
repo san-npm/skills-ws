@@ -87,6 +87,7 @@ export default function SkillPage({ params }: { params: { name: string } }) {
           <a
             href="https://github.com/san-npm/skills-ws"
             target="_blank"
+            rel="noopener noreferrer"
             className="hover:text-accent transition-colors"
           >
             Source code

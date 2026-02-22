@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 interface Faq {
   q: string;
-  a: string;
+  a: ReactNode;
 }
 
 export default function FaqAccordion({ faqs }: { faqs: Faq[] }) {
@@ -27,10 +27,9 @@ export default function FaqAccordion({ faqs }: { faqs: Faq[] }) {
             className="overflow-hidden transition-all duration-200"
             style={{ maxHeight: open === i ? "500px" : "0px" }}
           >
-            <div
-              className="px-6 pb-4 text-[14px] text-text-dim font-sans leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: faq.a }}
-            />
+            <div className="px-6 pb-4 text-[14px] text-text-dim font-sans leading-relaxed">
+              {faq.a}
+            </div>
           </div>
         </div>
       ))}

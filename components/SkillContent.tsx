@@ -24,9 +24,13 @@ export default function SkillContent({ content }: { content: string }) {
           p: ({ children }) => <p className="mb-3 leading-relaxed">{children}</p>,
           ul: ({ children }) => <ul className="mb-4 space-y-1.5 list-none">{children}</ul>,
           ol: ({ children }) => <ol className="mb-4 space-y-1.5 list-decimal pl-5">{children}</ol>,
-          li: ({ children }) => (
+          li: ({ children, ordered, index }: { children?: React.ReactNode; ordered?: boolean; index?: number }) => (
             <li className="flex items-start gap-2">
-              <span className="w-1 h-1 rounded-full bg-accent mt-2.5 shrink-0" />
+              {ordered ? (
+                <span className="text-accent text-[12px] font-mono mt-0.5 shrink-0 min-w-[1.2em]">{(index ?? 0) + 1}.</span>
+              ) : (
+                <span className="w-1 h-1 rounded-full bg-accent mt-2.5 shrink-0" />
+              )}
               <span className="flex-1 min-w-0">{children}</span>
             </li>
           ),
@@ -47,7 +51,7 @@ export default function SkillContent({ content }: { content: string }) {
           },
           pre: ({ children }) => <pre className="mb-4 overflow-x-auto">{children}</pre>,
           a: ({ href, children }) => (
-            <a href={href} target="_blank" className="text-accent hover:underline">
+            <a href={href} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
               {children}
             </a>
           ),
