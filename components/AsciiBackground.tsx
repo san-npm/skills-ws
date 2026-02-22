@@ -1,69 +1,84 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
-const ASCII_CHARS = " .,:-~=+*!#%$@";
+const ASCII_CHARS = " .,:;~=+*!?#%$@";
 
 export default function AsciiBackground() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    // Setup Three.js scene
+    // Respect reduced motion
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 100);
-    camera.position.z = 3;
+    const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
+    camera.position.z = 4;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setClearColor(0x000000, 1);
 
-    // ASCII overlay canvas
+    // ASCII overlay
     const asciiCanvas = document.createElement("canvas");
     const asciiCtx = asciiCanvas.getContext("2d")!;
-    asciiCanvas.style.position = "absolute";
-    asciiCanvas.style.inset = "0";
-    asciiCanvas.style.width = "100%";
-    asciiCanvas.style.height = "100%";
+    asciiCanvas.style.cssText = "position:absolute;inset:0;width:100%;height:100%;";
     container.appendChild(asciiCanvas);
 
-    // Hidden offscreen canvas for reading 3D render
+    // Offscreen for reading pixels
     const offscreen = document.createElement("canvas");
+    const offCtx = offscreen.getContext("2d", { willReadFrequently: true })!;
 
-    // 3D objects — rotating torus knot and floating spheres
-    const torusGeo = new THREE.TorusKnotGeometry(1, 0.35, 128, 32);
-    const torusMat = new THREE.MeshStandardMaterial({ color: 0x00ff88, roughness: 0.4, metalness: 0.6 });
+    // Scene objects
+    // Main: rotating torus knot
+    const torusGeo = new THREE.TorusKnotGeometry(0.9, 0.32, 100, 24, 2, 3);
+    const torusMat = new THREE.MeshStandardMaterial({
+      color: 0x00ff88,
+      roughness: 0.3,
+      metalness: 0.7,
+      emissive: 0x003311,
+    });
     const torus = new THREE.Mesh(torusGeo, torusMat);
     scene.add(torus);
 
+    // Orbiting icosahedron
+    const icoGeo = new THREE.IcosahedronGeometry(0.3, 0);
+    const icoMat = new THREE.MeshStandardMaterial({ color: 0x00cc66, roughness: 0.5, metalness: 0.5 });
+    const ico = new THREE.Mesh(icoGeo, icoMat);
+    scene.add(ico);
+
     // Floating particles
-    const particlesGeo = new THREE.BufferGeometry();
-    const particleCount = 200;
-    const positions = new Float32Array(particleCount * 3);
+    const particleCount = 150;
+    const pGeo = new THREE.BufferGeometry();
+    const pPos = new Float32Array(particleCount * 3);
+    const pVel = new Float32Array(particleCount * 3);
     for (let i = 0; i < particleCount * 3; i++) {
-      positions[i] = (Math.random() - 0.5) * 8;
+      pPos[i] = (Math.random() - 0.5) * 7;
+      pVel[i] = (Math.random() - 0.5) * 0.002;
     }
-    particlesGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    const particlesMat = new THREE.PointsMaterial({ color: 0x00ff88, size: 0.08 });
-    const particles = new THREE.Points(particlesGeo, particlesMat);
+    pGeo.setAttribute("position", new THREE.BufferAttribute(pPos, 3));
+    const pMat = new THREE.PointsMaterial({ color: 0x00ff88, size: 0.06, transparent: true, opacity: 0.6 });
+    const particles = new THREE.Points(pGeo, pMat);
     scene.add(particles);
 
     // Lighting
-    const light1 = new THREE.DirectionalLight(0x00ff88, 2);
-    light1.position.set(2, 3, 4);
+    const light1 = new THREE.DirectionalLight(0x00ff88, 2.5);
+    light1.position.set(3, 4, 5);
     scene.add(light1);
-    const light2 = new THREE.DirectionalLight(0x008844, 1);
-    light2.position.set(-2, -1, 2);
+    const light2 = new THREE.DirectionalLight(0x004422, 1.5);
+    light2.position.set(-3, -2, 3);
     scene.add(light2);
-    scene.add(new THREE.AmbientLight(0x001a0d, 0.5));
+    scene.add(new THREE.AmbientLight(0x001a0d, 0.8));
 
-    const cellW = 8;
-    const cellH = 14;
-    const fontSize = 11;
+    const cellW = 7;
+    const cellH = 12;
+    const fontSize = 10;
 
     const resize = () => {
       const w = container.clientWidth;
@@ -71,7 +86,6 @@ export default function AsciiBackground() {
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
-
       const cols = Math.floor(w / cellW);
       const rows = Math.floor(h / cellH);
       offscreen.width = cols;
@@ -83,31 +97,56 @@ export default function AsciiBackground() {
     window.addEventListener("resize", resize);
 
     let animId: number;
-    const offCtx = offscreen.getContext("2d", { willReadFrequently: true })!;
+    const startTime = performance.now();
 
     const animate = () => {
-      const time = performance.now() * 0.001;
+      const elapsed = (performance.now() - startTime) * 0.001;
 
-      torus.rotation.x = time * 0.3;
-      torus.rotation.y = time * 0.2;
-      torus.rotation.z = time * 0.1;
+      if (prefersReduced) {
+        // Static render for reduced motion
+        torus.rotation.set(0.3, 0.5, 0);
+      } else {
+        torus.rotation.x = elapsed * 0.25;
+        torus.rotation.y = elapsed * 0.18;
+        torus.rotation.z = elapsed * 0.08;
 
-      particles.rotation.y = time * 0.05;
-      particles.rotation.x = Math.sin(time * 0.1) * 0.2;
+        // Orbit icosahedron
+        ico.position.x = Math.cos(elapsed * 0.6) * 2;
+        ico.position.y = Math.sin(elapsed * 0.4) * 1;
+        ico.position.z = Math.sin(elapsed * 0.6) * 0.8;
+        ico.rotation.x = elapsed * 0.8;
+        ico.rotation.y = elapsed * 0.5;
 
-      // Render 3D scene
+        // Drift particles
+        const posAttr = particles.geometry.attributes.position;
+        for (let i = 0; i < particleCount; i++) {
+          posAttr.array[i * 3] += pVel[i * 3];
+          posAttr.array[i * 3 + 1] += pVel[i * 3 + 1];
+          posAttr.array[i * 3 + 2] += pVel[i * 3 + 2];
+          // Wrap around
+          for (let j = 0; j < 3; j++) {
+            if (Math.abs(posAttr.array[i * 3 + j]) > 3.5) {
+              posAttr.array[i * 3 + j] *= -0.9;
+            }
+          }
+        }
+        (posAttr as THREE.BufferAttribute).needsUpdate = true;
+
+        particles.rotation.y = elapsed * 0.03;
+      }
+
+      // Render 3D
       renderer.render(scene, camera);
 
-      // Read pixels at low resolution
+      // Convert to ASCII
       const cols = offscreen.width;
       const rows = offscreen.height;
       if (cols <= 0 || rows <= 0) { animId = requestAnimationFrame(animate); return; }
 
       offCtx.drawImage(renderer.domElement, 0, 0, cols, rows);
       const imageData = offCtx.getImageData(0, 0, cols, rows);
-      const pixels = imageData.data;
+      const px = imageData.data;
 
-      // Render ASCII
       asciiCtx.fillStyle = "#0a0a0a";
       asciiCtx.fillRect(0, 0, asciiCanvas.width, asciiCanvas.height);
       asciiCtx.font = `${fontSize}px monospace`;
@@ -115,23 +154,20 @@ export default function AsciiBackground() {
       for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
           const i = (y * cols + x) * 4;
-          const r = pixels[i];
-          const g = pixels[i + 1];
-          const b = pixels[i + 2];
+          const r = px[i], g = px[i + 1], b = px[i + 2];
           const brightness = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
 
-          if (brightness < 0.02) continue; // skip black
+          if (brightness < 0.015) continue;
 
           const charIdx = Math.floor(brightness * (ASCII_CHARS.length - 1));
-          const char = ASCII_CHARS[charIdx];
-
-          const green = Math.floor(40 + brightness * 215);
-          const alpha = 0.3 + brightness * 0.7;
-          asciiCtx.fillStyle = `rgba(0, ${green}, ${Math.floor(green * 0.55)}, ${alpha})`;
-          asciiCtx.fillText(char, x * cellW, y * cellH + fontSize);
+          const green = Math.floor(30 + brightness * 225);
+          const alpha = 0.2 + brightness * 0.8;
+          asciiCtx.fillStyle = `rgba(0,${green},${Math.floor(green * 0.5)},${alpha})`;
+          asciiCtx.fillText(ASCII_CHARS[charIdx], x * cellW, y * cellH + fontSize);
         }
       }
 
+      if (!ready) setReady(true);
       animId = requestAnimationFrame(animate);
     };
 
@@ -143,17 +179,19 @@ export default function AsciiBackground() {
       renderer.dispose();
       torusGeo.dispose();
       torusMat.dispose();
-      particlesGeo.dispose();
-      particlesMat.dispose();
+      icoGeo.dispose();
+      icoMat.dispose();
+      pGeo.dispose();
+      pMat.dispose();
       if (asciiCanvas.parentNode) asciiCanvas.parentNode.removeChild(asciiCanvas);
     };
-  }, []);
+  }, [ready]);
 
   return (
     <div
       ref={containerRef}
-      className="absolute inset-0 w-full h-full overflow-hidden"
-      style={{ opacity: 0.5 }}
+      className="absolute inset-0 w-full h-full overflow-hidden transition-opacity duration-1000"
+      style={{ opacity: ready ? 0.45 : 0 }}
     />
   );
 }
