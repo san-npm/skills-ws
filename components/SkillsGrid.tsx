@@ -62,7 +62,7 @@ export default function SkillsGrid({
               : "border-border text-text-dim hover:border-border-hover hover:text-text-main bg-bg-card"
           }`}
         >
-          All
+          All ({skills.length})
         </button>
         {categories.map((cat) => (
           <button
@@ -89,31 +89,38 @@ export default function SkillsGrid({
             <Link
               key={skill.name}
               href={`/skills/${skill.name}`}
-              className="bg-bg-card border border-border rounded-xl px-6 py-5 grid grid-cols-[auto_1fr_auto] items-start gap-4 transition-all hover:border-border-hover hover:bg-bg-hover hover:-translate-y-px no-underline text-inherit animate-fade-in"
-              style={{ animationDelay: `${i * 50}ms` }}
+              className="bg-bg-card border border-border rounded-xl px-6 py-5 grid grid-cols-[1fr_auto] items-start gap-4 transition-all hover:border-border-hover hover:bg-bg-hover hover:-translate-y-px no-underline text-inherit animate-fade-in"
+              style={{ animationDelay: `${i * 30}ms` }}
             >
-              <div
-                className="w-1 h-11 rounded-full max-sm:hidden shrink-0"
-                style={{ backgroundColor: `#${skill.color}` }}
-              />
               <div className="min-w-0">
-                <div className="text-base font-semibold text-text-main mb-1.5 font-sans">
-                  {skill.name}
+                <div className="flex items-center gap-3 mb-1.5">
+                  <span className="text-base font-semibold text-text-main font-sans">
+                    {skill.name}
+                  </span>
+                  <span className="text-[11px] text-text-muted font-mono">
+                    v{skill.version}
+                  </span>
                 </div>
                 <div className="text-[13px] text-text-dim leading-relaxed font-sans">
                   {skill.description}
                 </div>
+                <div className="flex items-center gap-4 mt-2.5">
+                  <span className="text-[11px] text-text-muted font-mono">
+                    {(skill.installs ?? 0).toLocaleString()} installs
+                  </span>
+                  <span className="flex items-center gap-1 text-[11px] text-text-muted font-mono">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-500/70" />
+                    VT clean
+                  </span>
+                </div>
               </div>
-              <div className="flex flex-col items-end gap-2 sm:min-w-fit max-sm:flex-row max-sm:items-center">
+              <div className="flex flex-col items-end gap-2 sm:min-w-fit">
                 <span
                   className={`text-[11px] uppercase tracking-wide font-medium px-2.5 py-1 rounded ${
                     categoryColors[skill.category]?.text ?? "text-text-dim"
                   } ${categoryColors[skill.category]?.bg ?? "bg-border/10"}`}
                 >
                   {skill.category}
-                </span>
-                <span className="text-[11px] text-text-muted">
-                  v{skill.version}
                 </span>
               </div>
             </Link>

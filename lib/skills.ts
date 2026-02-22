@@ -10,7 +10,7 @@ export interface Skill {
   features?: string[];
   useCases?: string[];
   content?: string;
-  vtUrl?: string;
+  installs?: number;
 }
 
 export interface SkillsConfig {
@@ -40,4 +40,7 @@ export const categoryColors: Record<string, { text: string; bg: string }> = {
   design: { text: "text-cat-pink", bg: "bg-cat-pink/10" },
   conversion: { text: "text-cat-teal", bg: "bg-cat-teal/10" },
   dev: { text: "text-cat-orange", bg: "bg-cat-orange/10" },
+  growth: { text: "text-text-dim", bg: "bg-border/10" },
+  analytics: { text: "text-text-dim", bg: "bg-border/10" },
+  operations: { text: "text-text-dim", bg: "bg-border/10" },
 };

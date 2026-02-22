@@ -28,7 +28,7 @@ export default function Home() {
         </pre>
         <p className="relative z-10 font-sans text-lg text-text-dim mb-3">
           Agent skills built for{" "}
-          <strong className="text-text-main font-semibold">marketing, growth & conversion</strong>
+          <strong className="text-text-main font-semibold">marketing, growth, analytics & conversion</strong>
         </p>
         <p className="relative z-10 font-sans text-sm text-text-muted mb-8">
           by <a href="https://openletz.com" target="_blank" className="text-text-dim hover:text-accent transition-colors">Commit Media</a>
