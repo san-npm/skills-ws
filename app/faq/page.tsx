@@ -1,0 +1,59 @@
+import type { Metadata } from "next";
+import FaqAccordion from "@/components/FaqAccordion";
+
+export const metadata: Metadata = {
+  title: "FAQ — skills.ws",
+  description: "Frequently asked questions about agent skills — installation, security, compatibility, and more.",
+};
+
+const faqs = [
+  {
+    q: "What are agent skills?",
+    a: "Agent skills are modular packages that give AI coding assistants specialized knowledge. Each skill is a SKILL.md file that teaches an agent how to handle a specific domain — marketing strategy, SEO auditing, conversion optimization, and more. Think of them as expertise plugins.",
+  },
+  {
+    q: "Are these skills free?",
+    a: "Yes. All skills are free and open source. Install them with a single command and use them in any compatible agent.",
+  },
+  {
+    q: "Who built these skills?",
+    a: 'All skills are built in-house by <a href="https://openletz.com" target="_blank" class="text-accent hover:underline">Commit Media</a>. No third-party code, no community contributions mixed in. Every skill is written, tested, and maintained by us.',
+  },
+  {
+    q: "Are the skills secure?",
+    a: "Yes. Every skill is scanned with VirusTotal (each skill page links to its scan report). There are no external runtime dependencies. Scripts read credentials from environment variables only — no hardcoded secrets. No eval(), exec(), or child_process patterns anywhere.",
+  },
+  {
+    q: "Which AI assistants are supported?",
+    a: "OpenClaw, Claude Code, Cursor, Codex, Gemini CLI, and any agent that supports the open SKILL.md standard. The skills are agent-agnostic — they work anywhere SKILL.md files are recognized.",
+  },
+  {
+    q: "How do I install skills?",
+    a: 'Run <code class="bg-[#0a0a0a] border border-[#222] rounded px-1.5 py-0.5 text-[13px] font-mono text-[#00ff88]">npx skillsadd commit-skills</code> to install all skills, or add <code class="bg-[#0a0a0a] border border-[#222] rounded px-1.5 py-0.5 text-[13px] font-mono text-[#00ff88]">--skill name</code> to install a specific one.',
+  },
+  {
+    q: "Can I install individual skills?",
+    a: 'Yes. Use the --skill flag: <code class="bg-[#0a0a0a] border border-[#222] rounded px-1.5 py-0.5 text-[13px] font-mono text-[#00ff88]">npx skillsadd commit-skills --skill seo-geo</code>',
+  },
+  {
+    q: "How often are skills updated?",
+    a: "Skills are updated as frameworks evolve and based on real-world usage feedback. Each skill has a version number — check the skill page for the latest version.",
+  },
+  {
+    q: "Can I request a new skill?",
+    a: 'Yes. Open an issue on <a href="https://github.com/san-npm/skills-ws/issues" target="_blank" class="text-accent hover:underline">GitHub</a> describing the skill you need and the use case.',
+  },
+  {
+    q: "What categories are available?",
+    a: "Currently: marketing (SEO, content, ads, social, analytics), conversion (CRO, signup flows, lead scoring, CRM, funnels), design (landing pages), and web3 (smart contract auditing). We focus on marketing and growth engineering.",
+  },
+];
+
+export default function FaqPage() {
+  return (
+    <div className="max-w-[700px] mx-auto px-6 py-16">
+      <h1 className="text-2xl font-bold font-sans text-text-main mb-8">Frequently Asked Questions</h1>
+      <FaqAccordion faqs={faqs} />
+    </div>
+  );
+}

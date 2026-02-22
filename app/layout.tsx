@@ -17,10 +17,35 @@ export const metadata: Metadata = {
   },
 };
 
+const navLinks = [
+  { label: "Skills", href: "/" },
+  { label: "Docs", href: "/docs" },
+  { label: "CLI", href: "/cli" },
+  { label: "FAQ", href: "/faq" },
+];
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className="font-mono min-h-screen overflow-x-hidden relative">
+        <nav className="sticky top-0 z-50 bg-bg/80 backdrop-blur-md border-b border-border">
+          <div className="max-w-[900px] mx-auto px-6 flex items-center justify-between h-12">
+            <a href="/" className="text-sm font-semibold text-text-main hover:text-accent transition-colors font-sans">
+              skills.ws
+            </a>
+            <div className="flex gap-5">
+              {navLinks.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  className="text-[13px] text-text-dim hover:text-accent transition-colors font-sans"
+                >
+                  {link.label}
+                </a>
+              ))}
+            </div>
+          </div>
+        </nav>
         <div className="relative z-10">{children}</div>
         <script
           type="application/ld+json"
