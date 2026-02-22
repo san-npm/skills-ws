@@ -23,7 +23,7 @@ export default function SkillContent({ content }: { content: string }) {
           ),
           p: ({ children }) => <p className="mb-3 leading-relaxed">{children}</p>,
           ul: ({ children }) => <ul className="mb-4 space-y-1.5 list-none">{children}</ul>,
-          ol: ({ children }) => <ol className="mb-4 space-y-1.5 list-decimal pl-5">{children}</ol>,
+          ol: ({ children }) => <ol className="mb-4 space-y-1.5 list-none">{children}</ol>,
           li: ({ children, ordered, index }: { children?: React.ReactNode; ordered?: boolean; index?: number }) => (
             <li className="flex items-start gap-2">
               {ordered ? (
