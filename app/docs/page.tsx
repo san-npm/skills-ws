@@ -72,11 +72,11 @@ export default function DocsPage() {
         <div className="space-y-3">
           <div className="bg-bg border border-border rounded-lg px-5 py-3 font-mono text-[13px]">
             <span className="text-accent select-none">$ </span>
-            <span className="text-text-main">npx skillsadd commit-skills</span>
+            <span className="text-text-main">curl -fsSL https://skills-ws.vercel.app/install.sh | bash</span>
           </div>
           <div className="bg-bg border border-border rounded-lg px-5 py-3 font-mono text-[13px]">
             <span className="text-accent select-none">$ </span>
-            <span className="text-text-main">npx skillsadd commit-skills --skill seo-geo</span>
+            <span className="text-text-main">curl -fsSL https://skills-ws.vercel.app/install.sh | bash -s -- --skill seo-geo</span>
           </div>
         </div>
       </section>

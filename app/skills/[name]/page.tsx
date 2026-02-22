@@ -60,7 +60,7 @@ export default function SkillPage({ params }: { params: { name: string } }) {
         </div>
 
         <div className="mb-8">
-          <InstallBox command={`npx skillsadd commit-skills --skill ${skill.name}`} />
+          <InstallBox command={`curl -fsSL https://skills-ws.vercel.app/install.sh | bash -s -- --skill ${skill.name}`} />
         </div>
 
         <div className="mb-8">
