@@ -72,11 +72,11 @@ export default function DocsPage() {
         <div className="space-y-3">
           <div className="bg-bg border border-border rounded-lg px-5 py-3 font-mono text-[13px]">
             <span className="text-accent select-none">$ </span>
-            <span className="text-text-main">npx skillsadd</span>
+            <span className="text-text-main">npx skills-ws</span>
           </div>
           <div className="bg-bg border border-border rounded-lg px-5 py-3 font-mono text-[13px]">
             <span className="text-accent select-none">$ </span>
-            <span className="text-text-main">npx skillsadd --skill seo-geo</span>
+            <span className="text-text-main">npx skills-ws --skill seo-geo</span>
           </div>
         </div>
       </section>

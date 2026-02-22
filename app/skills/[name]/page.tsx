@@ -60,7 +60,7 @@ export default function SkillPage({ params }: { params: { name: string } }) {
         </div>
 
         <div className="mb-8">
-          <InstallBox command={`npx skillsadd --skill ${skill.name}`} />
+          <InstallBox command={`npx skills-ws --skill ${skill.name}`} />
         </div>
 
         <div className="mb-8">

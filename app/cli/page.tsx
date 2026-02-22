@@ -14,7 +14,7 @@ export default function CliPage() {
         <h2 className="text-lg font-semibold text-text-main font-sans mb-3">Install all skills</h2>
         <div className="bg-bg border border-border rounded-lg px-5 py-3 font-mono text-[13px] mb-3">
           <span className="text-accent select-none">$ </span>
-          <span className="text-text-main">npx skillsadd</span>
+          <span className="text-text-main">npx skills-ws</span>
         </div>
         <p className="text-[14px] text-text-dim font-sans leading-relaxed">
           Installs all 18 skills into your project. Works with any SKILL.md-compatible agent.
@@ -25,7 +25,7 @@ export default function CliPage() {
         <h2 className="text-lg font-semibold text-text-main font-sans mb-3">Install a single skill</h2>
         <div className="bg-bg border border-border rounded-lg px-5 py-3 font-mono text-[13px] mb-3">
           <span className="text-accent select-none">$ </span>
-          <span className="text-text-main">npx skillsadd --skill seo-geo</span>
+          <span className="text-text-main">npx skills-ws --skill seo-geo</span>
         </div>
         <p className="text-[14px] text-text-dim font-sans leading-relaxed">
           Install only the skill you need. Replace <code className="bg-bg border border-border rounded px-1.5 py-0.5 text-[13px] font-mono text-accent">seo-geo</code> with any skill name.

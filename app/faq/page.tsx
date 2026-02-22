@@ -33,11 +33,11 @@ const faqs = [
   },
   {
     q: "How do I install skills?",
-    a: <>Run <Code>npx skillsadd</Code> to install all skills, or add <Code>--skill name</Code> to install a specific one.</>,
+    a: <>Run <Code>npx skills-ws</Code> to install all skills, or add <Code>--skill name</Code> to install a specific one.</>,
   },
   {
     q: "Can I install individual skills?",
-    a: <>Yes. Use the --skill flag: <Code>npx skillsadd --skill seo-geo</Code></>,
+    a: <>Yes. Use the --skill flag: <Code>npx skills-ws --skill seo-geo</Code></>,
   },
   {
     q: "How often are skills updated?",

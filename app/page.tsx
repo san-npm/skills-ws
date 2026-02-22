@@ -35,7 +35,7 @@ export default function Home() {
         </p>
 
         <div className="relative z-10">
-          <InstallBox command="npx skillsadd" />
+          <InstallBox command="npx skills-ws" />
         </div>
 
         <div className="relative z-10 flex justify-center gap-5 mt-8 mb-12 flex-wrap">
