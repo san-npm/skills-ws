@@ -31,7 +31,7 @@ export default function Home() {
           <strong className="text-text-main font-semibold">marketing, growth, analytics & conversion</strong>
         </p>
         <p className="relative z-10 font-sans text-sm text-text-muted mb-8">
-          by <a href="https://openletz.com" target="_blank" className="text-text-dim hover:text-accent transition-colors">Commit Media</a>
+          by <a href="https://openletz.com" target="_blank" rel="noopener noreferrer" className="text-text-dim hover:text-accent transition-colors">Commit Media</a>
         </p>
 
         <div className="relative z-10">
@@ -103,6 +103,7 @@ export default function Home() {
           <a
             href="https://openletz.com"
             target="_blank"
+            rel="noopener noreferrer"
             className="text-text-dim hover:text-accent transition-colors"
           >
             Commit Media
@@ -119,6 +120,7 @@ export default function Home() {
               key={label}
               href={href}
               target={href.startsWith("http") ? "_blank" : undefined}
+              rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
               className="text-text-dim text-[13px] hover:text-accent transition-colors"
             >
               {label}
