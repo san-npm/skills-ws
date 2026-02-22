@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -30,18 +31,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-mono min-h-screen overflow-x-hidden relative">
         <nav className="sticky top-0 z-50 bg-bg/80 backdrop-blur-md border-b border-border">
           <div className="max-w-[900px] mx-auto px-6 flex items-center justify-between h-12">
-            <a href="/" className="text-sm font-semibold text-text-main hover:text-accent transition-colors font-sans">
+            <Link href="/" className="text-sm font-semibold text-text-main hover:text-accent transition-colors font-sans">
               skills.ws
-            </a>
+            </Link>
             <div className="flex gap-5">
               {navLinks.map((link) => (
-                <a
+                <Link
                   key={link.href}
                   href={link.href}
                   className="text-[13px] text-text-dim hover:text-accent transition-colors font-sans"
                 >
                   {link.label}
-                </a>
+                </Link>
               ))}
             </div>
           </div>
