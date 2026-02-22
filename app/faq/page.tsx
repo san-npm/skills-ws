@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import FaqAccordion from "@/components/FaqAccordion";
 
 export const metadata: Metadata = {
-  title: "FAQ — skills.ws",
-  description: "Frequently asked questions about agent skills — installation, security, compatibility, and more.",
+  title: "FAQ — Agent Skills for AI",
+  description:
+    "Frequently asked questions about skills.ws — installation, security, compatibility, supported AI assistants, and how agent skills work with OpenClaw, Claude Code, Cursor, and Codex.",
+  alternates: { canonical: "https://skills-ws.vercel.app/faq" },
 };
 
 const Code = ({ children }: { children: React.ReactNode }) => (
@@ -53,11 +55,28 @@ const faqs = [
   },
 ];
 
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((f) => ({
+    "@type": "Question",
+    name: f.q,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: typeof f.a === "string" ? f.a : f.q,
+    },
+  })),
+};
+
 export default function FaqPage() {
   return (
     <div className="max-w-[700px] mx-auto px-6 py-16">
       <h1 className="text-2xl font-bold font-sans text-text-main mb-8">Frequently Asked Questions</h1>
       <FaqAccordion faqs={faqs} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema).replace(/</g, "\\u003c") }}
+      />
     </div>
   );
 }

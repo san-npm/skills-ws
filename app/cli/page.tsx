@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { getSkills } from "@/lib/skills";
 
 export const metadata: Metadata = {
-  title: "CLI Reference — skills.ws",
-  description: "How to install and manage agent skills from the command line.",
+  title: "CLI Reference — npx skills-ws",
+  description:
+    "Install agent skills from the command line with npx skills-ws. List, install, and manage 39 skills for AI coding assistants.",
+  alternates: { canonical: "https://skills-ws.vercel.app/cli" },
 };
 
 export default function CliPage() {

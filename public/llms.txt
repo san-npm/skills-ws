@@ -1,0 +1,77 @@
+# skills.ws
+
+> Agent skills for AI coding assistants. Install with npx skills-ws.
+
+skills.ws provides SKILL.md files that give AI coding assistants specialized knowledge — workflows, checklists, code patterns, and domain expertise. Drop them into your project and your AI gets smarter.
+
+## Platforms
+- OpenClaw
+- Claude Code
+- Cursor
+- Codex
+
+## Install
+```
+npx skills-ws install          # interactive picker
+npx skills-ws install seo-geo  # install specific skill
+npx skills-ws install all      # install all skills
+```
+
+## Skills
+
+### Analytics
+- [data-analytics](https://skills-ws.vercel.app/skills/data-analytics): Data analysis workflows, SQL query patterns, dashboard design, KPI frameworks, and data storytelling for business intelligence.
+- [data-management](https://skills-ws.vercel.app/skills/data-management): Data governance, pipeline design, ETL workflows, data quality frameworks, and warehouse architecture for growing teams.
+- [google-analytics](https://skills-ws.vercel.app/skills/google-analytics): GA4 setup, event taxonomy, custom dimensions, conversion tracking, audience segments, and reporting automation.
+- [search-console](https://skills-ws.vercel.app/skills/search-console): Google Search Console optimization. Index coverage, performance analysis, sitemap management, and search appearance debugging.
+- [bing-webmaster](https://skills-ws.vercel.app/skills/bing-webmaster): Bing Webmaster Tools setup, IndexNow protocol, URL submission, backlink analysis, and Bing-specific SEO optimization.
+- [yandex-webmaster](https://skills-ws.vercel.app/skills/yandex-webmaster): Yandex Webmaster setup, Yandex-specific SEO, regional targeting, Turbo pages, and Russian market search optimization.
+- [retention-analytics](https://skills-ws.vercel.app/skills/retention-analytics): Churn analysis, cohort retention, engagement scoring, health scoring, and win-back strategies for SaaS products.
+
+### Conversion
+- [page-cro](https://skills-ws.vercel.app/skills/page-cro): Optimize, improve, or increase conversions on any marketing page — homepage, landing, pricing, feature pages.
+- [signup-flow-cro](https://skills-ws.vercel.app/skills/signup-flow-cro): Optimize signup, registration, account creation, or trial activation flows for higher conversion.
+- [popup-cro](https://skills-ws.vercel.app/skills/popup-cro): Create or optimize popups, modals, overlays, slide-ins, and banners for conversion. Exit intent, lead capture, announcements.
+- [lead-scoring](https://skills-ws.vercel.app/skills/lead-scoring): Design and implement lead scoring models. Qualify leads based on behavior, demographics, and engagement.
+- [crm-builder](https://skills-ws.vercel.app/skills/crm-builder): Design and implement CRM workflows. Pipeline management, automation, lead nurturing, deal tracking.
+- [sales-funnel](https://skills-ws.vercel.app/skills/sales-funnel): Design and optimize sales funnels. TOFU/MOFU/BOFU content, qualification stages, conversion paths.
+- [ab-testing](https://skills-ws.vercel.app/skills/ab-testing): A/B test design, statistical analysis, sample size calculation, experiment prioritization, and results interpretation.
+- [pricing-optimization](https://skills-ws.vercel.app/skills/pricing-optimization): Price testing, value metric selection, packaging strategy, discount frameworks, and willingness-to-pay research.
+
+### Design
+- [landing-page-builder](https://skills-ws.vercel.app/skills/landing-page-builder): Build high-converting landing pages from scratch. Copy, layout, CTAs, social proof, and responsive design.
+- [ascii-banner](https://skills-ws.vercel.app/skills/ascii-banner): Build animated ASCII banners for CLI tools and web interfaces. Frame-based animation, ANSI color systems, terminal compatibility, accessibility, and web-based ASCII shaders.
+
+### Growth
+- [business-development](https://skills-ws.vercel.app/skills/business-development): BD strategy, partnership frameworks, outreach templates, deal pipeline management, and negotiation playbooks for B2B SaaS.
+- [cold-outreach](https://skills-ws.vercel.app/skills/cold-outreach): Cold email and LinkedIn outreach. Personalization frameworks, follow-up sequences, deliverability, and reply rate optimization.
+- [social-media-growth](https://skills-ws.vercel.app/skills/social-media-growth): Platform-specific growth tactics. Algorithmic optimization, engagement hacking, viral mechanics, and community building at scale.
+- [competitor-intelligence](https://skills-ws.vercel.app/skills/competitor-intelligence): Competitive analysis frameworks, market positioning, feature comparison matrices, and win/loss analysis for strategic planning.
+- [affiliate-marketing](https://skills-ws.vercel.app/skills/affiliate-marketing): Affiliate program design, commission structures, partner recruitment, tracking implementation, and performance optimization.
+- [customer-acquisition](https://skills-ws.vercel.app/skills/customer-acquisition): CAC optimization, channel mix modeling, attribution analysis, and acquisition strategy for paid and organic channels.
+
+### Marketing
+- [seo-geo](https://skills-ws.vercel.app/skills/seo-geo): SEO & GEO (Generative Engine Optimization) for websites. Optimize for AI search engines and traditional search.
+- [content-strategy](https://skills-ws.vercel.app/skills/content-strategy): Plan content strategy, decide what to create, figure out what topics to cover for SaaS and software products.
+- [copywriting](https://skills-ws.vercel.app/skills/copywriting): Write, rewrite, or improve marketing copy for any page — homepage, landing, pricing, feature, about, or product pages.
+- [email-sequence](https://skills-ws.vercel.app/skills/email-sequence): Create or optimize email sequences, drip campaigns, automated flows, and lifecycle email programs.
+- [paid-ads](https://skills-ws.vercel.app/skills/paid-ads): Paid advertising campaigns on Google Ads, Meta, LinkedIn, Twitter/X. Strategy, copy, targeting, optimization.
+- [programmatic-seo](https://skills-ws.vercel.app/skills/programmatic-seo): Create SEO-driven pages at scale using templates and data. Directory pages, location pages, comparison pages.
+- [growth-hacking](https://skills-ws.vercel.app/skills/growth-hacking): Growth hacking strategies and tactics. Viral loops, referral programs, activation funnels, retention hooks.
+- [local-seo](https://skills-ws.vercel.app/skills/local-seo): Local SEO optimization. Google Business Profile, local citations, reviews, location pages, map pack ranking.
+- [marketing-analytics](https://skills-ws.vercel.app/skills/marketing-analytics): Marketing analytics setup and optimization. GA4, attribution, dashboards, KPIs, funnel analysis.
+- [social-media-kit](https://skills-ws.vercel.app/skills/social-media-kit): Create social media content kits. Platform-specific posts, hashtag strategies, content calendars, engagement tactics.
+
+### Operations
+- [accounting-finance](https://skills-ws.vercel.app/skills/accounting-finance): Financial modeling, bookkeeping automation, invoicing workflows, tax compliance checklists, and P&L analysis for SMEs and startups.
+- [crm-operations](https://skills-ws.vercel.app/skills/crm-operations): CRM setup, pipeline automation, lead routing, deal tracking, and operational workflows for HubSpot, Salesforce, Pipedrive.
+- [revenue-operations](https://skills-ws.vercel.app/skills/revenue-operations): RevOps frameworks, funnel metrics, forecasting models, GTM alignment, and operational efficiency for scaling teams.
+
+### Web3
+- [smart-contract-auditor](https://skills-ws.vercel.app/skills/smart-contract-auditor): Audit Solidity smart contracts for vulnerabilities, gas optimization, and best practices.
+
+## Links
+- Website: https://skills-ws.vercel.app
+- npm: https://www.npmjs.com/package/skills-ws
+- GitHub: https://github.com/san-npm/skills-ws
+- Publisher: Commit Media (https://openletz.com)

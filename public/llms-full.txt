@@ -1,0 +1,4835 @@
+# skills.ws
+
+> Agent skills for AI coding assistants. Install with npx skills-ws.
+
+skills.ws provides SKILL.md files that give AI coding assistants specialized knowledge — workflows, checklists, code patterns, and domain expertise. Drop them into your project and your AI gets smarter.
+
+## Platforms
+- OpenClaw
+- Claude Code
+- Cursor
+- Codex
+
+## Install
+```
+npx skills-ws install          # interactive picker
+npx skills-ws install seo-geo  # install specific skill
+npx skills-ws install all      # install all skills
+```
+
+## Skills
+
+### Analytics
+- [data-analytics](https://skills-ws.vercel.app/skills/data-analytics): Data analysis workflows, SQL query patterns, dashboard design, KPI frameworks, and data storytelling for business intelligence.
+- [data-management](https://skills-ws.vercel.app/skills/data-management): Data governance, pipeline design, ETL workflows, data quality frameworks, and warehouse architecture for growing teams.
+- [google-analytics](https://skills-ws.vercel.app/skills/google-analytics): GA4 setup, event taxonomy, custom dimensions, conversion tracking, audience segments, and reporting automation.
+- [search-console](https://skills-ws.vercel.app/skills/search-console): Google Search Console optimization. Index coverage, performance analysis, sitemap management, and search appearance debugging.
+- [bing-webmaster](https://skills-ws.vercel.app/skills/bing-webmaster): Bing Webmaster Tools setup, IndexNow protocol, URL submission, backlink analysis, and Bing-specific SEO optimization.
+- [yandex-webmaster](https://skills-ws.vercel.app/skills/yandex-webmaster): Yandex Webmaster setup, Yandex-specific SEO, regional targeting, Turbo pages, and Russian market search optimization.
+- [retention-analytics](https://skills-ws.vercel.app/skills/retention-analytics): Churn analysis, cohort retention, engagement scoring, health scoring, and win-back strategies for SaaS products.
+
+### Conversion
+- [page-cro](https://skills-ws.vercel.app/skills/page-cro): Optimize, improve, or increase conversions on any marketing page — homepage, landing, pricing, feature pages.
+- [signup-flow-cro](https://skills-ws.vercel.app/skills/signup-flow-cro): Optimize signup, registration, account creation, or trial activation flows for higher conversion.
+- [popup-cro](https://skills-ws.vercel.app/skills/popup-cro): Create or optimize popups, modals, overlays, slide-ins, and banners for conversion. Exit intent, lead capture, announcements.
+- [lead-scoring](https://skills-ws.vercel.app/skills/lead-scoring): Design and implement lead scoring models. Qualify leads based on behavior, demographics, and engagement.
+- [crm-builder](https://skills-ws.vercel.app/skills/crm-builder): Design and implement CRM workflows. Pipeline management, automation, lead nurturing, deal tracking.
+- [sales-funnel](https://skills-ws.vercel.app/skills/sales-funnel): Design and optimize sales funnels. TOFU/MOFU/BOFU content, qualification stages, conversion paths.
+- [ab-testing](https://skills-ws.vercel.app/skills/ab-testing): A/B test design, statistical analysis, sample size calculation, experiment prioritization, and results interpretation.
+- [pricing-optimization](https://skills-ws.vercel.app/skills/pricing-optimization): Price testing, value metric selection, packaging strategy, discount frameworks, and willingness-to-pay research.
+
+### Design
+- [landing-page-builder](https://skills-ws.vercel.app/skills/landing-page-builder): Build high-converting landing pages from scratch. Copy, layout, CTAs, social proof, and responsive design.
+- [ascii-banner](https://skills-ws.vercel.app/skills/ascii-banner): Build animated ASCII banners for CLI tools and web interfaces. Frame-based animation, ANSI color systems, terminal compatibility, accessibility, and web-based ASCII shaders.
+
+### Growth
+- [business-development](https://skills-ws.vercel.app/skills/business-development): BD strategy, partnership frameworks, outreach templates, deal pipeline management, and negotiation playbooks for B2B SaaS.
+- [cold-outreach](https://skills-ws.vercel.app/skills/cold-outreach): Cold email and LinkedIn outreach. Personalization frameworks, follow-up sequences, deliverability, and reply rate optimization.
+- [social-media-growth](https://skills-ws.vercel.app/skills/social-media-growth): Platform-specific growth tactics. Algorithmic optimization, engagement hacking, viral mechanics, and community building at scale.
+- [competitor-intelligence](https://skills-ws.vercel.app/skills/competitor-intelligence): Competitive analysis frameworks, market positioning, feature comparison matrices, and win/loss analysis for strategic planning.
+- [affiliate-marketing](https://skills-ws.vercel.app/skills/affiliate-marketing): Affiliate program design, commission structures, partner recruitment, tracking implementation, and performance optimization.
+- [customer-acquisition](https://skills-ws.vercel.app/skills/customer-acquisition): CAC optimization, channel mix modeling, attribution analysis, and acquisition strategy for paid and organic channels.
+
+### Marketing
+- [seo-geo](https://skills-ws.vercel.app/skills/seo-geo): SEO & GEO (Generative Engine Optimization) for websites. Optimize for AI search engines and traditional search.
+- [content-strategy](https://skills-ws.vercel.app/skills/content-strategy): Plan content strategy, decide what to create, figure out what topics to cover for SaaS and software products.
+- [copywriting](https://skills-ws.vercel.app/skills/copywriting): Write, rewrite, or improve marketing copy for any page — homepage, landing, pricing, feature, about, or product pages.
+- [email-sequence](https://skills-ws.vercel.app/skills/email-sequence): Create or optimize email sequences, drip campaigns, automated flows, and lifecycle email programs.
+- [paid-ads](https://skills-ws.vercel.app/skills/paid-ads): Paid advertising campaigns on Google Ads, Meta, LinkedIn, Twitter/X. Strategy, copy, targeting, optimization.
+- [programmatic-seo](https://skills-ws.vercel.app/skills/programmatic-seo): Create SEO-driven pages at scale using templates and data. Directory pages, location pages, comparison pages.
+- [growth-hacking](https://skills-ws.vercel.app/skills/growth-hacking): Growth hacking strategies and tactics. Viral loops, referral programs, activation funnels, retention hooks.
+- [local-seo](https://skills-ws.vercel.app/skills/local-seo): Local SEO optimization. Google Business Profile, local citations, reviews, location pages, map pack ranking.
+- [marketing-analytics](https://skills-ws.vercel.app/skills/marketing-analytics): Marketing analytics setup and optimization. GA4, attribution, dashboards, KPIs, funnel analysis.
+- [social-media-kit](https://skills-ws.vercel.app/skills/social-media-kit): Create social media content kits. Platform-specific posts, hashtag strategies, content calendars, engagement tactics.
+
+### Operations
+- [accounting-finance](https://skills-ws.vercel.app/skills/accounting-finance): Financial modeling, bookkeeping automation, invoicing workflows, tax compliance checklists, and P&L analysis for SMEs and startups.
+- [crm-operations](https://skills-ws.vercel.app/skills/crm-operations): CRM setup, pipeline automation, lead routing, deal tracking, and operational workflows for HubSpot, Salesforce, Pipedrive.
+- [revenue-operations](https://skills-ws.vercel.app/skills/revenue-operations): RevOps frameworks, funnel metrics, forecasting models, GTM alignment, and operational efficiency for scaling teams.
+
+### Web3
+- [smart-contract-auditor](https://skills-ws.vercel.app/skills/smart-contract-auditor): Audit Solidity smart contracts for vulnerabilities, gas optimization, and best practices.
+
+## Links
+- Website: https://skills-ws.vercel.app
+- npm: https://www.npmjs.com/package/skills-ws
+- GitHub: https://github.com/san-npm/skills-ws
+- Publisher: Commit Media (https://openletz.com)
+
+---
+
+# Full Skill Documentation
+
+## seo-geo
+
+**Category:** marketing | **Version:** 1.0.0
+**Description:** SEO & GEO (Generative Engine Optimization) for websites. Optimize for AI search engines and traditional search.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# SEO & GEO Optimization v2
+
+**GEO = Generative Engine Optimization** — AI engines cite sources, not rank pages. Being cited is the new #1.
+
+## Workflow
+
+### 1. Technical SEO Audit
+
+Run the free audit script:
+```bash
+python3 scripts/seo_audit.py "https://example.com"
+```
+
+Manual quick checks:
+```bash
+curl -sL "URL" | grep -E "<title>|<meta name=\"description\"|application/ld\+json" | head -20
+curl -s "URL/robots.txt"
+curl -s "URL/sitemap.xml" | head -50
+```
+
+Ensure AI bots allowed in robots.txt: `Googlebot`, `Bingbot`, `PerplexityBot`, `ChatGPT-User`, `ClaudeBot`, `GPTBot`, `anthropic-ai`.
+
+Full technical checklist (Core Web Vitals, crawl budget, mobile-first): references/technical-seo.md
+
+### 2. Keyword Research
+
+With DataForSEO API (`DATAFORSEO_LOGIN` + `DATAFORSEO_PASSWORD` env vars):
+```bash
+python3 scripts/keyword_research.py "keyword" --location 2840 --language en
+python3 scripts/competitor_gap.py "yourdomain.com" "competitor.com"
+python3 scripts/serp_analysis.py "target keyword"
+```
+
+Without API — use web search for volume/difficulty estimates.
+
+Cluster by intent: informational → blog, transactional → landing pages, navigational → product pages. Full methodology: references/keyword-research.md
+
+### 3. GEO Optimization
+
+Apply **Princeton 9 GEO Methods** — best combo: **Fluency + Statistics**:
+
+| Method | Boost | Action |
+|--------|-------|--------|
+| Cite Sources | +40% | Authoritative references with links |
+| Statistics | +37% | Specific numbers and data points |
+| Quotations | +30% | Expert quotes with attribution |
+| Authoritative Tone | +25% | Confident expert language |
+| Simplify | +20% | Plain language for complex topics |
+| Technical Terms | +18% | Domain-specific vocabulary |
+| Fluency | +15-30% | Readability and flow |
+| ~~Keyword Stuffing~~ | **-10%** | **NEVER** |
+
+Structure content for AI citation: answer-first format, clear H1>H2>H3, bullet/numbered lists, tables, short paragraphs (2-3 sentences), FAQ sections with schema.
+
+Platform-specific strategies: references/geo-optimization.md
+
+### 4. E-E-A-T Signals
+
+- Author bios with credentials on every article
+- Link to primary sources and studies
+- Display trust signals (certifications, awards, reviews)
+- Include first-hand experience and original data
+- Visible last-updated timestamps
+- Build topical authority through content clusters
+
+Full guide: references/eeat-guide.md
+
+### 5. Schema Markup (JSON-LD)
+
+Generate structured data for every page type:
+- `WebPage`/`Article` — content pages
+- `FAQPage` — FAQ sections (+40% AI visibility)
+- `HowTo` — tutorials and guides
+- `Product` + `AggregateRating` — product pages
+- `Organization`/`LocalBusiness` — about/contact pages
+- `SoftwareApplication` — tools and apps
+- `BreadcrumbList` — navigation
+- `VideoObject` — video content
+- `Review`/`AggregateRating` — review pages
+
+Templates: references/schema-templates.md
+
+Validate at: `https://search.google.com/test/rich-results?url={url}`
+
+### 6. On-Page SEO
+
+```html
+<title>{Primary Keyword} — {Brand} | {Secondary}</title>
+<meta name="description" content="{150-160 chars with keyword}">
+<meta property="og:title" content="{Title}">
+<meta property="og:description" content="{Description}">
+<meta property="og:image" content="{1200x630 image URL}">
+<meta name="twitter:card" content="summary_large_image">
+```
+
+Checklist:
+- H1 contains primary keyword (one H1 per page)
+- Images have descriptive alt text with keywords
+- Internal links to related content (3-5 per page)
+- External links use `rel="noopener noreferrer"`
+- URL is short, descriptive, hyphenated
+- Page loads under 3 seconds
+- Mobile-friendly responsive design
+
+### 7. International SEO
+
+For multilingual sites, implement hreflang:
+```html
+<link rel="alternate" hreflang="en" href="https://example.com/en/" />
+<link rel="alternate" hreflang="fr" href="https://example.com/fr/" />
+<link rel="alternate" hreflang="x-default" href="https://example.com/" />
+```
+
+Full guide: references/international-seo.md
+
+### 8. Security Audit
+
+Scan competitor and referenced URLs with VirusTotal:
+```bash
+vt scan url "https://competitor.com"
+vt url "https://competitor.com" --include=last_analysis_stats
+```
+
+Flag any URLs with detections > 0 in recommendations.
+
+## References
+
+- references/technical-seo.md — Core Web Vitals, crawlability, indexing
+- references/geo-optimization.md — AI search strategies per platform
+- references/schema-templates.md — JSON-LD for 10+ page types
+- references/keyword-research.md — Clustering, intent mapping, gap analysis
+- references/eeat-guide.md — E-E-A-T signals and implementation
+- references/international-seo.md — hreflang, geo-targeting, multilingual
+
+---
+
+## content-strategy
+
+**Category:** marketing | **Version:** 1.0.0
+**Description:** Plan content strategy, decide what to create, figure out what topics to cover for SaaS and software products.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Content Strategy v2
+
+## Workflow
+
+### 1. Content Audit
+
+Inventory existing content:
+- URL, title, word count, publish date, last updated
+- Organic traffic (from GA4/Search Console)
+- Target keyword and current ranking
+- Content type (blog, guide, landing page, case study)
+- Quality score (1-5): accuracy, depth, freshness
+
+Flag: thin content (<500 words), outdated (>12 months), cannibalized (multiple pages targeting same keyword).
+
+### 2. Competitor Content Analysis
+
+For each competitor:
+1. Run `site:competitor.com` to estimate indexed page count
+2. Identify their top-performing content (Ahrefs/SEMrush or manual research)
+3. Map their content clusters and topic coverage
+4. Find gaps: topics they cover that you don't
+5. Find opportunities: topics neither of you covers well
+
+### 3. Topic Scoring Matrix
+
+Score each topic idea (1-5 on each, total out of 25):
+
+| Factor | Weight | Description |
+|--------|--------|-------------|
+| Search Volume | 5 | Monthly search demand |
+| Business Relevance | 5 | How close to your product/sale |
+| Competition | 5 | Inverse of keyword difficulty |
+| Expertise Match | 5 | Your team's ability to write authoritatively |
+| Content Gap | 5 | Lack of good existing content online |
+
+Prioritize topics scoring 18+ first.
+
+### 4. Topic Cluster Design
+
+Build pillar-cluster model:
+
+```
+Pillar Page: "Complete Guide to {Topic}" (3000+ words)
+├── Cluster: "How to {subtopic 1}" (1500+ words)
+├── Cluster: "{Topic} vs {Alternative}" (1500+ words)
+├── Cluster: "Best {Topic} tools" (2000+ words)
+├── Cluster: "{Topic} for {audience}" (1500+ words)
+└── Cluster: "{Topic} examples" (1500+ words)
+```
+
+Rules:
+- Every cluster page links to its pillar page
+- Pillar page links to all cluster pages
+- Cluster pages interlink where relevant
+- One pillar per major topic area
+
+### 5. Content Calendar
+
+Build a 90-day calendar:
+- Week 1-4: Foundation content (pillar pages, core landing pages)
+- Week 5-8: Cluster content (supporting blog posts)
+- Week 9-12: Amplification content (case studies, comparisons, guest posts)
+
+Cadence: 2-4 pieces/week for growing sites, 1-2/week for maintenance.
+
+Template in references/content-frameworks.md.
+
+### 6. Content ROI Tracking
+
+Track per piece:
+- Production cost (time + money)
+- Organic traffic after 90 days
+- Leads/conversions attributed
+- Revenue attributed (if measurable)
+- Cost per lead from content
+
+## References
+
+- references/content-frameworks.md — Pillar/cluster model, scoring matrix, calendar templates, editorial workflow
+
+---
+
+## copywriting
+
+**Category:** marketing | **Version:** 1.0.0
+**Description:** Write, rewrite, or improve marketing copy for any page — homepage, landing, pricing, feature, about, or product pages.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Copywriting v2
+
+Write marketing copy that converts. Every page element has a job — make sure it does it.
+
+## Core Frameworks
+
+### PAS (Problem-Agitate-Solve)
+1. **Problem**: Name the pain the reader feels
+2. **Agitate**: Make the pain vivid and urgent
+3. **Solve**: Present your product as the answer
+
+### AIDA (Attention-Interest-Desire-Action)
+1. **Attention**: Bold headline or surprising stat
+2. **Interest**: Expand with relevant details
+3. **Desire**: Show benefits and social proof
+4. **Action**: Clear, specific CTA
+
+### BAB (Before-After-Bridge)
+1. **Before**: Current painful state
+2. **After**: Dream outcome achieved
+3. **Bridge**: Your product is how they get there
+
+### 4Us (Useful-Urgent-Unique-Ultra-specific)
+Score every headline 1-4 on each U. Aim for 12+.
+
+Full frameworks and 50+ swipe patterns: references/frameworks.md
+
+## Page-by-Page Playbook
+
+### Homepage
+- Hero: One clear value proposition (what + for whom + why different)
+- Subheadline: Expand on the benefit or address the "how"
+- Social proof bar: logos, numbers, or testimonial
+- 3 feature blocks: benefit-first headlines, not feature labels
+- Final CTA section: restate the value prop with urgency
+
+### Landing Page
+- One goal per page (no navigation distractions)
+- Headline matches the ad/link that brought them
+- Benefits > features (what it does FOR them)
+- Social proof close to CTA
+- Single, repeated CTA button
+
+### Pricing Page
+- Anchor with the most expensive plan first (or highlight recommended)
+- Name plans by persona ("Starter", "Growth", "Scale") not size
+- Feature comparison table with checkmarks
+- FAQ section addressing objections
+- Money-back guarantee near CTA
+
+### Feature Page
+- Lead with the outcome, not the feature name
+- Show don't tell: screenshots, demos, examples
+- Compare old way vs new way
+- Testimonial from someone who uses THIS feature
+- CTA: try this specific feature
+
+## CTA Optimization
+
+Rules:
+- Use first person: "Start my free trial" > "Start your free trial"
+- Be specific: "Get the report" > "Submit"
+- Add value: "Create my account (free)" > "Sign up"
+- Reduce risk: "Try free for 14 days — no credit card"
+- One primary CTA per page section
+
+## Voice & Tone
+
+Define for every brand:
+- **Voice** (constant): Professional? Casual? Playful? Authoritative?
+- **Tone** (varies by context): Landing page = confident, Error page = helpful, Email = friendly
+
+Rules:
+- Write at 6th-8th grade reading level
+- Short sentences (15-20 words average)
+- Active voice always
+- "You" more than "we"
+- Cut every word that doesn't earn its place
+
+## References
+
+- references/frameworks.md — PAS, AIDA, BAB, PASTOR, StoryBrand + 50 swipe patterns
+- references/swipe-file.md — Proven copy examples by page type
+
+---
+
+## page-cro
+
+**Category:** conversion | **Version:** 1.0.0
+**Description:** Optimize, improve, or increase conversions on any marketing page — homepage, landing, pricing, feature pages.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Page CRO v2
+
+## Audit Workflow
+
+### 1. Above the Fold
+First screen must contain:
+- Clear value proposition (what + for whom + why different)
+- Primary CTA (visible without scrolling)
+- Trust signal (logo bar, testimonial snippet, or metric)
+- Relevant hero image/video (not stock photos)
+
+### 2. Page Structure
+Optimal section order for landing pages:
+1. Hero (value prop + CTA)
+2. Social proof bar (logos or metrics)
+3. Problem statement (pain they feel)
+4. Solution (how you solve it)
+5. Features/benefits (3-4 max, benefit-first)
+6. Social proof (testimonials, case studies)
+7. How it works (3 steps)
+8. Pricing or offer
+9. FAQ (address objections)
+10. Final CTA (restate value prop)
+
+### 3. Trust Signals
+- Customer logos (known brands first)
+- Metrics: "Used by X+ companies" / "Y% improvement"
+- Testimonials with photo, name, title, company
+- Review scores (G2, Trustpilot, etc.)
+- Security badges (SOC2, GDPR, SSL)
+- Money-back guarantee badge near CTA
+
+### 4. CTA Optimization
+- Button color: contrast with page (test red vs green vs blue)
+- Button text: first person, specific ("Start my free trial")
+- Reduce risk: "No credit card required", "Cancel anytime"
+- One primary CTA per section, same action throughout
+
+## A/B Testing
+
+### Sample Size Calculator
+```
+Minimum sample = 16 × p × (1-p) / MDE²
+p = baseline conversion rate (e.g., 0.05 for 5%)
+MDE = minimum detectable effect (e.g., 0.2 for 20% relative improvement)
+```
+
+For 5% baseline, 20% relative improvement: ~6,400 visitors per variant.
+
+### Statistical Significance
+- z = (p1 - p2) / sqrt(p_pool × (1 - p_pool) × (1/n1 + 1/n2))
+- Significant if z > 1.96 (95% confidence)
+- Run for minimum 2 full weeks (capture weekly patterns)
+- Don't stop early on promising results
+
+Full testing guide: references/ab-testing.md
+
+## Heatmap Interpretation
+
+- **Red zones**: High attention — put important content here
+- **Cold zones**: Low attention — move or remove content
+- **False bottoms**: If users stop scrolling, add visual continuity cues
+- **Rage clicks**: Frustration indicator — element looks clickable but isn't
+- **F-pattern/Z-pattern**: Place key elements along natural scan path
+
+## Page Speed Impact
+- 1s → 3s load time: bounce rate increases 32%
+- 1s → 5s load time: bounce rate increases 90%
+- Each 100ms improvement: +1% conversion rate
+- Mobile speed matters more (slower connections)
+
+## References
+
+- references/ab-testing.md — Complete A/B testing guide with calculators
+- references/cro-patterns.md — 30+ proven conversion patterns
+
+---
+
+## email-sequence
+
+**Category:** marketing | **Version:** 1.0.0
+**Description:** Create or optimize email sequences, drip campaigns, automated flows, and lifecycle email programs.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Email Sequence v2
+
+## Sequence Design
+
+### 1. Define the Sequence
+
+Every sequence needs:
+- **Trigger**: What action starts the sequence (signup, purchase, inactivity)
+- **Goal**: One clear objective (activate, convert, retain, re-engage)
+- **Length**: 3-7 emails typically
+- **Cadence**: Days between emails (vary by urgency)
+- **Exit condition**: What stops the sequence (conversion, unsubscribe, another trigger)
+
+### 2. Email Structure
+
+Every email follows:
+```
+Subject Line (30-50 chars, mobile-friendly)
+Preview Text (40-90 chars, complements subject)
+---
+Opening Line (personal, specific, no "I hope this finds you well")
+Body (one idea per email, scannable, short paragraphs)
+CTA (one primary action, button or link)
+P.S. (optional — high readability, good for secondary CTA)
+```
+
+### 3. Subject Line Optimization
+
+Formulas:
+- Question: "Struggling with {pain point}?"
+- Number: "{Number} ways to {outcome}"
+- Curiosity gap: "The {topic} mistake you're probably making"
+- Personal: "{First name}, quick question"
+- Urgency: "Last chance: {offer} expires tonight"
+- Social proof: "{Number} people already {action}"
+- How-to: "How to {outcome} in {timeframe}"
+
+Rules:
+- 30-50 characters (mobile truncation at ~40)
+- No ALL CAPS (spam filter trigger)
+- Avoid: "free", "act now", "limited time" in first emails
+- Test emoji vs no emoji (audience-dependent)
+- Preview text is part of the subject — make them work together
+
+### 4. Sequence Templates
+
+Templates for 6 sequence types: references/sequence-templates.md
+
+### 5. Deliverability
+
+Critical for reaching inboxes: references/deliverability.md
+
+### 6. Segmentation
+
+Segment by:
+- **Behavior**: pages visited, emails opened/clicked, features used
+- **Demographics**: role, company size, industry
+- **Lifecycle stage**: trial, active, at-risk, churned
+- **Engagement**: highly engaged, passive, dormant
+
+Rule: The more personalized the segment, the higher the conversion rate. Aim for segments of 500+ for statistical significance.
+
+## Metrics
+
+| Metric | Good | Great | Action if Low |
+|--------|------|-------|---------------|
+| Open Rate | 20-25% | 30%+ | Fix subject lines, sender name, send time |
+| Click Rate | 2-5% | 5%+ | Fix CTA, email body, offer relevance |
+| Reply Rate | 1-3% | 5%+ | More personal tone, better questions |
+| Unsubscribe | <0.5% | <0.2% | Better targeting, reduce frequency |
+| Bounce Rate | <2% | <0.5% | Clean list, verify emails |
+
+## References
+
+- references/sequence-templates.md — 6 complete sequence templates with timing
+- references/deliverability.md — SPF, DKIM, DMARC, warm-up, reputation
+
+---
+
+## paid-ads
+
+**Category:** marketing | **Version:** 1.0.0
+**Description:** Paid advertising campaigns on Google Ads, Meta, LinkedIn, Twitter/X. Strategy, copy, targeting, optimization.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Paid Ads v2
+
+## Campaign Structure
+
+### Google Ads
+```
+Account
+├── Campaign (budget + geo + bidding)
+│   ├── Ad Group (keyword theme)
+│   │   ├── Keywords (10-20 per group)
+│   │   ├── Ads (3-5 responsive search ads)
+│   │   └── Extensions (sitelinks, callouts, structured snippets)
+│   └── Ad Group 2...
+└── Campaign 2...
+```
+
+### Meta (Facebook/Instagram)
+```
+Ad Account
+├── Campaign (objective: conversions/traffic/awareness)
+│   ├── Ad Set (audience + placement + budget + schedule)
+│   │   ├── Ad (creative + copy + CTA)
+│   │   └── Ad 2...
+│   └── Ad Set 2 (different audience)
+└── Campaign 2...
+```
+
+## Ad Copy Formulas
+
+### Google Search Ads (30 char headlines, 90 char descriptions)
+- H1: {Keyword} — {Benefit}
+- H2: {Social Proof} | {Offer}
+- H3: {CTA} — {Risk Reversal}
+- D1: {Expand on benefit}. {Specific result}. {CTA with urgency}.
+- D2: {Address objection}. {Trust signal}. {Secondary CTA}.
+
+### Meta Ads
+- **Hook** (first line, before "See more"): Bold claim, question, or stat
+- **Body**: Problem → Solution → Proof → CTA
+- **CTA button**: Match to funnel stage (Learn More → top, Sign Up → mid, Shop Now → bottom)
+
+Platform specs and character limits: references/platform-specs.md
+
+## Audience Targeting
+
+### Google
+- Keywords: exact [keyword], phrase "keyword", broad +keyword
+- Negative keywords: exclude irrelevant searches (add weekly)
+- In-market audiences: people actively researching your category
+- Custom intent: target by URLs and keywords competitors use
+
+### Meta
+- Core audiences: demographics + interests + behaviors
+- Custom audiences: website visitors, email list, video viewers, engagers
+- Lookalike audiences: 1% (best quality) to 10% (more reach) of source
+- Exclusions: existing customers, converters, irrelevant audiences
+
+### LinkedIn
+- Job title + seniority + company size + industry
+- Matched audiences: website retargeting, email list, lookalikes
+- Tip: Layer job function + seniority for best results
+
+## Bidding Strategy
+
+| Goal | Google Strategy | Meta Strategy |
+|------|----------------|---------------|
+| Conversions | Target CPA or Maximize Conversions | Lowest Cost or Cost Cap |
+| Revenue | Target ROAS | Minimum ROAS |
+| Traffic | Maximize Clicks | Lowest Cost (link clicks) |
+| Awareness | Target Impression Share | Reach or ThruPlay |
+
+Start with automated bidding, switch to manual only when you have 30+ conversions/month of data.
+
+## Budget Framework
+
+- Test budget: $50-100/day per campaign minimum (need statistical significance)
+- Scale: Increase 20% every 3-5 days (avoid learning phase resets)
+- Split: 70% proven campaigns, 20% testing, 10% experimental
+
+## A/B Testing
+
+Test one variable at a time:
+1. **Headlines** (highest impact)
+2. **Creative/image** (Meta, LinkedIn)
+3. **CTA** (button text and offer)
+4. **Audience** (different targeting)
+5. **Landing page** (post-click experience)
+
+Minimum: 1000 impressions and 100 clicks per variant before declaring winner.
+
+## Retargeting
+
+Funnel-based retargeting:
+- **1-3 days**: Cart abandoners → urgency/discount
+- **3-7 days**: Product page visitors → social proof/benefits
+- **7-14 days**: Blog readers → lead magnet/free trial
+- **14-30 days**: Homepage visitors → brand story/value prop
+- **30-90 days**: All visitors → seasonal offers/new features
+
+Frequency cap: 3-5 impressions per person per week.
+
+## References
+
+- references/platform-specs.md — Character limits, image sizes, placements per platform
+- references/ad-copy-formulas.md — 30+ proven ad copy templates
+
+---
+
+## signup-flow-cro
+
+**Category:** conversion | **Version:** 1.0.0
+**Description:** Optimize signup, registration, account creation, or trial activation flows for higher conversion.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Signup Flow CRO v2
+
+## Signup Form Optimization
+
+### Field Reduction
+Every additional field reduces conversion 5-10%. Minimum viable signup:
+- **Best**: Email only (or social login)
+- **Good**: Email + password
+- **Acceptable**: Email + password + name
+- **Risky**: Email + password + name + company + phone
+
+Ask everything else AFTER signup (progressive profiling).
+
+### Social Login
+Offer in order of conversion impact:
+1. Google (highest adoption)
+2. GitHub (dev tools)
+3. Apple (mobile apps)
+4. Microsoft (enterprise)
+5. SSO/SAML (enterprise, behind "Enterprise login" link)
+
+Place social login ABOVE email form (most users prefer it).
+
+### Password UX
+- Show password strength indicator (real-time)
+- Allow show/hide password toggle
+- Minimum 8 chars, no arbitrary rules (no "must include uppercase + number + symbol")
+- Support password managers (proper autocomplete attributes)
+
+### Email Verification
+- Don't block access before verification (let them in, remind later)
+- Verification email within 10 seconds
+- Clear subject: "Verify your {Product} email"
+- One-click verification button (no codes to type)
+- Resend option visible after 30 seconds
+- Fallback: magic link or code entry
+
+## Multi-Step Forms
+When you MUST collect more info:
+1. Step 1: Email + password (create account)
+2. Step 2: Role + company size (personalize experience)
+3. Step 3: Use case or goals (tailor onboarding)
+
+Rules:
+- Show progress indicator
+- Allow skipping non-essential steps
+- Save progress (don't lose data on back button)
+- Each step has value for the user (personalization, not just your data collection)
+
+## Post-Signup Handoff
+Within 5 seconds of signup:
+- Redirect to first-value action (not empty dashboard)
+- Welcome modal with 1-2 question setup wizard
+- Start onboarding checklist
+
+## References
+
+- references/signup-patterns.md — Signup form patterns and examples
+- references/friction-checklist.md — 25-point friction audit
+
+---
+
+## popup-cro
+
+**Category:** conversion | **Version:** 1.0.0
+**Description:** Create or optimize popups, modals, overlays, slide-ins, and banners for conversion. Exit intent, lead capture, announcements.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Popup CRO v2
+
+## Popup Types
+
+| Type | Trigger | Best For |
+|------|---------|----------|
+| Exit intent | Mouse moves to close/back | Last-chance offers, lead capture |
+| Scroll-triggered | 50-75% scroll depth | Engaged readers, content upgrades |
+| Time delay | 15-30 seconds on page | Returning visitors, announcements |
+| Click-triggered | Button/link click | Gated content, detailed info |
+| Slide-in | Corner, scroll-triggered | Less intrusive lead capture |
+| Top bar | Always visible | Announcements, promotions |
+
+## Design Rules
+
+- **One popup per page visit** (never stack)
+- **Easy close**: visible X button, click outside to dismiss, Escape key
+- **Mobile-friendly**: full-width on mobile, thumb-reachable close button
+- **Frequency cap**: Don't show again for 7-30 days after dismiss
+- **Respect "no"**: If they close it, don't show same offer again soon
+
+## Trigger Timing
+
+- **New visitors**: Time delay (30s) or scroll (50%)
+- **Returning visitors**: Exit intent (they already know you)
+- **Blog readers**: Scroll-triggered at 60% (they're engaged)
+- **Pricing page**: Exit intent with discount or chat offer
+- **Cart page**: Exit intent with urgency/discount
+
+## Copy Framework
+
+```
+[Headline: Benefit or offer]
+[1-2 line supporting text]
+[Form: email field + CTA button]
+[Trust text: "No spam. Unsubscribe anytime."]
+[Close link: "No thanks, I don't want {benefit}"]
+```
+
+The "no thanks" text should make saying no feel slightly silly (but never manipulative).
+
+## Templates and trigger rules: references/popup-templates.md
+
+## References
+
+- references/trigger-rules.md — When to show which popup type
+- references/popup-templates.md — Copy and design templates
+
+---
+
+## programmatic-seo
+
+**Category:** marketing | **Version:** 1.0.0
+**Description:** Create SEO-driven pages at scale using templates and data. Directory pages, location pages, comparison pages.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Programmatic SEO v2
+
+## When to Use pSEO
+
+Good candidates:
+- Location + service combinations ("plumber in {city}")
+- Tool/product comparisons ("{Tool A} vs {Tool B}")
+- Integration pages ("{Product} + {Integration}")
+- Glossary/definition pages ("{Term} definition")
+- Directory/listing pages ("{Category} in {Location}")
+- Alternative pages ("{Product} alternatives")
+
+Bad candidates (will get penalized):
+- Thin pages with just swapped city names
+- Auto-generated content with no unique value
+- Doorway pages targeting variations of one keyword
+
+## Pipeline
+
+### 1. Data Collection
+- Identify all variable combinations (cities × services, tools × tools)
+- Gather unique data per page (statistics, local info, product details)
+- Validate data quality (no empty fields, accurate information)
+
+### 2. Template Design
+
+Each template needs:
+- **Unique intro** (not just "{city} + {service}" boilerplate)
+- **Data-driven content** (real statistics, comparisons, facts per entity)
+- **User value** (answers a real question, not just keyword targeting)
+- **Internal links** (to related pages within the programmatic set)
+- **Schema markup** (appropriate type per page category)
+
+### 3. Quality Thresholds
+- Minimum 500 unique words per page (not counting boilerplate)
+- At least 3 data points unique to that page
+- No more than 40% shared content across pages
+- Every page must answer at least one question a real user would have
+
+### 4. Internal Linking
+- Hub pages link to all children (e.g., "Plumbers" → all city pages)
+- Child pages link to hub and 3-5 siblings
+- Cross-link between related categories
+- Breadcrumb navigation on every page
+
+### 5. Indexing Strategy
+- XML sitemap for all programmatic pages
+- Noindex thin pages until they have enough content
+- Monitor Search Console for "Crawled — currently not indexed"
+- Submit in batches (1000-5000 pages at a time)
+
+## Page Templates
+
+Detailed templates by type: references/template-patterns.md
+Data pipeline architecture: references/data-pipeline.md
+
+## References
+
+- references/template-patterns.md — Templates for each page type
+- references/data-pipeline.md — Data collection and generation pipelines
+
+---
+
+## growth-hacking
+
+**Category:** marketing | **Version:** 1.0.0
+**Description:** Growth hacking strategies and tactics. Viral loops, referral programs, activation funnels, retention hooks.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Growth Hacking
+
+## AARRR Framework (Pirate Metrics)
+
+| Stage | Metric | Target |
+|-------|--------|--------|
+| **Acquisition** | New signups/visitors | Channel-dependent |
+| **Activation** | % completing key action | 40-60% |
+| **Retention** | Day 7/30 retention | 25%/15%+ |
+| **Revenue** | Conversion to paid | 5-15% |
+| **Referral** | Viral coefficient (K) | >0.5, ideally >1 |
+
+Focus on fixing the leakiest stage first.
+
+## Viral Loop Design
+
+Types of viral loops:
+1. **Inherent**: Product requires sharing (Slack, Zoom, Dropbox shared folders)
+2. **Incentivized**: Reward for referring (Dropbox storage, Uber credits)
+3. **Word-of-mouth**: Product so good people talk about it
+4. **Content**: User-created content gets shared (Canva, Spotify Wrapped)
+
+Viral coefficient K = invites × conversion rate. K>1 = exponential growth.
+
+Design details: references/viral-mechanics.md
+
+## Product-Led Growth (PLG)
+
+Key principles:
+- Free tier or trial with real value (not crippled)
+- Self-serve onboarding (no sales call needed)
+- Aha moment within first session
+- Usage-based expansion (natural path to paid)
+- In-product sharing and collaboration
+
+PLG playbook: references/plg-playbook.md
+
+## Experimentation
+
+### ICE Framework
+Score each experiment 1-10:
+- **Impact**: How big is the potential upside?
+- **Confidence**: How sure are you it'll work?
+- **Ease**: How easy is it to implement?
+
+Total = I + C + E. Run highest scores first.
+
+### RICE Framework
+- **Reach**: How many users affected per quarter?
+- **Impact**: Minimal (0.25) → Massive (3)
+- **Confidence**: Low (50%) → High (100%)
+- **Effort**: Person-weeks to build
+
+Score = (Reach × Impact × Confidence) / Effort
+
+Details: references/experiment-frameworks.md
+
+## Retention Hooks
+
+- **Habit loop**: Trigger → Action → Variable Reward → Investment
+- **Progress mechanics**: Streaks, levels, completion percentage
+- **Loss aversion**: "You'll lose your streak" / "Your data will be deleted"
+- **Social proof**: "Your team is using this" / "3 colleagues joined"
+- **Notification strategy**: Email, push, in-app — context-dependent timing
+
+## References
+
+- references/viral-mechanics.md — Viral loop templates and examples
+- references/plg-playbook.md — PLG implementation guide
+- references/experiment-frameworks.md — ICE, RICE, PIE frameworks with templates
+
+---
+
+## landing-page-builder
+
+**Category:** design | **Version:** 1.0.0
+**Description:** Build high-converting landing pages from scratch. Copy, layout, CTAs, social proof, and responsive design.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Landing Page Builder
+
+Build complete landing pages section by section. Copy + design + code in one flow.
+
+## Page Blueprint
+
+Every high-converting landing page follows this structure:
+
+### 1. Hero Section
+```
+[Logo + minimal nav]
+H1: Primary value proposition (what + for whom)
+Subtitle: Expand on the benefit or "how"
+[Primary CTA button]   [Secondary CTA: "See demo"]
+Trust bar: "Trusted by X+ companies" + 3-5 logos
+[Hero image/screenshot/video]
+```
+
+### 2. Problem Section
+```
+H2: "The problem with {current approach}"
+3 pain points with icons:
+  - Pain 1: specific frustration
+  - Pain 2: specific frustration
+  - Pain 3: specific frustration
+```
+
+### 3. Solution Section
+```
+H2: "How {Product} solves this"
+3 benefits (NOT features):
+  - Benefit 1: outcome they get + supporting screenshot
+  - Benefit 2: outcome they get + supporting screenshot
+  - Benefit 3: outcome they get + supporting screenshot
+```
+
+### 4. Social Proof Section
+```
+H2: "Trusted by teams at"
+[Logo grid: 6-8 recognizable brands]
+3 testimonial cards: photo + quote + name + title + company
+Key metric: "X% average improvement in {outcome}"
+```
+
+### 5. How It Works
+```
+H2: "Get started in 3 steps"
+Step 1: [Icon] Title → Description
+Step 2: [Icon] Title → Description
+Step 3: [Icon] Title → Description
+```
+
+### 6. Features Grid
+```
+H2: "Everything you need to {outcome}"
+6 feature cards: icon + title + 1-line description
+```
+
+### 7. Pricing (optional)
+```
+H2: "Simple, transparent pricing"
+2-3 plan cards with: name, price, features list, CTA
+Highlight recommended plan
+FAQ below pricing
+```
+
+### 8. FAQ Section
+```
+H2: "Frequently asked questions"
+5-8 accordion items addressing common objections
+Include FAQPage schema markup
+```
+
+### 9. Final CTA
+```
+H2: Restate value proposition
+Subtitle: Urgency or risk reversal
+[Primary CTA button — same as hero]
+```
+
+## Section templates with Tailwind code: references/section-templates.md
+
+## Conversion principles: references/conversion-principles.md
+
+## References
+
+- references/section-templates.md — HTML/Tailwind code for each section type
+- references/conversion-principles.md — Design principles for conversion
+
+---
+
+## lead-scoring
+
+**Category:** conversion | **Version:** 1.0.0
+**Description:** Design and implement lead scoring models. Qualify leads based on behavior, demographics, and engagement.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Lead Scoring
+
+## Scoring Model Design
+
+### Two-Axis Model
+Score leads on two independent axes:
+1. **Fit Score** (0-100): How well they match your ICP (demographics)
+2. **Engagement Score** (0-100): How actively they interact (behavior)
+
+Combine: `Total Score = (Fit × 0.4) + (Engagement × 0.6)`
+
+### Fit Score (Demographics)
+
+| Signal | Points | Example |
+|--------|--------|---------|
+| Company size matches ICP | +20 | 50-500 employees |
+| Industry match | +15 | SaaS, fintech |
+| Job title/seniority | +20 | VP+, Director, C-level |
+| Budget range confirmed | +15 | >$50K ARR potential |
+| Geography match | +10 | Target market |
+| Tech stack match | +10 | Uses compatible tools |
+| Revenue range match | +10 | $5M-$50M ARR |
+
+### Engagement Score (Behavior)
+
+| Signal | Points | Decay |
+|--------|--------|-------|
+| Pricing page visit | +20 | -5/week |
+| Demo request | +30 | None |
+| Free trial signup | +25 | -5/week inactive |
+| Case study download | +10 | -3/week |
+| Blog post read | +2 | -1/week |
+| Email open | +1 | -1/week |
+| Email click | +5 | -2/week |
+| Webinar attended | +15 | -3/week |
+| Multiple sessions (3+) | +10 | -2/week |
+| Returned after 30d absence | +15 | -5/week |
+
+### Score Decay
+Apply weekly decay to prevent stale high scores. A lead who visited pricing 3 months ago isn't hot anymore.
+
+### Thresholds
+
+| Score | Classification | Action |
+|-------|---------------|--------|
+| 0-30 | Cold lead | Nurture sequence |
+| 31-50 | Warm lead | Targeted content |
+| 51-70 | MQL | Marketing-qualified, alert SDR |
+| 71-85 | SQL | Sales-qualified, direct outreach |
+| 86-100 | Hot | Immediate sales attention |
+
+## Qualification Frameworks
+
+Details: references/scoring-models.md
+
+## References
+
+- references/scoring-models.md — BANT, CHAMP, MEDDIC frameworks with implementation guides
+- references/signal-weights.md — Calibrating signal weights with historical data
+
+---
+
+## local-seo
+
+**Category:** marketing | **Version:** 1.0.0
+**Description:** Local SEO optimization. Google Business Profile, local citations, reviews, location pages, map pack ranking.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Local SEO
+
+## Google Business Profile (GBP)
+
+### Setup Checklist
+- [ ] Claim and verify listing
+- [ ] Correct business name (no keyword stuffing)
+- [ ] Primary + secondary categories (most specific first)
+- [ ] Complete address (or service area for mobile businesses)
+- [ ] Phone number (local, not toll-free)
+- [ ] Website URL (to location-specific page if multi-location)
+- [ ] Business hours (keep updated, mark holidays)
+- [ ] Business description (750 chars, natural keywords)
+- [ ] 10+ high-quality photos (exterior, interior, team, products)
+- [ ] Enable messaging and booking if applicable
+
+### Ongoing Optimization
+- Post weekly (offers, events, updates, products)
+- Respond to ALL reviews within 24 hours
+- Add new photos monthly
+- Update seasonal hours
+- Use Google Posts for promotions
+- Answer Q&A section proactively
+
+## NAP Consistency
+
+NAP = Name, Address, Phone. Must be IDENTICAL everywhere:
+- Google Business Profile
+- Website footer and contact page
+- All directory listings
+- Social media profiles
+- Schema markup
+
+Even small variations hurt ("St." vs "Street", "Suite" vs "Ste.").
+
+## Local Citations
+
+Submit to top directories: references/citation-sources.md
+
+## Local Schema
+
+Add LocalBusiness schema to every location page: references/local-schema.md
+
+## Review Management
+
+- Ask happy customers for reviews (email 1 week after purchase/service)
+- Respond to negative reviews: acknowledge, apologize, offer resolution offline
+- Never buy fake reviews (Google penalizes heavily)
+- Display reviews on your website (with Review schema)
+- Target: 4.0+ average, 50+ reviews for competitive niches
+
+## Geo-Targeted Content
+
+For each location:
+- Unique location page (not boilerplate with city swapped)
+- Local landmarks, events, community references
+- Local testimonials from that area
+- Embedded Google Map
+- Location-specific schema markup
+
+## References
+
+- references/gbp-optimization.md — Detailed GBP guide
+- references/citation-sources.md — Top directory sites
+- references/local-schema.md — LocalBusiness JSON-LD
+
+---
+
+## marketing-analytics
+
+**Category:** marketing | **Version:** 1.0.0
+**Description:** Marketing analytics setup and optimization. GA4, attribution, dashboards, KPIs, funnel analysis.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Marketing Analytics
+
+## GA4 Setup
+
+### Event Taxonomy
+
+Design events in a consistent `object_action` pattern:
+```
+page_view, session_start, first_visit
+form_submit, form_start, form_error
+button_click, link_click, cta_click
+signup_start, signup_complete
+purchase_start, purchase_complete
+feature_use, feature_activate
+content_view, content_scroll, content_share
+```
+
+### Key Events (Conversions)
+Mark as conversions in GA4:
+- `signup_complete` — new account creation
+- `purchase_complete` — transaction
+- `demo_request` — high-intent lead
+- `trial_start` — trial activation
+- `contact_submit` — contact form
+
+### Enhanced Measurement
+Enable in GA4 settings: page views, scrolls, outbound clicks, site search, file downloads, video engagement.
+
+### Custom Dimensions
+- `user_type`: free, trial, paid, churned
+- `traffic_source_detail`: granular source tracking
+- `content_category`: blog, docs, landing, product
+- `experiment_variant`: A/B test tracking
+
+Full setup guide: references/ga4-setup.md
+
+## UTM Strategy
+
+### Convention
+```
+utm_source = platform (google, facebook, linkedin, newsletter)
+utm_medium = channel type (cpc, social, email, referral)
+utm_campaign = campaign name (spring-sale-2026, product-launch)
+utm_content = creative variant (hero-image-a, cta-blue)
+utm_term = keyword (only for paid search)
+```
+
+### Rules
+- All lowercase, hyphens not underscores
+- Consistent naming across team (document in shared sheet)
+- Never use UTMs on internal links (breaks session attribution)
+- Tag every external link: ads, emails, social posts, partner links
+
+Full conventions: references/utm-conventions.md
+
+## Attribution Models
+
+| Model | How It Works | Best For |
+|-------|-------------|----------|
+| Last Click | 100% credit to last touchpoint | Bottom-funnel optimization |
+| First Click | 100% credit to first touchpoint | Understanding acquisition |
+| Linear | Equal credit to all touchpoints | Balanced view |
+| Time Decay | More credit to recent touchpoints | Long sales cycles |
+| Position-Based | 40% first, 40% last, 20% middle | Most balanced default |
+| Data-Driven | ML-based, GA4 default | 1000+ conversions/month |
+
+Recommendation: Use data-driven if you have the volume. Otherwise, position-based is the best default.
+
+Details: references/attribution-models.md
+
+## KPI Dashboard
+
+### Acquisition
+- Sessions by source/medium
+- New vs returning users
+- Cost per acquisition (CPA) by channel
+- Landing page conversion rates
+
+### Engagement
+- Pages per session
+- Average engagement time
+- Bounce rate by page
+- Scroll depth (25%, 50%, 75%, 100%)
+
+### Conversion
+- Conversion rate by funnel step
+- Drop-off between steps
+- Revenue by attribution model
+- Customer acquisition cost (CAC)
+
+### Retention
+- Cohort retention curves
+- Monthly active users (MAU)
+- Churn rate by cohort
+- Customer lifetime value (CLV)
+
+## References
+
+- references/ga4-setup.md — Complete GA4 implementation guide
+- references/utm-conventions.md — UTM naming standards and examples
+- references/attribution-models.md — Deep dive on each model with examples
+
+---
+
+## crm-builder
+
+**Category:** conversion | **Version:** 1.0.0
+**Description:** Design and implement CRM workflows. Pipeline management, automation, lead nurturing, deal tracking.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# CRM Builder
+
+## CRM Design Process
+
+### 1. Define Pipeline Stages
+
+Standard B2B SaaS pipeline:
+```
+Lead → MQL → SQL → Discovery → Demo → Proposal → Negotiation → Closed Won/Lost
+```
+
+Standard B2B Services:
+```
+Inquiry → Qualified → Meeting → Proposal → Contract → Closed Won/Lost
+```
+
+E-commerce/B2C:
+```
+Visitor → Lead → Customer → Repeat → VIP
+```
+
+Rules:
+- Max 7-8 stages (more = confusion)
+- Each stage has clear entry criteria
+- Define required fields per stage (can't advance without them)
+- Set expected time in each stage (flag stalled deals)
+
+### 2. Contact Properties
+
+Essential fields:
+- Name, email, phone, company, job title
+- Lead source (utm_source or manual)
+- Lead score (see lead-scoring skill)
+- Lifecycle stage (subscriber → lead → MQL → SQL → customer)
+- Owner (assigned sales rep)
+- Last activity date
+- Industry, company size (for segmentation)
+
+Custom fields based on your ICP (Ideal Customer Profile).
+
+### 3. Automation Rules
+
+High-impact automations:
+- **Lead assignment**: Route leads by territory, company size, or round-robin
+- **Follow-up reminders**: Alert if no activity for X days
+- **Stage progression**: Auto-move when criteria met (e.g., demo scheduled → Demo stage)
+- **Win/loss notifications**: Slack/email alert on deal close
+- **Lifecycle updates**: Auto-update contact lifecycle when deal moves
+- **Re-engagement**: Trigger email if deal stalls for X days
+
+### 4. Email Integration
+
+- Sync sent/received emails to contact timeline
+- Log meeting notes and call recordings
+- Track email opens and link clicks
+- Template library for common emails (intro, follow-up, proposal)
+
+### 5. Reporting Dashboard
+
+Essential reports:
+- Pipeline value by stage
+- Win rate by source/owner/month
+- Average deal cycle time
+- Activity metrics (calls, emails, meetings per rep)
+- Revenue forecast (weighted pipeline)
+- Lost deal reasons analysis
+
+### 6. Tool Selection
+
+| Tool | Best For | Price |
+|------|----------|-------|
+| HubSpot Free | Startups, <5 reps | Free → $50/user/mo |
+| Pipedrive | SMB sales teams | $15-99/user/mo |
+| Salesforce | Enterprise | $25-300/user/mo |
+| Notion/Airtable | Very early stage, custom workflows | Free-$20/user/mo |
+| Close | Inside sales, high-volume calling | $29-149/user/mo |
+
+## References
+
+- references/crm-templates.md — Pipeline templates by industry, property sets
+- references/automation-recipes.md — 20+ automation workflows
+
+---
+
+## sales-funnel
+
+**Category:** conversion | **Version:** 1.0.0
+**Description:** Design and optimize sales funnels. TOFU/MOFU/BOFU content, qualification stages, conversion paths.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Sales Funnel
+
+## Funnel Stages
+
+### TOFU (Top of Funnel) — Awareness
+- **Goal**: Attract strangers, build audience
+- **Content**: Blog posts, social media, videos, podcasts, infographics
+- **Metrics**: Traffic, impressions, reach, new visitors
+- **CTA**: Subscribe, follow, download free resource
+
+### MOFU (Middle of Funnel) — Consideration
+- **Goal**: Convert visitors to leads, educate
+- **Content**: Lead magnets, webinars, case studies, email sequences, comparison guides
+- **Metrics**: Leads generated, email subscribers, webinar registrants
+- **CTA**: Download guide, watch demo, join webinar
+
+### BOFU (Bottom of Funnel) — Decision
+- **Goal**: Convert leads to customers
+- **Content**: Free trials, demos, proposals, consultations, testimonials, ROI calculators
+- **Metrics**: Trial signups, demo requests, conversion rate, revenue
+- **CTA**: Start trial, book demo, get quote, buy now
+
+### Post-Purchase — Retention & Expansion
+- **Goal**: Retain, upsell, get referrals
+- **Content**: Onboarding, training, check-ins, feature announcements, loyalty programs
+- **Metrics**: Retention rate, NPS, expansion revenue, referral rate
+- **CTA**: Upgrade, refer a friend, leave review
+
+## Lead Magnets by Funnel Stage
+
+| Stage | Lead Magnet | Commitment Level |
+|-------|------------|-----------------|
+| TOFU | Checklist, cheat sheet, template | Low (email only) |
+| TOFU | Quiz, calculator, free tool | Low-medium |
+| MOFU | Ebook, whitepaper, report | Medium |
+| MOFU | Webinar, video course | Medium-high |
+| BOFU | Free trial, demo, consultation | High |
+| BOFU | ROI calculator, custom audit | High |
+
+## Objection Handling
+
+Common objections and responses: references/objection-handling.md
+
+## Funnel Templates
+
+Detailed funnel blueprints by business type: references/funnel-templates.md
+
+## References
+
+- references/funnel-templates.md — Complete funnel blueprints
+- references/objection-handling.md — Top 15 objections with responses
+
+---
+
+## smart-contract-auditor
+
+**Category:** web3 | **Version:** 1.0.0
+**Description:** Audit Solidity smart contracts for vulnerabilities, gas optimization, and best practices.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Smart Contract Auditor
+
+## Audit Checklist
+
+### 1. Access Control
+- [ ] `onlyOwner` / role-based access on sensitive functions
+- [ ] No unprotected `selfdestruct`
+- [ ] No unprotected proxy upgrade functions
+- [ ] Ownership transfer is two-step (propose + accept)
+- [ ] No default public visibility on state variables
+
+### 2. Reentrancy
+- [ ] External calls are last (checks-effects-interactions pattern)
+- [ ] ReentrancyGuard on functions with external calls + state changes
+- [ ] No cross-function reentrancy via shared state
+
+### 3. Integer Safety
+- [ ] Solidity 0.8+ (built-in overflow protection) or SafeMath
+- [ ] Checked division (no divide by zero)
+- [ ] Casting between types checked for truncation
+
+### 4. Input Validation
+- [ ] All user inputs validated (address != 0, amount > 0)
+- [ ] Array bounds checked
+- [ ] Ether values validated
+
+### 5. Token Handling
+- [ ] SafeERC20 for all token transfers (handles non-standard returns)
+- [ ] Check return values of `transfer` / `transferFrom`
+- [ ] Handle fee-on-transfer tokens if applicable
+- [ ] Handle rebasing tokens if applicable
+
+### 6. Flash Loan Protection
+- [ ] Price oracles use TWAP (not spot price)
+- [ ] Critical functions have minimum time delays
+- [ ] Governance votes have sufficient voting periods
+
+### 7. Front-Running Protection
+- [ ] Commit-reveal for sensitive operations
+- [ ] Maximum slippage parameters on swaps
+- [ ] Deadline parameters on transactions
+
+### 8. Gas Optimization
+- Use `uint256` instead of smaller types (EVM operates on 256-bit)
+- Pack storage variables (multiple small vars in one slot)
+- Use `calldata` instead of `memory` for read-only function params
+- Cache storage reads in local variables
+- Use `++i` instead of `i++`
+- Use custom errors instead of require strings
+
+Full vulnerability catalog: references/vulnerability-catalog.md
+Gas optimization guide: references/gas-optimization.md
+Complete audit process: references/audit-checklist.md
+
+## References
+
+- references/vulnerability-catalog.md — Top 20 vulnerabilities with examples
+- references/gas-optimization.md — Gas saving patterns
+- references/audit-checklist.md — Step-by-step audit process
+
+---
+
+## social-media-kit
+
+**Category:** marketing | **Version:** 1.0.0
+**Description:** Create social media content kits. Platform-specific posts, hashtag strategies, content calendars, engagement tactics.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Social Media Kit
+
+## Platform Playbooks
+
+### LinkedIn
+- **Format**: Text posts (1300 chars), articles, carousels (PDF), video
+- **Best performing**: Personal stories, lessons learned, contrarian takes, data insights
+- **Structure**: Hook line → story/insight → takeaway → CTA/question
+- **Posting**: Tuesday-Thursday 8-10am local time
+- **Hashtags**: 3-5 relevant, mix broad (#marketing) and niche (#saasGrowth)
+- **Engagement hack**: Reply to every comment within 1 hour (boosts algorithm)
+
+### Twitter/X
+- **Format**: Tweets (280 chars), threads, images, video
+- **Thread structure**: Hook tweet → numbered points → summary → CTA
+- **Best performing**: Threads (10-15 tweets), hot takes, how-to tips, curated lists
+- **Posting**: 8-10am and 5-7pm local, weekdays
+- **Engagement**: Quote-tweet with added value, reply to big accounts in your niche
+
+### Instagram
+- **Format**: Reels (90s max), carousels (10 slides), stories, posts
+- **Carousels**: Cover slide (hook) → content slides → CTA slide
+- **Reels**: Hook in first 1s, value in 15-30s, CTA at end
+- **Hashtags**: 5-10, mix of sizes (10K-500K posts each)
+- **Posting**: Monday, Wednesday, Friday 11am-1pm
+
+### TikTok
+- **Format**: Short video (15-60s optimal)
+- **Hook**: First 1-2 seconds must stop the scroll
+- **Structure**: Hook → context → value → CTA
+- **Trending**: Use trending sounds, adapt trends to your niche
+- **Posting**: 7-9am, 12-3pm, 7-11pm
+
+## Content Repurposing Workflow
+
+One blog post becomes:
+1. **LinkedIn post** — key takeaway as personal insight
+2. **Twitter thread** — main points as numbered thread
+3. **Instagram carousel** — visual summary (10 slides)
+4. **Short video** — 60s summary for Reels/TikTok
+5. **Email snippet** — highlight in newsletter
+6. **Quote graphics** — 3-5 pull quotes as images
+
+## Content Calendar Template
+
+See references/content-calendar.md for weekly planning template.
+
+## References
+
+- references/platform-guides.md — Detailed specs and best practices per platform
+- references/content-calendar.md — Weekly planning template with content mix
+
+---
+
+## business-development
+
+**Category:** growth | **Version:** 1.0.0
+**Description:** BD strategy, partnership frameworks, outreach templates, deal pipeline management, and negotiation playbooks for B2B SaaS.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Business Development
+
+## Workflow
+
+### 1. Partner Identification
+
+**Scoring matrix — rate each potential partner 1-5:**
+
+| Criterion | Weight | Score (1-5) |
+|-----------|--------|-------------|
+| Audience overlap | 25% | Does their audience need your product? |
+| Technical fit | 20% | Can you integrate/co-build? |
+| Brand alignment | 15% | Compatible positioning and values? |
+| Reach | 15% | Audience size and engagement |
+| Strategic value | 15% | Opens new market/segment? |
+| Effort to close | 10% | Decision-maker accessibility |
+
+**Weighted score > 3.5 = pursue. 2.5-3.5 = nurture. < 2.5 = skip.**
+
+### 2. Outreach Sequences
+
+**Cold partner outreach (5-touch, 14 days):**
+
+```
+Touch 1 (Day 0) — Value-first intro
+Subject: [Their product] + [Your product] = [specific outcome]
+
+Hi [Name],
+
+[One sentence showing you understand their business].
+I think there's a natural fit between [their product] and [yours]
+— specifically, [concrete integration/co-marketing idea].
+
+[One sentence on what's in it for them — traffic, revenue, feature gap filled].
+
+Worth a 15-min call to explore?
+
+[Your name]
+```
+
+```
+Touch 2 (Day 3) — Case study/proof
+Subject: Re: [original subject]
+
+Quick follow-up — [similar partnership] drove [specific result]
+for [company]. Thought the model could work for us too.
+
+Happy to share the details.
+```
+
+```
+Touch 3 (Day 7) — LinkedIn engagement
+Connect + comment on their recent post with genuine insight.
+Then DM: "Sent you an email about [topic] — would love your take."
+```
+
+```
+Touch 4 (Day 10) — New angle
+Subject: Different thought on [their challenge]
+
+Noticed [specific observation about their product/content].
+We solved that for [X customers] with [approach].
+Could be a co-marketing story worth telling.
+```
+
+```
+Touch 5 (Day 14) — Breakup
+Subject: Closing the loop
+
+Totally understand if timing isn't right.
+I'll keep an eye on [their product] — if you ever want
+to explore [partnership type], I'm here.
+```
+
+### 3. Deal Pipeline
+
+| Stage | Definition | Exit criteria | Typical duration |
+|-------|-----------|---------------|-----------------|
+| Identified | Matches partner scoring criteria | Research complete, contact found | 1-2 days |
+| Outreach | First touch sent | Reply received (positive or neutral) | 1-2 weeks |
+| Discovery | Initial call scheduled/completed | Mutual interest confirmed, use case defined | 1-2 weeks |
+| Proposal | Partnership terms drafted | Both sides reviewed, legal involved | 2-4 weeks |
+| Negotiation | Terms being finalized | Agreement on commercial terms | 1-3 weeks |
+| Signed | Contract executed | Integration/campaign kickoff scheduled | 1 week |
+| Live | Partnership active | Revenue/metrics being tracked | Ongoing |
+
+### 4. Partnership Models
+
+| Model | Structure | Best for | Revenue split |
+|-------|-----------|----------|---------------|
+| Referral | Send leads, earn commission | Low-touch, high volume | 10-20% of first year ACV |
+| Reseller | They sell your product | Market expansion | 20-40% margin to partner |
+| Integration | Technical product integration | Sticky, long-term | Rev share on joint customers |
+| Co-marketing | Joint content/events | Brand awareness | Cost share, lead share |
+| White label | They rebrand your product | Enterprise, agencies | 40-60% margin to you |
+
+### 5. Partnership Agreement Essentials
+
+**Non-negotiables in every agreement:**
+- Revenue share % and payment terms (net 30/60)
+- Exclusivity scope (or explicit non-exclusivity)
+- Data sharing and privacy terms (GDPR)
+- Term length and renewal conditions
+- Termination clause (30-60 day notice)
+- IP ownership of co-created assets
+- Performance minimums (if applicable)
+
+### 6. Co-Marketing Playbook
+
+**Joint activities by effort level:**
+
+| Effort | Activity | Expected reach |
+|--------|----------|---------------|
+| Low | Guest blog post swap | 2-5k views each |
+| Low | Social media cross-promotion | 1-3k impressions |
+| Medium | Joint webinar | 200-500 registrants |
+| Medium | Co-branded ebook/report | 500-2k downloads |
+| High | Integration launch campaign | 5-20k impressions |
+| High | Joint conference booth | 500-2k conversations |
+
+### 7. Tracking & Reporting
+
+**Monthly BD dashboard:**
+- Pipeline value by stage
+- Conversion rate stage-to-stage
+- Average deal cycle length
+- Revenue from partnerships (direct + influenced)
+- Partner satisfaction score (quarterly NPS)
+
+**Per-partner tracking:**
+- Leads referred (both directions)
+- Revenue generated
+- Integration usage (if applicable)
+- Support tickets from partner customers
+- Co-marketing campaign performance
+
+---
+
+## cold-outreach
+
+**Category:** growth | **Version:** 1.0.0
+**Description:** Cold email and LinkedIn outreach. Personalization frameworks, follow-up sequences, deliverability, and reply rate optimization.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Cold Outreach
+
+## Workflow
+
+### 1. Deliverability Setup
+
+Do this BEFORE sending a single email. Skipping this = spam folder.
+
+**DNS records (required):**
+```
+# SPF — authorize your sending IPs
+v=spf1 include:_spf.google.com include:sendgrid.net ~all
+
+# DKIM — sign emails cryptographically
+selector._domainkey.example.com → provided by your ESP
+
+# DMARC — tell receivers what to do with failures
+_dmarc.example.com → v=DMARC1; p=quarantine; rua=mailto:dmarc@example.com
+```
+
+**Domain warmup schedule (new domain):**
+
+| Week | Emails/day | Target |
+|------|-----------|--------|
+| 1 | 5-10 | Known contacts, internal, friends |
+| 2 | 15-25 | Warm leads, existing network |
+| 3 | 30-50 | Mix of warm and cold |
+| 4 | 50-80 | Full cold outreach |
+| 5+ | 80-100 | Steady state |
+
+**Never send from your primary domain.** Use a dedicated subdomain (e.g., `outreach.example.com`) to protect your main domain reputation.
+
+### 2. Copy Frameworks
+
+**PAS (Problem-Agitate-Solve):**
+```
+Subject: [Problem they have]
+
+Hi [Name],
+
+[Problem]: Most [their role] at [their company type] struggle with [specific problem].
+
+[Agitate]: This usually means [consequence] — which costs [quantified impact].
+
+[Solve]: We help [similar companies] [specific outcome] by [method].
+
+[CTA]: Worth a 15-min call this week?
+```
+
+**QVC (Question-Value-CTA):**
+```
+Subject: Quick question about [their specific situation]
+
+Hi [Name],
+
+[Question]: How are you handling [specific challenge] at [Company]?
+
+[Value]: We helped [similar company] [specific result with numbers]
+by [brief method].
+
+[CTA]: Open to hearing how?
+```
+
+**BAB (Before-After-Bridge):**
+```
+Subject: [Desired outcome] for [Company]
+
+Hi [Name],
+
+[Before]: Right now [their situation/pain].
+
+[After]: Imagine [desired state with specific metrics].
+
+[Bridge]: That's what we did for [reference customer].
+15 minutes to show you how?
+```
+
+### 3. Follow-Up Sequence
+
+**Timing (7-touch, 21 days):**
+
+| Touch | Day | Type | Purpose |
+|-------|-----|------|---------|
+| 1 | 0 | Email | Initial value prop |
+| 2 | 2 | Email | Different angle or case study |
+| 3 | 5 | LinkedIn | Connect + comment on their content |
+| 4 | 7 | Email | Social proof / testimonial |
+| 5 | 11 | Email | New insight or resource |
+| 6 | 15 | Email | Direct ask with urgency |
+| 7 | 21 | Email | Breakup — polite close |
+
+**Follow-up rules:**
+- Each touch adds NEW value — never "just bumping this up"
+- Vary the angle: problem, social proof, insight, resource, direct ask
+- Keep emails under 100 words (mobile-first)
+- One CTA per email, always a question
+
+### 4. Personalization
+
+**Tiers by effort:**
+
+| Tier | Time/email | Method | Reply rate |
+|------|-----------|--------|-----------|
+| Generic | 0 min | Template only | 1-3% |
+| Light | 2 min | Company name + role-specific pain | 5-8% |
+| Medium | 5 min | Reference their content/news + custom opener | 10-15% |
+| Deep | 15 min | Unique insight about their business + custom value prop | 20-30% |
+
+**Personalization signals (research checklist):**
+- Recent LinkedIn posts or articles they wrote
+- Company news (funding, hiring, product launch)
+- Tech stack (BuiltWith, Wappalyzer)
+- Job postings (reveal priorities and pain points)
+- Mutual connections
+- Conference appearances or podcast episodes
+
+### 5. Benchmarks
+
+| Metric | Poor | Average | Good | Excellent |
+|--------|------|---------|------|-----------|
+| Open rate | < 30% | 40-50% | 50-65% | > 65% |
+| Reply rate | < 2% | 3-5% | 5-10% | > 10% |
+| Positive reply rate | < 1% | 1-3% | 3-5% | > 5% |
+| Bounce rate | > 5% | 2-5% | 1-2% | < 1% |
+| Unsubscribe rate | > 2% | 1-2% | 0.5-1% | < 0.5% |
+
+**If open rate is low:** Subject line problem. A/B test subjects.
+**If open rate is high but reply is low:** Copy problem. Test different frameworks.
+**If bounce rate is high:** List quality problem. Verify emails before sending.
+
+### 6. A/B Testing
+
+**Test one variable at a time:**
+
+| Variable | Test method |
+|----------|------------|
+| Subject line | Split list 50/50, send simultaneously |
+| Opening line | Same subject, different first sentence |
+| CTA type | Question vs statement vs calendar link |
+| Sending time | Same copy, different send times |
+| Sequence length | 5-touch vs 7-touch |
+| Personalization tier | Light vs medium on same segment |
+
+**Minimum sample:** 100 emails per variant for meaningful results.
+**Run time:** 7-14 days to account for follow-up replies.
+
+### 7. Tools Stack
+
+| Function | Tools |
+|----------|-------|
+| Email finding | Apollo, Hunter.io, Snov.io |
+| Verification | NeverBounce, ZeroBounce, MillionVerifier |
+| Sequencing | Instantly, Lemlist, Smartlead, Apollo |
+| Warmup | Instantly (built-in), Warmbox, Mailwarm |
+| LinkedIn | PhantomBuster, Expandi, Dripify |
+| CRM | HubSpot, Pipedrive, Close |
+
+## Daily Operations Checklist
+
+- [ ] Check reply inbox — respond within 2 hours during business hours
+- [ ] Review bounce notifications — remove invalid addresses
+- [ ] Monitor sending reputation (Google Postmaster Tools)
+- [ ] Review sequence analytics — pause underperforming campaigns
+- [ ] Move positive replies to CRM — tag source campaign
+
+---
+
+## accounting-finance
+
+**Category:** operations | **Version:** 1.0.0
+**Description:** Financial modeling, bookkeeping automation, invoicing workflows, tax compliance checklists, and P&L analysis for SMEs and startups.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Accounting & Finance
+
+## Workflow
+
+### 1. P&L Structure
+
+| Line item | Calculation | Watch for |
+|-----------|-------------|-----------|
+| Revenue | MRR × months + one-time | Revenue recognition timing |
+| COGS | Hosting + support + onboarding | Should be < 30% of revenue for SaaS |
+| Gross margin | Revenue - COGS | Target: 70-80% for SaaS |
+| Operating expenses | Sales + Marketing + R&D + G&A | Break down by department |
+| EBITDA | Gross margin - OpEx | Profitability indicator |
+| Net income | EBITDA - interest - taxes - depreciation | Bottom line |
+
+**Monthly P&L review checklist:**
+- [ ] Revenue matches billing system (reconcile ±1%)
+- [ ] COGS categorized correctly (not mixed with OpEx)
+- [ ] Headcount costs allocated to correct department
+- [ ] One-time costs flagged and excluded from run-rate
+- [ ] MoM and YoY comparison included
+
+### 2. Cash Flow Forecasting
+
+**13-week rolling forecast (the standard):**
+
+```
+Week | Starting cash | + Revenue collected | - Payroll | - Vendors | - Tax | = Ending cash
+1    | 150,000       | 45,000              | 30,000   | 8,000    | 0     | 157,000
+2    | 157,000       | 12,000              | 0        | 5,000    | 0     | 164,000
+...
+```
+
+**Key rules:**
+- Use cash collected, not revenue recognized
+- Payroll on actual pay dates (biweekly or monthly)
+- Include tax payments on due dates
+- Flag weeks where ending cash < 2 months of burn
+- Update weekly — stale forecasts are useless
+
+**Burn rate calculation:**
+```
+Monthly burn = Total cash spent in month (excluding one-time)
+Runway (months) = Current cash balance / Monthly burn
+```
+
+Runway < 6 months = fundraise or cut costs immediately.
+
+### 3. Unit Economics
+
+| Metric | Formula | SaaS benchmark |
+|--------|---------|----------------|
+| CAC | Total sales & marketing spend / New customers | Varies by segment |
+| LTV | ARPU × Gross margin % × (1 / Monthly churn rate) | 3-5x CAC minimum |
+| LTV:CAC | LTV / CAC | > 3:1 healthy |
+| Payback period | CAC / (ARPU × Gross margin %) | < 12 months |
+| Magic number | Net new ARR / Prior quarter S&M spend | > 0.75 = efficient |
+
+### 4. Invoice Automation
+
+**Invoice workflow:**
+1. Contract signed → create invoice record
+2. Invoice generated → send on billing date
+3. Payment due → track aging (net 30/60)
+4. Overdue → automated reminder sequence:
+   - Day 1 past due: friendly reminder
+   - Day 7: second notice with payment link
+   - Day 14: escalation to account manager
+   - Day 30: final notice, flag for collections
+
+**Invoice must include:**
+- Unique invoice number (sequential)
+- Your company legal name, address, VAT number
+- Client company name, address, VAT number
+- Line items with descriptions, quantities, unit prices
+- Subtotal, tax rate, tax amount, total
+- Payment terms and bank details
+- Issue date and due date
+
+### 5. EU VAT Compliance
+
+| Scenario | VAT treatment |
+|----------|---------------|
+| B2B within same EU country | Charge local VAT |
+| B2B cross-border EU | Reverse charge (0% VAT, buyer reports) |
+| B2C within EU | Charge destination country VAT rate (OSS) |
+| B2C outside EU | No EU VAT |
+| B2B outside EU | No VAT (export) |
+
+**OSS (One-Stop Shop)** — register in one EU country, report all EU B2C sales there.
+
+**VAT rates (major markets):**
+
+| Country | Standard rate |
+|---------|-------------|
+| Luxembourg | 17% |
+| France | 20% |
+| Germany | 19% |
+| Netherlands | 21% |
+| Spain | 21% |
+| Italy | 22% |
+| Ireland | 23% |
+
+### 6. Revenue Recognition (ASC 606 / IFRS 15)
+
+**5-step model:**
+1. Identify the contract
+2. Identify performance obligations
+3. Determine transaction price
+4. Allocate price to obligations
+5. Recognize revenue when obligation is satisfied
+
+**SaaS specifics:**
+- Monthly subscription: recognize monthly as service delivered
+- Annual prepayment: recognize 1/12 each month (rest is deferred revenue)
+- Setup fees: defer and recognize over contract term (usually)
+- Usage-based: recognize as usage occurs
+
+### 7. Budget vs Actual
+
+**Variance analysis template:**
+
+| Category | Budget | Actual | Variance | % Var | Flag |
+|----------|--------|--------|----------|-------|------|
+| Revenue | 100,000 | 95,000 | -5,000 | -5% | Review |
+| COGS | 25,000 | 23,000 | +2,000 | -8% | OK |
+| Marketing | 30,000 | 38,000 | -8,000 | +27% | Alert |
+| R&D | 40,000 | 41,000 | -1,000 | +3% | OK |
+
+**Rules:**
+- Flag variances > 10% for review
+- Flag variances > 20% for immediate action
+- Always explain WHY, not just WHAT
+- Reforecast quarterly based on actuals
+
+---
+
+## data-analytics
+
+**Category:** analytics | **Version:** 1.0.0
+**Description:** Data analysis workflows, SQL query patterns, dashboard design, KPI frameworks, and data storytelling for business intelligence.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Data Analytics
+
+## Workflow
+
+### 1. Define the Question
+
+Before writing any query, articulate:
+- **What decision** will this analysis inform?
+- **What metric** answers the question?
+- **What timeframe** is relevant?
+- **What segments** matter?
+
+Bad: "How are we doing?" → Good: "What's our 30-day retention rate by acquisition channel for Q1 cohorts?"
+
+### 2. KPI Framework Selection
+
+| Framework | Best for | Core metrics |
+|-----------|----------|-------------|
+| AARRR (Pirate) | Growth-stage SaaS | Acquisition, Activation, Retention, Revenue, Referral |
+| HEART | Product/UX teams | Happiness, Engagement, Adoption, Retention, Task success |
+| NSM (North Star) | Company alignment | One metric that captures core value delivery |
+| OKR | Goal tracking | Objectives + measurable Key Results |
+
+**Choose NSM first, then AARRR for operational metrics, HEART for product teams.**
+
+### 3. SQL Patterns
+
+**Funnel analysis:**
+```sql
+WITH funnel AS (
+  SELECT
+    user_id,
+    MAX(CASE WHEN event = 'signup' THEN 1 ELSE 0 END) AS signed_up,
+    MAX(CASE WHEN event = 'onboarding_complete' THEN 1 ELSE 0 END) AS onboarded,
+    MAX(CASE WHEN event = 'first_value_action' THEN 1 ELSE 0 END) AS activated,
+    MAX(CASE WHEN event = 'purchase' THEN 1 ELSE 0 END) AS converted
+  FROM events
+  WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
+  GROUP BY user_id
+)
+SELECT
+  COUNT(*) AS total_users,
+  SUM(signed_up) AS signups,
+  SUM(onboarded) AS onboarded,
+  SUM(activated) AS activated,
+  SUM(converted) AS converted,
+  ROUND(100.0 * SUM(onboarded) / NULLIF(SUM(signed_up), 0), 1) AS signup_to_onboard_pct,
+  ROUND(100.0 * SUM(activated) / NULLIF(SUM(onboarded), 0), 1) AS onboard_to_activate_pct,
+  ROUND(100.0 * SUM(converted) / NULLIF(SUM(activated), 0), 1) AS activate_to_convert_pct
+FROM funnel;
+```
+
+**Cohort retention:**
+```sql
+WITH cohort AS (
+  SELECT
+    user_id,
+    DATE_TRUNC('week', MIN(created_at)) AS cohort_week
+  FROM events
+  WHERE event = 'signup'
+  GROUP BY user_id
+),
+activity AS (
+  SELECT
+    user_id,
+    DATE_TRUNC('week', created_at) AS activity_week
+  FROM events
+  WHERE event = 'session_start'
+)
+SELECT
+  c.cohort_week,
+  COUNT(DISTINCT c.user_id) AS cohort_size,
+  COUNT(DISTINCT CASE WHEN a.activity_week = c.cohort_week + INTERVAL '1 week' THEN c.user_id END) AS week_1,
+  COUNT(DISTINCT CASE WHEN a.activity_week = c.cohort_week + INTERVAL '2 weeks' THEN c.user_id END) AS week_2,
+  COUNT(DISTINCT CASE WHEN a.activity_week = c.cohort_week + INTERVAL '4 weeks' THEN c.user_id END) AS week_4,
+  COUNT(DISTINCT CASE WHEN a.activity_week = c.cohort_week + INTERVAL '8 weeks' THEN c.user_id END) AS week_8
+FROM cohort c
+LEFT JOIN activity a ON c.user_id = a.user_id
+GROUP BY c.cohort_week
+ORDER BY c.cohort_week;
+```
+
+**LTV calculation:**
+```sql
+WITH monthly_revenue AS (
+  SELECT
+    user_id,
+    DATE_TRUNC('month', payment_date) AS month,
+    SUM(amount) AS mrr
+  FROM payments
+  WHERE status = 'succeeded'
+  GROUP BY user_id, DATE_TRUNC('month', payment_date)
+),
+user_ltv AS (
+  SELECT
+    user_id,
+    SUM(mrr) AS total_revenue,
+    COUNT(DISTINCT month) AS months_active,
+    MIN(month) AS first_payment,
+    MAX(month) AS last_payment
+  FROM monthly_revenue
+  GROUP BY user_id
+)
+SELECT
+  ROUND(AVG(total_revenue), 2) AS avg_ltv,
+  ROUND(AVG(months_active), 1) AS avg_lifetime_months,
+  ROUND(AVG(total_revenue / NULLIF(months_active, 0)), 2) AS avg_arpu
+FROM user_ltv;
+```
+
+**Churn detection:**
+```sql
+SELECT
+  user_id,
+  MAX(created_at) AS last_active,
+  CURRENT_DATE - MAX(created_at)::date AS days_since_active,
+  CASE
+    WHEN CURRENT_DATE - MAX(created_at)::date > 30 THEN 'churned'
+    WHEN CURRENT_DATE - MAX(created_at)::date > 14 THEN 'at_risk'
+    ELSE 'active'
+  END AS status
+FROM events
+WHERE event = 'session_start'
+GROUP BY user_id
+ORDER BY days_since_active DESC;
+```
+
+### 4. Dashboard Design
+
+**Layout rules:**
+- Top row: 3-4 KPI cards (current value + trend arrow + % change)
+- Second row: Primary chart (line/area for trends, bar for comparisons)
+- Third row: Breakdown tables or secondary charts
+- Filters: Date range, segment, channel — always at top
+
+**Chart selection:**
+| Data type | Chart |
+|-----------|-------|
+| Trend over time | Line chart |
+| Part of whole | Stacked bar or donut |
+| Comparison across categories | Horizontal bar |
+| Distribution | Histogram |
+| Correlation | Scatter plot |
+| Funnel stages | Funnel chart |
+| Geographic | Choropleth map |
+
+### 5. Statistical Analysis
+
+**A/B test significance:**
+```python
+from scipy import stats
+
+control_conversions, control_total = 120, 1000
+variant_conversions, variant_total = 145, 1000
+
+# Two-proportion z-test
+p1 = control_conversions / control_total
+p2 = variant_conversions / variant_total
+p_pool = (control_conversions + variant_conversions) / (control_total + variant_total)
+se = (p_pool * (1 - p_pool) * (1/control_total + 1/variant_total)) ** 0.5
+z_score = (p2 - p1) / se
+p_value = 2 * (1 - stats.norm.cdf(abs(z_score)))
+
+print(f"Lift: {((p2/p1) - 1) * 100:.1f}%")
+print(f"p-value: {p_value:.4f}")
+print(f"Significant: {'Yes' if p_value < 0.05 else 'No'}")
+```
+
+**Sample size calculation:**
+```python
+from scipy.stats import norm
+
+def sample_size(baseline_rate, mde, alpha=0.05, power=0.8):
+    z_alpha = norm.ppf(1 - alpha/2)
+    z_beta = norm.ppf(power)
+    p1 = baseline_rate
+    p2 = baseline_rate * (1 + mde)
+    n = ((z_alpha * (2*p1*(1-p1))**0.5 + z_beta * (p1*(1-p1) + p2*(1-p2))**0.5) / (p2 - p1)) ** 2
+    return int(n) + 1
+
+# Example: 5% baseline, detect 10% relative lift
+print(f"Need {sample_size(0.05, 0.10)} users per variant")
+```
+
+### 6. Data Storytelling
+
+**Structure every analysis as:**
+1. **Context** — Why are we looking at this? (1 sentence)
+2. **Finding** — What did we discover? (lead with the insight, not the method)
+3. **Evidence** — Show the chart/table that proves it
+4. **Implication** — So what? What should we do?
+5. **Recommendation** — Specific next action with expected impact
+
+**Rules:**
+- One insight per slide/section
+- Annotate charts (mark events, callout anomalies)
+- Compare to benchmarks or previous periods
+- Quantify impact in dollars or users, not just percentages
+
+---
+
+## data-management
+
+**Category:** analytics | **Version:** 1.0.0
+**Description:** Data governance, pipeline design, ETL workflows, data quality frameworks, and warehouse architecture for growing teams.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Data Management
+
+## Workflow
+
+### 1. Pipeline Architecture
+
+**Batch vs streaming:**
+
+| Approach | Latency | Use case | Tools |
+|----------|---------|----------|-------|
+| Batch ETL | Hours | Daily reporting, historical analysis | Airflow, dbt, Fivetran |
+| Micro-batch | Minutes | Near-real-time dashboards | Spark Streaming, dbt + scheduler |
+| Streaming | Seconds | Real-time alerts, live feeds | Kafka, Flink, Kinesis |
+
+**Decision:** Start with batch. Move to streaming only when business requires sub-minute latency.
+
+**Standard pipeline pattern:**
+```
+Sources → Extract → Landing/Raw → Transform → Staging → Serve → BI/Analytics
+  ↓         ↓          ↓             ↓           ↓        ↓
+ APIs    Fivetran    Raw zone     dbt models   Clean    Looker/
+ DBs     Airbyte    (immutable)  (versioned)  tables   Metabase
+ Files   Custom     S3/GCS       SQL tests    Views    API
+```
+
+### 2. Warehouse Schema Design
+
+**Star schema (recommended for analytics):**
+```sql
+-- Fact table (events/transactions — append-only, granular)
+CREATE TABLE fact_orders (
+  order_id BIGINT PRIMARY KEY,
+  customer_key INT REFERENCES dim_customers(customer_key),
+  product_key INT REFERENCES dim_products(product_key),
+  date_key INT REFERENCES dim_dates(date_key),
+  quantity INT,
+  revenue DECIMAL(10,2),
+  discount DECIMAL(10,2),
+  created_at TIMESTAMP
+);
+
+-- Dimension table (descriptive attributes — slowly changing)
+CREATE TABLE dim_customers (
+  customer_key INT PRIMARY KEY,  -- surrogate key
+  customer_id VARCHAR(50),        -- natural key
+  name VARCHAR(200),
+  email VARCHAR(200),
+  segment VARCHAR(50),
+  country VARCHAR(50),
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP,
+  is_current BOOLEAN DEFAULT TRUE  -- SCD Type 2
+);
+
+-- Date dimension (pre-populated)
+CREATE TABLE dim_dates (
+  date_key INT PRIMARY KEY,       -- YYYYMMDD format
+  full_date DATE,
+  year INT,
+  quarter INT,
+  month INT,
+  week INT,
+  day_of_week VARCHAR(10),
+  is_weekend BOOLEAN,
+  is_holiday BOOLEAN
+);
+```
+
+**Star vs snowflake:**
+- Star: denormalized dimensions, faster queries, easier to understand. **Use this.**
+- Snowflake: normalized dimensions, saves storage, more joins. Only if storage is a concern (rarely).
+
+### 3. dbt Project Structure
+
+```
+models/
+  staging/          -- 1:1 with source tables, rename/cast/clean
+    stg_stripe_payments.sql
+    stg_hubspot_contacts.sql
+  intermediate/     -- business logic joins
+    int_customer_orders.sql
+  marts/            -- final tables for BI
+    dim_customers.sql
+    fact_orders.sql
+    metrics_monthly_revenue.sql
+  schema.yml        -- tests and documentation
+```
+
+**dbt model example:**
+```sql
+-- models/marts/dim_customers.sql
+WITH customers AS (
+  SELECT * FROM {{ ref('stg_hubspot_contacts') }}
+),
+orders AS (
+  SELECT customer_id, MIN(order_date) AS first_order, COUNT(*) AS total_orders, SUM(revenue) AS ltv
+  FROM {{ ref('stg_stripe_payments') }}
+  GROUP BY customer_id
+)
+SELECT
+  c.customer_id,
+  c.name,
+  c.email,
+  c.segment,
+  c.country,
+  o.first_order,
+  o.total_orders,
+  o.ltv,
+  CASE WHEN o.ltv > 1000 THEN 'high' WHEN o.ltv > 100 THEN 'medium' ELSE 'low' END AS value_tier
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id
+```
+
+### 4. Data Quality Framework
+
+**Quality dimensions:**
+
+| Dimension | Definition | Check |
+|-----------|-----------|-------|
+| Completeness | No missing required values | `WHERE column IS NULL` count |
+| Accuracy | Values are correct | Spot-check against source, range validation |
+| Consistency | Same value across systems | Compare CRM vs billing vs product DB |
+| Timeliness | Data is fresh enough | `MAX(updated_at)` vs expected freshness |
+| Uniqueness | No unintended duplicates | `COUNT(*) vs COUNT(DISTINCT key)` |
+| Validity | Values match expected format | Regex, enum validation, range checks |
+
+**dbt tests (add to schema.yml):**
+```yaml
+models:
+  - name: dim_customers
+    columns:
+      - name: customer_id
+        tests:
+          - not_null
+          - unique
+      - name: email
+        tests:
+          - not_null
+          - accepted_values:
+              values: []
+              quote: false
+              config:
+                where: "email NOT LIKE '%@%'"
+                severity: warn
+      - name: segment
+        tests:
+          - accepted_values:
+              values: ['enterprise', 'mid-market', 'smb', 'self-serve']
+```
+
+**Data quality score:**
+```
+Quality score = (Completeness × 0.3) + (Accuracy × 0.25) + (Consistency × 0.2) + (Timeliness × 0.15) + (Uniqueness × 0.1)
+```
+Target: > 95% across all dimensions.
+
+### 5. GDPR Compliance
+
+**Data subject rights checklist:**
+
+| Right | Implementation |
+|-------|---------------|
+| Access (Art. 15) | Export all personal data within 30 days |
+| Rectification (Art. 16) | Allow users to correct their data |
+| Erasure (Art. 17) | Delete personal data on request (right to be forgotten) |
+| Portability (Art. 20) | Provide data in machine-readable format |
+| Restriction (Art. 18) | Stop processing but retain data |
+| Objection (Art. 21) | Opt out of marketing/profiling |
+
+**Data retention policy template:**
+
+| Data type | Retention period | Basis |
+|-----------|-----------------|-------|
+| Account data | Duration of contract + 3 years | Contractual necessity |
+| Payment records | 7 years | Legal obligation (tax) |
+| Analytics events | 26 months | Legitimate interest |
+| Marketing consent | Until withdrawn | Consent |
+| Support tickets | 3 years after resolution | Legitimate interest |
+| Deleted account data | 30 days (grace period) then purge | Erasure right |
+
+**Consent management:**
+- Record: what, when, how, and version of consent text
+- Allow granular consent (analytics, marketing, third-party separately)
+- Make withdrawal as easy as giving consent
+- Re-consent on material changes to privacy policy
+
+### 6. Monitoring
+
+**Automated alerts:**
+- Pipeline failure (any step) → Slack/PagerDuty immediate
+- Data freshness > expected SLA → warn after 1 hour, alert after 4 hours
+- Quality score drops below 90% → alert data team
+- Duplicate rate > 1% → alert
+- Schema change detected in source → alert (breaking changes)
+
+---
+
+## google-analytics
+
+**Category:** analytics | **Version:** 1.0.0
+**Description:** GA4 setup, event taxonomy, custom dimensions, conversion tracking, audience segments, and reporting automation.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Google Analytics 4
+
+## Workflow
+
+### 1. Measurement Plan
+
+Before touching GA4, define what matters:
+
+| Layer | Question | Example |
+|-------|----------|---------|
+| Business objective | What's the goal? | Increase trial signups 20% |
+| KPI | How do we measure? | Trial signup rate, activation rate |
+| Events | What do we track? | `sign_up`, `tutorial_complete`, `plan_selected` |
+| Dimensions | What context? | plan_type, referral_source, user_role |
+
+### 2. Event Taxonomy
+
+Use a consistent naming convention. Never use spaces or capitals in event names.
+
+**Naming pattern:** `object_action` (noun_verb)
+
+```
+# Core events (auto-collected — don't recreate)
+page_view, session_start, first_visit, user_engagement
+
+# Recommended events (use GA4 standard names)
+sign_up, login, purchase, add_to_cart, begin_checkout
+
+# Custom events (your business logic)
+trial_started
+feature_activated
+plan_upgraded
+invite_sent
+onboarding_completed
+support_ticket_opened
+```
+
+**Implementation (gtag.js):**
+```javascript
+// Custom event with parameters
+gtag('event', 'trial_started', {
+  plan_type: 'pro',
+  referral_source: 'pricing_page',
+  value: 49
+});
+
+// User property (set once per user)
+gtag('set', 'user_properties', {
+  account_type: 'enterprise',
+  company_size: '50-200'
+});
+```
+
+**GTM dataLayer push:**
+```javascript
+dataLayer.push({
+  event: 'plan_upgraded',
+  plan_from: 'free',
+  plan_to: 'pro',
+  mrr_delta: 49
+});
+```
+
+### 3. Custom Dimensions & Metrics
+
+Register in GA4 Admin → Custom definitions before sending data.
+
+| Scope | Dimension | Example values | Use |
+|-------|-----------|----------------|-----|
+| Event | plan_type | free, pro, enterprise | Segment by plan |
+| Event | feature_name | dashboard, export, api | Feature adoption |
+| User | account_type | individual, team, enterprise | User segmentation |
+| User | signup_source | organic, paid, referral | Acquisition quality |
+
+### 4. Conversion Tracking
+
+Mark key events as conversions in GA4 Admin → Events → toggle "Mark as conversion."
+
+**High-value conversions:**
+- `sign_up` — new account created
+- `purchase` — payment completed
+- `trial_started` — trial activated
+- `plan_upgraded` — expansion revenue
+
+**Micro-conversions (track but don't optimize ads against):**
+- `onboarding_completed`
+- `feature_activated`
+- `invite_sent`
+
+### 5. Audience Segments
+
+Build in GA4 → Audiences for remarketing and analysis:
+
+| Audience | Condition | Use |
+|----------|-----------|-----|
+| Active trial users | `trial_started` in last 14 days AND `session_count > 3` | Nurture campaigns |
+| Power users | `feature_activated` count > 10 in 30 days | Upsell targeting |
+| Churned users | `last_active > 30 days` AND `account_type = paid` | Win-back campaigns |
+| High-intent visitors | Viewed pricing page 2+ times, no signup | Retargeting ads |
+
+### 6. Cross-Domain Tracking
+
+For multi-domain setups (app.example.com + www.example.com):
+
+```javascript
+gtag('config', 'G-XXXXXXX', {
+  linker: {
+    domains: ['example.com', 'app.example.com', 'checkout.example.com']
+  }
+});
+```
+
+Verify in GA4 DebugView — sessions should NOT restart across domains.
+
+### 7. Attribution Settings
+
+GA4 Admin → Attribution settings:
+
+- **Reporting attribution model:** Data-driven (default, recommended)
+- **Lookback window:** 30 days for acquisition, 90 days for other conversions
+- **Cross-channel:** Enable for accurate multi-touch attribution
+
+### 8. Looker Studio Reporting
+
+Connect GA4 as data source. Key dashboard pages:
+
+**Overview dashboard:**
+- Sessions, users, new users (line chart, 30d trend)
+- Conversion rate by channel (bar chart)
+- Top landing pages by sessions and conversion rate (table)
+- Device category breakdown (pie chart)
+
+**Acquisition dashboard:**
+- Users by source/medium (table with sparklines)
+- Campaign performance (sessions, conversions, CPA)
+- Organic vs paid trend (combo chart)
+
+**Engagement dashboard:**
+- Events per session by page (heatmap)
+- Feature adoption funnel (custom funnel chart)
+- User retention cohort (built-in cohort table)
+
+### 9. Debugging
+
+**GA4 DebugView:** Enable with:
+```javascript
+gtag('config', 'G-XXXXXXX', { debug_mode: true });
+```
+Or install GA Debugger Chrome extension.
+
+**Common issues:**
+- Events not showing → check real-time report (24-48h processing delay for standard reports)
+- Duplicate events → check for double gtag installation (GTM + hardcoded)
+- Missing conversions → verify event is marked as conversion AND firing correctly
+- Cross-domain breaks → check linker config and excluded referrals
+
+### 10. GA4 Data API
+
+Query data programmatically:
+```python
+from google.analytics.data_v1beta import BetaAnalyticsDataClient
+from google.analytics.data_v1beta.types import RunReportRequest, DateRange, Dimension, Metric
+
+client = BetaAnalyticsDataClient()
+request = RunReportRequest(
+    property=f"properties/{PROPERTY_ID}",
+    date_ranges=[DateRange(start_date="30daysAgo", end_date="today")],
+    dimensions=[Dimension(name="sessionSource"), Dimension(name="sessionMedium")],
+    metrics=[Metric(name="sessions"), Metric(name="conversions")],
+)
+response = client.run_report(request)
+for row in response.rows:
+    print(row.dimension_values[0].value, row.metric_values[0].value)
+```
+
+## Weekly Audit Checklist
+
+- [ ] Check real-time for expected event flow
+- [ ] Verify conversion counts match backend data (±5% tolerance)
+- [ ] Review (not set) and (other) values in reports — indicates taxonomy gaps
+- [ ] Check data freshness in Looker Studio dashboards
+- [ ] Review audience sizes for remarketing — flag if dropping unexpectedly
+- [ ] Audit new events in DebugView before production rollout
+
+---
+
+## search-console
+
+**Category:** analytics | **Version:** 1.0.0
+**Description:** Google Search Console optimization. Index coverage, performance analysis, sitemap management, and search appearance debugging.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Google Search Console
+
+## Workflow
+
+### 1. Property Setup
+
+Verify ownership via DNS TXT record (most reliable):
+```
+google-site-verification=XXXXXXXXXXXXXXXX
+```
+Alternatives: HTML file upload, HTML meta tag, Google Analytics, Google Tag Manager.
+
+**Add both versions:**
+- `https://example.com` (URL prefix) — for specific path filtering
+- `example.com` (Domain) — for comprehensive data including subdomains
+
+### 2. Index Coverage Audit
+
+Navigate to Pages → Indexing to review status:
+
+| Status | Meaning | Action |
+|--------|---------|--------|
+| Valid | Indexed, no issues | Monitor |
+| Valid with warnings | Indexed but has issues | Fix warnings |
+| Excluded | Not indexed (intentional or not) | Review each reason |
+| Error | Cannot index, wants to | Fix immediately |
+
+**Common exclusion reasons and fixes:**
+
+| Reason | Fix |
+|--------|-----|
+| Crawled - currently not indexed | Improve content quality, add internal links |
+| Discovered - currently not indexed | Submit in sitemap, build backlinks, wait |
+| Excluded by noindex tag | Remove noindex if page should be indexed |
+| Alternate page with proper canonical | Expected for canonical dedup — verify canonical is correct |
+| Blocked by robots.txt | Update robots.txt if page should be crawled |
+| Duplicate without user-selected canonical | Set explicit canonical tag |
+| Soft 404 | Add real content or return proper 404 status |
+
+### 3. Performance Analysis
+
+Key metrics: impressions, clicks, CTR, average position.
+
+**Analysis by query cluster:**
+1. Export performance data (Queries tab, 16 months max)
+2. Group queries by intent/topic
+3. Calculate cluster-level CTR vs expected CTR for position:
+
+| Position | Expected CTR |
+|----------|-------------|
+| 1 | 25-35% |
+| 2 | 12-18% |
+| 3 | 8-12% |
+| 4-5 | 5-8% |
+| 6-10 | 2-5% |
+
+**If actual CTR < expected:** Title/description needs optimization.
+**If actual CTR > expected:** Strong snippet — protect this content.
+
+**Quick wins — filter for:**
+- Position 5-15 with high impressions → optimize to push into top 5
+- High impressions, low CTR → rewrite title tags and meta descriptions
+- Position 1-3, declining impressions → content freshness issue
+
+### 4. Sitemap Management
+
+Submit at Sitemaps → Add a new sitemap:
+```
+https://example.com/sitemap.xml
+```
+
+**Sitemap audit checklist:**
+- [ ] All indexable pages included
+- [ ] No noindex/canonicalized pages in sitemap
+- [ ] `<lastmod>` dates are accurate (not auto-generated today's date)
+- [ ] Response is HTTP 200 with valid XML
+- [ ] Under 50,000 URLs per sitemap (use sitemap index for larger sites)
+- [ ] Submitted in GSC AND referenced in robots.txt
+
+### 5. Core Web Vitals
+
+Check Page Experience → Core Web Vitals:
+
+| Metric | Good | Needs Improvement | Poor |
+|--------|------|-------------------|------|
+| LCP (Largest Contentful Paint) | ≤ 2.5s | ≤ 4.0s | > 4.0s |
+| INP (Interaction to Next Paint) | ≤ 200ms | ≤ 500ms | > 500ms |
+| CLS (Cumulative Layout Shift) | ≤ 0.1 | ≤ 0.25 | > 0.25 |
+
+**Debugging workflow:**
+1. Identify failing URL groups in GSC
+2. Test specific URLs with PageSpeed Insights
+3. Fix the highest-impact issue first (usually LCP)
+4. Validate fix in GSC (takes 28 days for field data)
+
+**Common fixes:**
+- LCP: Optimize hero image (WebP, proper sizing, preload), eliminate render-blocking resources
+- INP: Reduce JavaScript execution time, break long tasks, use `requestIdleCallback`
+- CLS: Set explicit width/height on images/video, avoid dynamic content injection above the fold
+
+### 6. URL Inspection
+
+Use URL Inspection tool to:
+- Check if a specific URL is indexed
+- See how Googlebot renders the page
+- Request indexing for new/updated pages
+- Debug canonical selection issues
+
+**API access for bulk inspection:**
+```python
+from googleapiclient.discovery import build
+service = build('searchconsole', 'v1', credentials=creds)
+request = {
+    'inspectionUrl': 'https://example.com/page',
+    'siteUrl': 'https://example.com'
+}
+response = service.urlInspection().index().inspect(body=request).execute()
+print(response['inspectionResult']['indexStatusResult']['coverageState'])
+```
+
+### 7. Rich Results Validation
+
+Check Enhancements section for structured data issues:
+- FAQ, How-to, Product, Review, Breadcrumb, Article, Event, LocalBusiness
+
+**Validation workflow:**
+1. Test with Rich Results Test (search.google.com/test/rich-results)
+2. Fix schema errors shown in GSC
+3. Validate fix — GSC will re-crawl and update status
+
+**Common schema errors:**
+- Missing required fields (e.g., `aggregateRating` without `reviewCount`)
+- Invalid date formats (use ISO 8601: `2025-01-15`)
+- Mismatched canonical and structured data URLs
+
+### 8. Search Appearance Optimization
+
+**Title tag formula:** `Primary Keyword — Benefit | Brand` (under 60 chars)
+**Meta description:** Include primary keyword, CTA, value prop (under 155 chars)
+
+**Test changes:**
+1. Identify pages with CTR below position-expected benchmarks
+2. Rewrite title + description
+3. Track CTR change over 2-4 weeks in GSC
+
+## Weekly Audit Checklist
+
+- [ ] Check index coverage for new errors
+- [ ] Review performance trends (7d vs previous 7d)
+- [ ] Monitor Core Web Vitals for regressions
+- [ ] Check sitemap processing status
+- [ ] Review manual actions (should always be empty)
+- [ ] Check security issues
+- [ ] Flag pages losing >20% impressions week-over-week
+
+---
+
+## bing-webmaster
+
+**Category:** analytics | **Version:** 1.0.0
+**Description:** Bing Webmaster Tools setup, IndexNow protocol, URL submission, backlink analysis, and Bing-specific SEO optimization.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Bing Webmaster Tools
+
+## Workflow
+
+### 1. Setup & Verification
+
+**Verification methods (pick one):**
+- XML file upload (BingSiteAuth.xml to root)
+- Meta tag (`<meta name="msvalidate.01" content="XXXX" />`)
+- CNAME DNS record
+- Auto-verify if already in Google Search Console (import)
+
+**Import from GSC:** Bing offers one-click import of all your GSC properties — fastest path.
+
+### 2. IndexNow Implementation
+
+IndexNow tells search engines about URL changes instantly. Supported by Bing, Yandex, and others.
+
+**Simple implementation (single URL):**
+```bash
+# Generate API key (any UUID works)
+KEY="your-api-key-here"
+
+# Place key file at site root
+echo "$KEY" > public/$KEY.txt
+# Accessible at: https://example.com/$KEY.txt
+
+# Notify Bing of URL change
+curl "https://api.indexnow.org/indexnow?url=https://example.com/updated-page&key=$KEY"
+```
+
+**Batch submission (up to 10,000 URLs):**
+```bash
+curl -X POST "https://api.indexnow.org/indexnow" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "host": "example.com",
+    "key": "your-api-key",
+    "keyLocation": "https://example.com/your-api-key.txt",
+    "urlList": [
+      "https://example.com/page1",
+      "https://example.com/page2",
+      "https://example.com/page3"
+    ]
+  }'
+```
+
+**Automate with build/deploy hook:**
+```javascript
+// Next.js post-build script
+const changedUrls = getChangedPages(); // your logic
+if (changedUrls.length > 0) {
+  await fetch('https://api.indexnow.org/indexnow', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      host: 'example.com',
+      key: process.env.INDEXNOW_KEY,
+      keyLocation: `https://example.com/${process.env.INDEXNOW_KEY}.txt`,
+      urlList: changedUrls
+    })
+  });
+}
+```
+
+### 3. Bing vs Google — Key Differences
+
+| Factor | Google | Bing |
+|--------|--------|------|
+| Social signals | Minimal impact | Significant ranking factor |
+| Exact match domains | Discounted | Still somewhat rewarded |
+| Multimedia content | Moderate impact | Higher weight (images, video) |
+| Page authority | Links-heavy | More balanced (links + social + content) |
+| Flash/Silverlight | Not indexed | Historically indexed (legacy) |
+| Keyword in URL | Minor factor | More weight |
+| Official site badge | No equivalent | Verified site badge available |
+
+### 4. URL Submission API
+
+**For new or updated content (beyond IndexNow):**
+```bash
+curl -X POST "https://ssl.bing.com/webmaster/api.svc/json/SubmitUrl?apikey=$BING_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"siteUrl":"https://example.com","url":"https://example.com/new-page"}'
+```
+
+**Daily quota:** 10,000 URLs/day for verified sites. Use for bulk submissions after migrations.
+
+### 5. Backlink Analysis
+
+Bing Webmaster provides free backlink data (competitive with paid tools for basics):
+- Inbound links report: domains linking to you
+- Anchor text distribution
+- Top linked pages
+- New and lost links
+
+**Audit checklist:**
+- [ ] Disavow toxic backlinks (spam, irrelevant foreign domains)
+- [ ] Check anchor text diversity (too many exact-match = risky)
+- [ ] Monitor new links weekly for negative SEO
+- [ ] Compare backlink profile vs top 3 competitors
+
+### 6. Bing SEO Optimization
+
+**Content optimization:**
+- Use exact-match keywords in H1 and first paragraph (Bing is more literal than Google)
+- Include multimedia: images with descriptive alt text, embedded video
+- Ensure fast page load (Bing uses page speed as a ranking factor)
+- Add schema markup (Bing uses it for rich results and entity understanding)
+
+**Technical optimization:**
+- Submit XML sitemap in Bing Webmaster Tools
+- Enable IndexNow for real-time indexing
+- Set crawl control settings (Bing respects crawl-delay in robots.txt)
+- Use hreflang for international pages (Bing supports it)
+
+### 7. Reporting
+
+**Monthly Bing audit:**
+- [ ] Check crawl errors and fix
+- [ ] Review search performance (impressions, clicks, CTR)
+- [ ] Compare Bing vs Google rankings for top 20 keywords
+- [ ] Monitor IndexNow submission success rate
+- [ ] Review and update sitemap if site structure changed
+- [ ] Check for manual penalties (rare but check)
+
+---
+
+## yandex-webmaster
+
+**Category:** analytics | **Version:** 1.0.0
+**Description:** Yandex Webmaster setup, Yandex-specific SEO, regional targeting, Turbo pages, and Russian market search optimization.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Yandex Webmaster
+
+## Workflow
+
+### 1. Setup & Verification
+
+**Verification methods:**
+- HTML file upload
+- Meta tag: `<meta name="yandex-verification" content="XXXX" />`
+- DNS TXT record
+- WHOIS email verification
+
+**Post-verification:**
+- Submit sitemap: Settings → Sitemap files → Add
+- Set main mirror: Settings → Site indexing → Main mirror (www vs non-www)
+- Configure regional targeting: Settings → Regional targeting → Select regions
+
+### 2. Yandex vs Google — Ranking Differences
+
+| Factor | Google | Yandex |
+|--------|--------|--------|
+| Backlinks | Primary signal | Important but less dominant |
+| Text relevance | Semantic, context-based | More literal keyword matching |
+| Commercial factors | Implicit | Explicit ranking factors (prices, contact info, delivery) |
+| User behavior | Moderate signal | Heavy signal (CTR, dwell time, pogo-sticking) |
+| Regional targeting | IP + hreflang | Explicit geo-assignment per page |
+| Content freshness | Important for news | Important across all content types |
+| Site quality (ICS) | No direct equivalent | Explicit quality rating visible in Webmaster |
+
+### 3. Commercial Ranking Factors
+
+Yandex explicitly values these for commercial queries:
+
+| Factor | Implementation |
+|--------|---------------|
+| Contact information | Full address, phone, email on every page (or footer) |
+| Prices visible | Show prices on product/service pages |
+| Delivery information | Clear delivery terms and costs |
+| Company details | Legal entity name, registration numbers |
+| Reviews/ratings | Customer reviews on site |
+| Wide assortment | More products/services = stronger signal |
+| Secure payment | SSL + payment security badges |
+
+### 4. Regional Targeting
+
+Yandex assigns pages to specific regions. Critical for local businesses.
+
+**Set region in Yandex Webmaster:** Settings → Regional targeting → Assign region per site section.
+
+**For multi-region businesses:**
+- Create separate regional landing pages (/moscow/, /spb/, /novosibirsk/)
+- Each page should have region-specific content (not just city name swapped)
+- Register in Yandex Business Directory for each location
+- Add structured local data (address, phone per region)
+
+### 5. Turbo Pages
+
+Turbo pages are Yandex's AMP equivalent — ultra-fast mobile pages served from Yandex cache.
+
+**RSS feed implementation:**
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:yandex="http://news.yandex.ru" xmlns:media="http://search.yahoo.com/mrss/"
+     xmlns:turbo="http://turbo.yandex.ru" version="2.0">
+  <channel>
+    <title>Site Name</title>
+    <link>https://example.com</link>
+    <turbo:analytics type="Yandex" id="XXXXXXXX"/>
+
+    <item turbo="true">
+      <title>Article Title</title>
+      <link>https://example.com/article</link>
+      <turbo:content>
+        <![CDATA[
+          <header>
+            <h1>Article Title</h1>
+            <figure>
+              <img src="https://example.com/image.jpg"/>
+            </figure>
+          </header>
+          <p>Article content goes here. Use standard HTML.</p>
+          <h2>Subheading</h2>
+          <p>More content with <a href="https://example.com">links</a>.</p>
+        ]]>
+      </turbo:content>
+    </item>
+  </channel>
+</rss>
+```
+
+**Submit:** Turbo pages → Sources → Add RSS feed URL.
+
+**Turbo page benefits:**
+- 15x faster load time on mobile
+- Higher position in mobile search results
+- Yandex serves from their CDN (zero server load)
+- Supports ads, analytics, forms, e-commerce widgets
+
+### 6. ICS Quality Rating
+
+ICS (Index of Citation for Sites) is Yandex's visible site quality score (0-10,000+).
+
+**Factors that improve ICS:**
+- Regular content updates
+- User engagement metrics (low bounce, high dwell time)
+- Backlink quality (Yandex values editorial links from relevant sites)
+- Site age and history
+- Presence in Yandex Business Directory
+- Social signals (shares, mentions)
+
+**Check ICS:** Yandex Webmaster → Site quality → ICS rating.
+
+### 7. Yandex-Specific Meta Tags
+
+```html
+<!-- Verification -->
+<meta name="yandex-verification" content="XXXX" />
+
+<!-- Control indexing -->
+<meta name="robots" content="index, follow" />
+<meta name="yandex" content="noyaca" />  <!-- Don't replace description with Yandex Catalog -->
+
+<!-- Original source (for syndicated content) -->
+<meta property="article:source" content="https://original-source.com/article" />
+```
+
+### 8. Yandex Webmaster API
+
+```python
+import requests
+
+headers = {"Authorization": f"OAuth {YANDEX_OAUTH_TOKEN}"}
+host_id = "https:example.com:443"
+
+# Get search queries
+r = requests.get(
+    f"https://api.webmaster.yandex.net/v4/user/{USER_ID}/hosts/{host_id}/search-queries/popular",
+    headers=headers,
+    params={"date_from": "2025-01-01", "date_to": "2025-01-31"}
+)
+for query in r.json().get("queries", []):
+    print(query["query_text"], query["indicators"]["TOTAL_SHOWS"], query["indicators"]["TOTAL_CLICKS"])
+```
+
+## Monthly Audit Checklist
+
+- [ ] Check indexing status — pages indexed vs submitted
+- [ ] Review ICS rating trend
+- [ ] Analyze top queries and position changes
+- [ ] Check Turbo page errors (if using)
+- [ ] Verify regional targeting is correct
+- [ ] Review crawl errors and excluded pages
+- [ ] Compare Yandex vs Google performance for key queries
+- [ ] Update sitemap if site structure changed
+
+---
+
+## social-media-growth
+
+**Category:** growth | **Version:** 1.0.0
+**Description:** Platform-specific growth tactics. Algorithmic optimization, engagement hacking, viral mechanics, and community building at scale.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Social Media Growth
+
+## Platform Algorithms
+
+### LinkedIn
+
+**What the algorithm rewards:**
+- Dwell time (people stop scrolling to read)
+- Comments (especially long, thoughtful ones)
+- Shares to DMs (private distribution)
+- Early engagement (first 60 minutes critical)
+
+**Content format performance:**
+
+| Format | Avg. reach | Best for |
+|--------|-----------|----------|
+| Text-only (story) | High | Personal stories, lessons |
+| Carousel (PDF) | Very high | Frameworks, how-tos |
+| Poll | High | Engagement, market research |
+| Video (native) | Medium | Thought leadership |
+| Article | Low | SEO, evergreen content |
+| Image + text | Medium | Quick insights |
+
+**Posting rules:**
+- 3-5 posts per week (more = diminishing returns)
+- Best times: Tue-Thu 8-10am target timezone
+- Hook in first 2 lines (before "see more" fold)
+- End with a question (drives comments)
+- No external links in post body (kills reach) — put links in first comment
+- Engage with 10-15 posts before and after publishing yours
+
+### Twitter/X
+
+**What the algorithm rewards:**
+- Replies and quote tweets (conversation)
+- Bookmark rate (save for later = high quality signal)
+- Time spent on tweet (long-form, threads)
+- Profile clicks from tweet
+
+| Format | Best for |
+|--------|----------|
+| Thread (5-12 tweets) | Deep dives, storytelling |
+| Single tweet + image | Quick insights, hot takes |
+| Quote tweet with take | Building on others' ideas |
+| Poll | Engagement, opinions |
+
+**Growth tactics:**
+- Reply to large accounts in your niche (first 30 min of their post)
+- Build a "reply network" — 20-30 accounts you consistently engage with
+- Post threads at 8am or 12pm target timezone
+- Pin your best-performing thread
+- Use 1-2 hashtags max (more looks spammy)
+
+### Instagram
+
+**Algorithm priority (2025):**
+- Reels > Carousels > Static images > Stories for reach
+- Saves and shares weighted higher than likes
+- Watch time on Reels (completion rate)
+
+| Content type | Cadence | Purpose |
+|-------------|---------|---------|
+| Reels | 3-5/week | Reach and discovery |
+| Carousels | 2-3/week | Education, saves |
+| Stories | Daily | Engagement, polls |
+| Static | 1-2/week | Brand aesthetic |
+
+**Reel optimization:**
+- Hook in first 1.5 seconds
+- 15-30 seconds optimal length
+- Add text overlays (many watch muted)
+- Use trending audio (check Reels tab)
+- End with a loop (seamless replay = more watch time)
+
+### TikTok
+
+**Algorithm is pure content quality — followers barely matter for reach.**
+
+- First 500 views = test group. Performance there determines viral push.
+- Watch time is king (especially rewatch rate)
+- Comment velocity in first hour
+- Share rate to external (DMs, other platforms)
+
+**Format rules:**
+- 15-45 seconds for max completion rate
+- Hook in first 1 second (pattern interrupt)
+- Native look (not polished ads) outperforms production quality
+- Reply to comments with video (TikTok boosts these)
+- Post 1-3 times daily for growth phase
+
+## Viral Content Mechanics
+
+**Hook types that stop the scroll:**
+
+| Hook type | Example |
+|-----------|---------|
+| Contrarian | "Stop posting on LinkedIn at 8am" |
+| Curiosity gap | "This one change doubled our signups" |
+| List/number | "5 tools I use daily that nobody talks about" |
+| Story | "I got fired. Best thing that happened." |
+| Challenge | "Most founders can't answer this question" |
+
+**Viral loop anatomy:**
+1. **Hook** — stop the scroll (1-2 seconds)
+2. **Setup** — create anticipation (why should I care?)
+3. **Payload** — deliver the value (insight, story, framework)
+4. **CTA** — drive action (follow, save, share, comment)
+
+## Content Calendar
+
+**Weekly template (B2B SaaS):**
+
+| Day | LinkedIn | Twitter/X | Instagram |
+|-----|---------|-----------|-----------|
+| Mon | Industry insight | Thread | Reel |
+| Tue | Personal story | Hot take + image | Carousel |
+| Wed | How-to carousel | Engage (no post) | Stories only |
+| Thu | Poll or question | Thread | Reel |
+| Fri | Behind-the-scenes | Casual/funny tweet | Static + story |
+
+## Community Building
+
+**Engagement-first strategy (first 90 days):**
+1. Identify 50 accounts in your niche (mix of sizes)
+2. Engage genuinely on their content daily (comment, not just like)
+3. DM 5 new people weekly with specific value (not pitch)
+4. Create content that references/amplifies community members
+5. Host a weekly space/live/room on one topic
+
+**Community flywheel:** Engage others → They engage you → Algorithm sees engagement → More reach → More community members → Repeat
+
+## Growth Metrics
+
+| Metric | Track | Benchmark |
+|--------|-------|-----------|
+| Follower growth rate | Weekly | 2-5% week-over-week in growth phase |
+| Engagement rate | Per post | LinkedIn: 3-5%, Twitter: 1-3%, Instagram: 3-6% |
+| Impressions | Weekly | 10x follower count = good |
+| Profile visits | Weekly | 5-10% of impressions |
+| Link clicks | Per post | 1-3% of impressions |
+| Saves/bookmarks | Per post | 2-5% of engagement = high-quality content |
+
+---
+
+## crm-operations
+
+**Category:** operations | **Version:** 1.0.0
+**Description:** CRM setup, pipeline automation, lead routing, deal tracking, and operational workflows for HubSpot, Salesforce, Pipedrive.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# CRM Operations
+
+## Workflow
+
+### 1. Property Architecture
+
+**Core contact properties:**
+
+| Property | Type | Purpose |
+|----------|------|---------|
+| lifecycle_stage | Dropdown | Subscriber → Lead → MQL → SQL → Opportunity → Customer |
+| lead_source | Dropdown | How they found you (organic, paid, referral, outbound) |
+| lead_score | Number | Calculated engagement + fit score |
+| assigned_owner | User | Current owner for routing |
+| last_engaged | Date | Last meaningful interaction |
+| icp_fit | Dropdown | Strong, moderate, weak |
+
+**Core company properties:**
+
+| Property | Type | Purpose |
+|----------|------|---------|
+| industry | Dropdown | Vertical classification |
+| employee_count | Number | Size segmentation |
+| arr_potential | Currency | Estimated deal value |
+| tech_stack | Multi-select | Integration opportunities |
+| decision_stage | Dropdown | Awareness, consideration, decision |
+
+**Naming convention:** `snake_case`, prefix custom properties with category (e.g., `billing_`, `product_`, `marketing_`).
+
+### 2. Pipeline Design
+
+**SaaS sales pipeline:**
+
+| Stage | Definition | Exit criteria | Win probability |
+|-------|-----------|---------------|----------------|
+| New | Lead qualified, first meeting booked | Discovery call completed | 10% |
+| Discovery | Pain and fit confirmed | Champion identified, budget discussed | 20% |
+| Demo | Product demonstrated | Technical validation passed | 40% |
+| Proposal | Pricing/terms shared | Verbal agreement on terms | 60% |
+| Negotiation | Contract in legal review | Redlines resolved | 80% |
+| Closed Won | Contract signed | Payment received or PO issued | 100% |
+| Closed Lost | Deal dead | Loss reason documented | 0% |
+
+**Required fields per stage transition:**
+- New → Discovery: `pain_point`, `budget_range`, `timeline`
+- Discovery → Demo: `champion_name`, `decision_maker`, `competitor`
+- Demo → Proposal: `technical_validated = true`
+- Proposal → Negotiation: `proposal_sent_date`, `contract_value`
+- Any → Closed Lost: `loss_reason` (required, dropdown)
+
+### 3. Lead Scoring
+
+**Two-axis scoring: Fit (demographic) + Engagement (behavioral)**
+
+**Fit scoring (0-50 points):**
+
+| Signal | Points | Rationale |
+|--------|--------|-----------|
+| ICP industry match | +15 | Right vertical |
+| Company size 50-500 | +10 | Sweet spot segment |
+| Decision-maker title | +10 | VP+ or C-level |
+| Target geography | +5 | In serviceable market |
+| Uses complementary tools | +5 | Integration potential |
+| Company size < 10 | -10 | Below minimum viable |
+| Student/personal email | -15 | Not a buyer |
+
+**Engagement scoring (0-50 points, decays 50% per 30 days inactive):**
+
+| Action | Points | Decay |
+|--------|--------|-------|
+| Visited pricing page | +10 | Yes |
+| Requested demo | +15 | No |
+| Downloaded content | +5 | Yes |
+| Attended webinar | +8 | Yes |
+| Opened 3+ emails in 7 days | +5 | Yes |
+| Replied to email | +10 | No |
+| Visited 5+ pages in session | +5 | Yes |
+
+**Thresholds:**
+- Score ≥ 70: MQL → auto-route to sales
+- Score 40-69: Nurture sequence
+- Score < 40: Marketing automation only
+
+### 4. Lead Routing
+
+**Round-robin with rules:**
+```
+IF lead_score >= 70 AND arr_potential >= $50k:
+  → Route to enterprise AE (named accounts)
+ELIF lead_score >= 70 AND arr_potential < $50k:
+  → Route to SMB AE (round-robin)
+ELIF lead_score 40-69:
+  → Route to SDR for qualification
+ELSE:
+  → Nurture automation
+```
+
+**SLA:** New MQL must be contacted within 5 minutes (speed to lead matters). If not claimed in 15 minutes, re-route.
+
+### 5. Deal Forecasting
+
+**Weighted pipeline method:**
+```
+Forecast = Σ (Deal value × Stage probability × Rep confidence adjustment)
+```
+
+| Forecast category | Definition |
+|-------------------|-----------|
+| Committed | 90%+ probability, verbal/written commitment |
+| Best case | 50-89% probability, active engagement |
+| Pipeline | 10-49% probability, early stage |
+| Upside | Identified but not yet in pipeline |
+
+**Monthly forecast review:** Compare forecast vs actual for last 3 months to calibrate rep-level accuracy.
+
+### 6. Data Hygiene
+
+**Weekly automated cleanup:**
+- Merge duplicate contacts (match on email → company + name)
+- Flag contacts with no activity > 90 days
+- Validate email addresses quarterly (bounce rate > 5% = problem)
+- Standardize company names (remove Inc, LLC, Ltd variants)
+- Archive closed-lost deals > 12 months old
+
+**Data quality dashboard:**
+- % contacts with complete required fields
+- % deals with next step date in future
+- Duplicate contact rate
+- Bounce rate on email sends
+- % contacts with valid lifecycle stage
+
+### 7. Automation Workflows
+
+**Essential automations:**
+
+| Trigger | Action |
+|---------|--------|
+| Form submission | Create contact, set lifecycle stage, enroll in sequence |
+| Lead score crosses MQL threshold | Notify owner, create task, update lifecycle |
+| Deal stage change | Update contact lifecycle, trigger next email |
+| No activity 14 days on open deal | Alert owner, create follow-up task |
+| Closed Won | Trigger onboarding sequence, notify CS team |
+| Closed Lost | Enroll in re-engagement nurture (90 day delay) |
+
+---
+
+## competitor-intelligence
+
+**Category:** growth | **Version:** 1.0.0
+**Description:** Competitive analysis frameworks, market positioning, feature comparison matrices, and win/loss analysis for strategic planning.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Competitor Intelligence
+
+## Workflow
+
+### 1. Competitor Identification
+
+**Three tiers:**
+
+| Tier | Definition | Track |
+|------|-----------|-------|
+| Direct | Same product, same market | Deep: pricing, features, messaging, every move |
+| Adjacent | Different product, same buyer | Monitor: major launches, positioning changes |
+| Aspirational | Where you want to be in 2-3 years | Quarterly: strategy, positioning, market moves |
+
+**Discovery methods:**
+- Search your top 5 keywords — who ranks?
+- Ask churned customers who they switched to
+- Check G2/Capterra/TrustRadius category pages
+- Monitor "alternatives to [your product]" searches
+- Track who bids on your brand keywords
+
+### 2. Feature Comparison Matrix
+
+| Feature | You | Competitor A | Competitor B | Competitor C |
+|---------|-----|-------------|-------------|-------------|
+| Core feature 1 | Full | Full | Partial | None |
+| Core feature 2 | Full | None | Full | Full |
+| Integration X | Full | Partial | None | Full |
+| API access | All plans | Enterprise only | Pro+ | None |
+| SSO/SAML | Pro+ | Enterprise only | All plans | Enterprise only |
+| Support SLA | 4h (Pro) | 24h | 8h | 12h |
+| Pricing (entry) | $49/mo | $79/mo | $39/mo | $99/mo |
+| Free tier | Yes | No | Yes (limited) | No |
+
+**Rules:**
+- Be honest. Don't mark competitors as "None" when they have partial support.
+- Update quarterly minimum — features change fast.
+- Note which plan includes each feature (not just "has it").
+- Source every claim (link to their docs/pricing page).
+
+### 3. Positioning Map
+
+**2x2 matrix — choose two axes that matter to your buyers:**
+
+Common axis pairs:
+- Ease of use ↔ Feature depth
+- SMB focus ↔ Enterprise focus
+- Price ↔ Capability
+- Self-serve ↔ High-touch
+- Horizontal ↔ Vertical/specialized
+
+**How to place competitors:**
+1. Score each competitor 1-10 on both axes
+2. Use customer reviews, demos, and published materials (not assumptions)
+3. Identify the white space — where are there no competitors?
+4. Position yourself in or near the white space (if it has demand)
+
+### 4. Win/Loss Analysis
+
+**Interview framework (20-min call with recent wins AND losses):**
+
+| Question | Purpose |
+|----------|---------|
+| What triggered the search for a solution? | Understand buying trigger |
+| What alternatives did you evaluate? | Competitive set |
+| What were your top 3 criteria? | Decision factors |
+| Why did you choose [winner] / not choose us? | Win/loss reason |
+| What almost changed your mind? | Close call factors |
+| How was the buying experience? | Process feedback |
+
+**Aggregate analysis (quarterly, minimum 20 interviews):**
+- Win rate by competitor: Who do we beat most? Lose to most?
+- Top 3 win reasons: What keeps winning deals for us?
+- Top 3 loss reasons: What keeps losing them?
+- Feature gaps cited: What do prospects wish we had?
+- Pricing feedback: Are we perceived as expensive, fair, cheap?
+
+### 5. Sales Battlecards
+
+**Template (one per competitor):**
+
+```markdown
+# Battlecard: [Competitor Name]
+
+## Quick Facts
+- Founded: [year] | HQ: [city] | Employees: ~[X] | Funding: $[X]M
+- Pricing: [starting price] - [enterprise price]
+- Target: [who they sell to]
+
+## They Say (their positioning)
+"[Their tagline/main claim]"
+
+## We Say (our counter-positioning)
+"[How we differentiate — one sentence]"
+
+## When We Win
+- [Scenario 1: specific situation where we're stronger]
+- [Scenario 2]
+- [Scenario 3]
+
+## When We Lose
+- [Scenario 1: specific situation where they're stronger]
+- [Scenario 2]
+
+## Landmines (questions to ask prospects to highlight our strengths)
+- "How do they handle [area where competitor is weak]?"
+- "What happens when you need [feature they lack]?"
+- "Have you looked into their [known pain point — pricing, support, etc.]?"
+
+## Objection Handling
+| Their claim | Our response |
+|-------------|-------------|
+| "[Competitor claim 1]" | "[Factual counter with proof]" |
+| "[Competitor claim 2]" | "[Factual counter with proof]" |
+
+## Proof Points
+- [Customer who switched from them to us + result]
+- [Head-to-head benchmark or comparison data]
+- [Review quote from G2/Capterra]
+```
+
+### 6. Monitoring
+
+**Ongoing competitive intelligence:**
+
+| Source | Frequency | What to track |
+|--------|-----------|--------------|
+| Their website/blog | Weekly | Messaging changes, new features, pricing |
+| G2/Capterra reviews | Monthly | Sentiment trends, new complaints |
+| Job postings | Monthly | Strategic direction (hiring = investing) |
+| Social media | Weekly | Positioning, customer conversations |
+| Press/funding | As it happens | Funding rounds, partnerships, acquisitions |
+| Their product | Quarterly | Sign up for free trial, document UX |
+
+**Competitive newsletter (internal, monthly):**
+- Top 3 competitive moves this month
+- Win/loss trend update
+- New feature comparison updates
+- Pricing or positioning changes
+- Recommended battlecard updates
+
+---
+
+## revenue-operations
+
+**Category:** operations | **Version:** 1.0.0
+**Description:** RevOps frameworks, funnel metrics, forecasting models, GTM alignment, and operational efficiency for scaling teams.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Revenue Operations
+
+## Workflow
+
+### 1. Revenue Funnel Definitions
+
+Align ALL teams on the same definitions:
+
+| Stage | Definition | Owner | SLA |
+|-------|-----------|-------|-----|
+| Visitor | Hit website or content | Marketing | — |
+| Lead | Known contact (form fill, signup) | Marketing | Enrich within 24h |
+| MQL | Meets scoring threshold (fit + engagement) | Marketing | Route within 5 min |
+| SAL | Sales accepted, meeting booked | SDR/BDR | Contact within 1 hour |
+| SQL | Qualified by sales (BANT/MEDDIC confirmed) | AE | Discovery within 3 days |
+| Opportunity | In pipeline with defined next steps | AE | Advance or close within 90 days |
+| Closed Won | Contract signed, revenue booked | AE → CS | Handoff within 48h |
+
+**Conversion benchmarks (B2B SaaS):**
+
+| Stage transition | Benchmark |
+|-----------------|-----------|
+| Visitor → Lead | 2-5% |
+| Lead → MQL | 15-30% |
+| MQL → SAL | 60-80% |
+| SAL → SQL | 40-60% |
+| SQL → Opportunity | 50-70% |
+| Opportunity → Closed Won | 20-30% |
+
+### 2. Forecasting Models
+
+**Weighted pipeline (standard):**
+```
+Deal forecast = Deal value × Stage probability
+Total forecast = Σ all deal forecasts
+```
+
+**Historical conversion (more accurate):**
+```
+Expected revenue = Current stage count × Historical stage-to-close rate × Average deal size
+```
+
+**Bottoms-up (most accurate, most work):**
+```
+Rep forecast = Committed + (Best case × 0.5) + (Pipeline × 0.15)
+Team forecast = Σ rep forecasts × Historical accuracy multiplier
+```
+
+**Forecast accuracy tracking:**
+
+| Month | Forecast | Actual | Accuracy |
+|-------|----------|--------|----------|
+| Jan | $250k | $230k | 92% |
+| Feb | $280k | $310k | 90% |
+| Mar | $300k | $275k | 92% |
+
+Target: ±10% accuracy consistently. If not: reps are sandbagging or being optimistic.
+
+### 3. GTM Alignment
+
+**Weekly GTM standup (30 min):**
+- Marketing: pipeline contribution this week, upcoming campaigns
+- Sales: deal updates, blockers, competitive intel
+- CS: churn risks, expansion opportunities, product feedback
+- RevOps: funnel health, forecast update, process issues
+
+**Monthly revenue review (60 min):**
+- Funnel conversion rates vs targets
+- Pipeline coverage (3x target = healthy)
+- Win rate trends by segment, source, rep
+- Churn and expansion ARR
+- Forecast vs actual analysis
+
+### 4. Quota & Territory Planning
+
+**Quota setting formula:**
+```
+Company target = Board-approved ARR target
+Sales capacity = # ramped AEs × quota per AE
+Quota per AE = Company target / # ramped AEs × 1.15 (buffer for attrition)
+```
+
+**Territory design principles:**
+- Equal opportunity (similar pipeline potential per territory)
+- Minimize travel (geographic clustering)
+- Account for existing relationships (don't reassign active deals)
+- Review quarterly (territories drift as markets change)
+
+**Ramp schedule:**
+
+| Month | % of full quota | Expectation |
+|-------|----------------|-------------|
+| 1-2 | 0% | Training, shadowing, certification |
+| 3 | 25% | First qualified meetings |
+| 4 | 50% | First deals in pipeline |
+| 5 | 75% | First closed deals |
+| 6+ | 100% | Fully ramped |
+
+### 5. Handoff Processes
+
+**Marketing → SDR (MQL handoff):**
+```
+Trigger: Lead score ≥ MQL threshold
+Data passed: Lead source, content consumed, pages visited, company info, score breakdown
+SDR action: Research (5 min) → personalized outreach within 1 hour
+Feedback loop: SDR marks SAL accepted/rejected with reason → Marketing adjusts scoring
+```
+
+**SDR → AE (SAL handoff):**
+```
+Trigger: Discovery call completed, BANT confirmed
+Data passed: Pain points, budget range, timeline, decision process, competitors
+AE action: Review notes → demo prep → schedule demo within 3 days
+Handoff format: Warm intro email (SDR introduces AE + summarizes conversation)
+```
+
+**AE → CS (Closed Won handoff):**
+```
+Trigger: Contract signed
+Data passed: Contract terms, use case, success criteria, stakeholders, technical requirements
+CS action: Onboarding kickoff within 48 hours
+Handoff format: Internal doc + joint call (AE + CS + customer)
+```
+
+### 6. Tech Stack Audit
+
+**Core RevOps stack:**
+
+| Layer | Tool | Purpose |
+|-------|------|---------|
+| CRM | HubSpot / Salesforce | Single source of truth |
+| Engagement | Outreach / Salesloft | Sales sequences |
+| Intelligence | Gong / Chorus | Call recording + analysis |
+| Enrichment | Clearbit / Apollo | Contact and company data |
+| Attribution | HubSpot / Dreamdata | Marketing attribution |
+| BI | Looker / Metabase | Cross-functional dashboards |
+| Communication | Slack + CRM integration | Real-time notifications |
+
+**Audit checklist:**
+- [ ] Data flows bidirectionally between all tools
+- [ ] No manual data entry between systems
+- [ ] Single source of truth for each data type
+- [ ] Reporting pulls from one source (not multiple conflicting dashboards)
+- [ ] Total cost < 15% of ARR (healthy range)
+
+### 7. RevOps Metrics Dashboard
+
+| Metric | Cadence | Target |
+|--------|---------|--------|
+| Pipeline coverage ratio | Weekly | 3-4x quarterly target |
+| Win rate | Monthly | 20-30% |
+| Average sales cycle | Monthly | Track trend, reduce 10% YoY |
+| CAC payback | Monthly | < 12 months |
+| Net revenue retention | Monthly | > 110% |
+| Forecast accuracy | Monthly | ±10% |
+| Speed to lead | Real-time | < 5 minutes |
+| Pipeline created per rep | Weekly | Even distribution |
+
+---
+
+## ab-testing
+
+**Category:** conversion | **Version:** 1.0.0
+**Description:** A/B test design, statistical analysis, sample size calculation, experiment prioritization, and results interpretation.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# A/B Testing
+
+## Workflow
+
+### 1. Hypothesis Generation
+
+**Format:** If we [change], then [metric] will [improve/decrease] by [amount], because [rationale].
+
+**Example:** If we shorten the signup form from 5 fields to 3, then signup completion rate will increase by 15%, because friction reduction at high-intent moments increases conversion.
+
+### 2. Prioritization
+
+**ICE framework (quick):**
+
+| Factor | Score 1-10 | Definition |
+|--------|-----------|------------|
+| Impact | How much will it move the metric? |
+| Confidence | How sure are we it'll work? |
+| Ease | How fast/cheap to implement? |
+| **ICE Score** | (I + C + E) / 3 |
+
+**RICE framework (more rigorous):**
+
+| Factor | Definition |
+|--------|-----------|
+| Reach | How many users affected per quarter? |
+| Impact | Expected effect size (0.25, 0.5, 1, 2, 3) |
+| Confidence | % sure (100%, 80%, 50%) |
+| Effort | Person-weeks to implement |
+| **RICE Score** | (R × I × C) / E |
+
+### 3. Sample Size Calculation
+
+**Formula:**
+```
+n = (Z_α/2 × √(2p̄(1-p̄)) + Z_β × √(p₁(1-p₁) + p₂(1-p₂)))² / (p₂ - p₁)²
+
+Where:
+  p₁ = baseline conversion rate
+  p₂ = expected conversion rate (baseline × (1 + MDE))
+  p̄  = (p₁ + p₂) / 2
+  Z_α/2 = 1.96 (for 95% confidence)
+  Z_β   = 0.84 (for 80% power)
+```
+
+**Quick reference table:**
+
+| Baseline rate | MDE (relative) | Sample per variant |
+|--------------|----------------|-------------------|
+| 2% | 10% | 78,000 |
+| 2% | 20% | 20,000 |
+| 5% | 10% | 30,000 |
+| 5% | 20% | 7,700 |
+| 10% | 10% | 14,300 |
+| 10% | 20% | 3,700 |
+| 20% | 10% | 6,300 |
+| 20% | 20% | 1,600 |
+
+**Test duration:**
+```
+Days needed = (Sample per variant × 2) / Daily traffic to test page
+```
+
+Minimum: 7 days (capture day-of-week effects). Maximum: 4 weeks (avoid novelty decay).
+
+### 4. Test Design
+
+**Rules:**
+- One hypothesis per test
+- Randomly assign users, not sessions (avoid flickering)
+- Use the same metric definition for control and variant
+- Define primary metric AND guardrail metrics before launch
+- Don't peek at results before reaching sample size
+
+**Guardrail metrics (always monitor):**
+- Page load time (variant shouldn't be slower)
+- Error rate
+- Revenue per user (don't increase signups but tank revenue)
+- Bounce rate
+
+### 5. Statistical Analysis
+
+**Frequentist approach (standard):**
+
+```python
+import numpy as np
+from scipy import stats
+
+# Results
+control = {'visitors': 5000, 'conversions': 250}  # 5.0%
+variant = {'visitors': 5000, 'conversions': 295}  # 5.9%
+
+p1 = control['conversions'] / control['visitors']
+p2 = variant['conversions'] / variant['visitors']
+p_pool = (control['conversions'] + variant['conversions']) / (control['visitors'] + variant['visitors'])
+
+se = np.sqrt(p_pool * (1 - p_pool) * (1/control['visitors'] + 1/variant['visitors']))
+z = (p2 - p1) / se
+p_value = 2 * (1 - stats.norm.cdf(abs(z)))
+
+lift = (p2 - p1) / p1 * 100
+ci_95 = 1.96 * np.sqrt(p1*(1-p1)/control['visitors'] + p2*(1-p2)/variant['visitors'])
+
+print(f"Control: {p1:.3%}")
+print(f"Variant: {p2:.3%}")
+print(f"Lift: {lift:.1f}%")
+print(f"95% CI: [{(p2-p1-ci_95)/p1*100:.1f}%, {(p2-p1+ci_95)/p1*100:.1f}%]")
+print(f"p-value: {p_value:.4f}")
+print(f"Significant: {'Yes' if p_value < 0.05 else 'No'}")
+```
+
+**Bayesian approach (when you want probability of being better):**
+
+```python
+from scipy.stats import beta
+
+a_alpha = control['conversions'] + 1
+a_beta = control['visitors'] - control['conversions'] + 1
+b_alpha = variant['conversions'] + 1
+b_beta = variant['visitors'] - variant['conversions'] + 1
+
+# Monte Carlo simulation
+samples_a = beta.rvs(a_alpha, a_beta, size=100000)
+samples_b = beta.rvs(b_alpha, b_beta, size=100000)
+
+prob_b_better = (samples_b > samples_a).mean()
+print(f"P(variant > control): {prob_b_better:.1%}")
+```
+
+### 6. Ship / No-Ship Decision
+
+| Scenario | Decision |
+|----------|----------|
+| p < 0.05 AND lift > MDE AND guardrails OK | Ship |
+| p < 0.05 AND lift > 0 but < MDE | Ship if no cost, otherwise iterate |
+| p > 0.05 AND lift direction positive | Inconclusive — extend or iterate |
+| p < 0.05 AND lift negative | Kill variant |
+| Guardrail metric degraded | Kill variant regardless of primary metric |
+
+### 7. Documentation Template
+
+```markdown
+## Test: [Name]
+**Hypothesis:** If we [change], then [metric] will [change] by [amount]
+**Primary metric:** [metric name]
+**Guardrails:** [metric 1, metric 2]
+**Sample size:** [X per variant]
+**Duration:** [start] to [end]
+
+### Results
+| Metric | Control | Variant | Lift | p-value | Sig? |
+|--------|---------|---------|------|---------|------|
+| Primary | X% | Y% | +Z% | 0.XX | Y/N |
+
+### Decision: Ship / Kill / Iterate
+**Reasoning:** [Why]
+**Next test:** [What we learned and what to try next]
+```
+
+## Common Mistakes
+
+- Stopping early because results "look significant" (peeking inflates false positives)
+- Running too many variants (splits traffic, takes forever to reach significance)
+- Testing tiny changes on low-traffic pages (will never reach significance)
+- Not segmenting results (variant might win overall but lose on mobile)
+- Ignoring practical significance (statistically significant 0.1% lift isn't worth shipping)
+
+---
+
+## retention-analytics
+
+**Category:** analytics | **Version:** 1.0.0
+**Description:** Churn analysis, cohort retention, engagement scoring, health scoring, and win-back strategies for SaaS products.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Retention Analytics
+
+## Workflow
+
+### 1. Cohort Retention Analysis
+
+**SQL — weekly retention cohorts:**
+```sql
+WITH cohorts AS (
+  SELECT user_id, DATE_TRUNC('week', created_at) AS cohort
+  FROM users WHERE created_at >= CURRENT_DATE - INTERVAL '90 days'
+),
+activity AS (
+  SELECT DISTINCT user_id, DATE_TRUNC('week', event_time) AS active_week
+  FROM events WHERE event = 'session_start'
+)
+SELECT
+  c.cohort,
+  COUNT(DISTINCT c.user_id) AS cohort_size,
+  ROUND(100.0 * COUNT(DISTINCT CASE WHEN a.active_week = c.cohort + INTERVAL '1 week' THEN c.user_id END) / COUNT(DISTINCT c.user_id), 1) AS w1_pct,
+  ROUND(100.0 * COUNT(DISTINCT CASE WHEN a.active_week = c.cohort + INTERVAL '2 weeks' THEN c.user_id END) / COUNT(DISTINCT c.user_id), 1) AS w2_pct,
+  ROUND(100.0 * COUNT(DISTINCT CASE WHEN a.active_week = c.cohort + INTERVAL '4 weeks' THEN c.user_id END) / COUNT(DISTINCT c.user_id), 1) AS w4_pct,
+  ROUND(100.0 * COUNT(DISTINCT CASE WHEN a.active_week = c.cohort + INTERVAL '8 weeks' THEN c.user_id END) / COUNT(DISTINCT c.user_id), 1) AS w8_pct
+FROM cohorts c
+LEFT JOIN activity a ON c.user_id = a.user_id
+GROUP BY c.cohort ORDER BY c.cohort;
+```
+
+**Retention benchmarks (B2B SaaS):**
+
+| Timeframe | Good | Great | Best-in-class |
+|-----------|------|-------|---------------|
+| Week 1 | 40% | 55% | 70%+ |
+| Month 1 | 30% | 45% | 60%+ |
+| Month 3 | 20% | 35% | 50%+ |
+| Month 12 | 15% | 25% | 40%+ |
+
+**If W1 retention is below 40%:** Activation problem. Fix onboarding.
+**If W1 is fine but M3 drops:** Value delivery problem. Users aren't finding ongoing value.
+
+### 2. Customer Health Score
+
+**Composite score (0-100):**
+
+| Signal | Weight | Scoring |
+|--------|--------|---------|
+| Product usage frequency | 25% | Daily=100, Weekly=60, Monthly=30, None=0 |
+| Feature breadth | 20% | % of key features used in last 30d |
+| Support tickets | 15% | 0=100, 1-2=70, 3+=30 (inverse) |
+| NPS response | 15% | Promoter=100, Passive=50, Detractor=0 |
+| License utilization | 15% | % of seats/capacity used |
+| Billing health | 10% | Current=100, Late=30, Failed=0 |
+
+**Health tiers:**
+
+| Score | Tier | Action |
+|-------|------|--------|
+| 80-100 | Healthy | Expansion opportunity — upsell |
+| 60-79 | Neutral | Monitor — check in monthly |
+| 40-59 | At risk | Proactive outreach — CS call within 7 days |
+| 0-39 | Critical | Immediate intervention — executive sponsor call |
+
+### 3. Churn Prediction Signals
+
+**Early warning signals (14-30 days before churn):**
+
+| Signal | Detection | Risk level |
+|--------|-----------|-----------|
+| Login frequency dropped 50%+ | Compare 7d avg vs 30d avg | High |
+| Key feature usage stopped | Zero events on core features | High |
+| Support ticket with negative sentiment | NLP on ticket text | Medium |
+| Admin user inactive > 14 days | Activity tracking | High |
+| Failed payment not resolved in 7 days | Billing system | Critical |
+| Competitor mentioned in support | Keyword detection | Medium |
+| Contract renewal < 60 days + low health | Health score + contract date | High |
+
+**SQL — at-risk detection:**
+```sql
+SELECT
+  u.user_id,
+  u.company_name,
+  u.plan,
+  u.contract_end,
+  COALESCE(recent.sessions_7d, 0) AS sessions_last_7d,
+  COALESCE(prior.sessions_7d, 0) AS sessions_prior_7d,
+  CASE
+    WHEN COALESCE(recent.sessions_7d, 0) = 0 THEN 'critical'
+    WHEN recent.sessions_7d < prior.sessions_7d * 0.5 THEN 'high_risk'
+    WHEN recent.sessions_7d < prior.sessions_7d * 0.75 THEN 'medium_risk'
+    ELSE 'healthy'
+  END AS risk_level
+FROM users u
+LEFT JOIN (
+  SELECT user_id, COUNT(*) AS sessions_7d
+  FROM events WHERE event = 'session_start' AND event_time >= CURRENT_DATE - 7
+  GROUP BY user_id
+) recent ON u.user_id = recent.user_id
+LEFT JOIN (
+  SELECT user_id, COUNT(*) AS sessions_7d
+  FROM events WHERE event = 'session_start' AND event_time BETWEEN CURRENT_DATE - 14 AND CURRENT_DATE - 7
+  GROUP BY user_id
+) prior ON u.user_id = prior.user_id
+WHERE u.status = 'active'
+ORDER BY risk_level DESC, u.contract_end ASC;
+```
+
+### 4. Win-Back Campaigns
+
+**Timing sequence:**
+
+| Day after churn | Channel | Message |
+|----------------|---------|---------|
+| 1 | Email | "We're sorry to see you go" + feedback survey |
+| 7 | Email | "Here's what you're missing" + new feature highlight |
+| 30 | Email | "Come back" + incentive (discount, extended trial, free month) |
+| 60 | Email | Final offer + case study of returning customer |
+| 90 | Email | "Door's always open" — no offer, just warm close |
+
+**Win-back incentive tiers:**
+
+| Customer value | Incentive |
+|---------------|-----------|
+| High LTV (top 20%) | Personal call from CS + custom offer |
+| Medium LTV | 20-30% discount for 3 months |
+| Low LTV | Free month or extended trial |
+| Free plan churn | Feature highlight email only (no discount) |
+
+**Win-back benchmarks:** Expect 5-15% of churned customers to return within 90 days with active win-back. 2-5% without any effort.
+
+### 5. NPS & Satisfaction
+
+**NPS survey timing:**
+- After onboarding (day 14-30)
+- Quarterly for active customers
+- After major interaction (support resolution, feature launch)
+- Never during billing issues or outages
+
+**NPS action framework:**
+
+| Score | Segment | Action |
+|-------|---------|--------|
+| 9-10 | Promoter | Request review/referral, case study candidate |
+| 7-8 | Passive | Ask what would make it a 10, feature request capture |
+| 0-6 | Detractor | CS outreach within 24h, root cause analysis |
+
+### 6. Retention Metrics Dashboard
+
+| Metric | Cadence | Target |
+|--------|---------|--------|
+| Logo retention (monthly) | Monthly | > 95% |
+| Net revenue retention | Monthly | > 110% |
+| Gross revenue retention | Monthly | > 90% |
+| Time to first value | Per cohort | < 24 hours |
+| DAU/MAU ratio | Weekly | > 40% = sticky product |
+| Support ticket CSAT | Weekly | > 90% |
+| Health score distribution | Weekly | < 20% in at-risk/critical |
+
+---
+
+## affiliate-marketing
+
+**Category:** growth | **Version:** 1.0.0
+**Description:** Affiliate program design, commission structures, partner recruitment, tracking implementation, and performance optimization.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Affiliate Marketing
+
+## Workflow
+
+### 1. Program Structure
+
+**In-house vs network:**
+
+| Factor | In-house | Network (ShareASale, Impact, etc.) |
+|--------|----------|-----------------------------------|
+| Setup cost | Higher (build tracking) | Lower (platform fee) |
+| Commission fee | None (just payouts) | 20-30% on top of commission |
+| Control | Full | Limited by platform rules |
+| Recruitment | You do it all | Access to affiliate marketplace |
+| Tracking | Custom or SaaS (Rewardful, FirstPromoter) | Built-in |
+| Best for | SaaS, high-value products | E-commerce, consumer products |
+
+**Recommendation:** Start in-house with a SaaS tracker (Rewardful, PartnerStack, FirstPromoter). Move to network only if you need volume affiliate recruitment.
+
+### 2. Commission Models
+
+| Model | Structure | Best for | Example |
+|-------|-----------|----------|---------|
+| CPA (Cost Per Acquisition) | Flat fee per signup/sale | SaaS free trials, lead gen | $50 per paid signup |
+| CPS (Cost Per Sale) | % of sale value | E-commerce, variable pricing | 20% of first purchase |
+| Recurring | % of subscription revenue | SaaS with monthly billing | 20% recurring for 12 months |
+| Tiered | Increasing % at volume thresholds | Motivating top performers | 20% (1-10), 25% (11-50), 30% (50+) |
+| Hybrid | Base CPA + recurring bonus | Balanced motivation | $25 CPA + 10% recurring |
+
+**Setting commission rates:**
+- Calculate your CAC from other channels
+- Set affiliate commission at 30-50% of your average CAC (profitable from day 1)
+- For SaaS: recurring commission should cap at 12 months (prevents perpetual liability)
+- Review rates quarterly based on affiliate-sourced LTV vs other channels
+
+### 3. Tracking Implementation
+
+**Server-side tracking (recommended — survives ad blockers):**
+```javascript
+// On referral click — store affiliate ID
+app.get('/ref/:affiliateId', (req, res) => {
+  res.cookie('affiliate_id', req.params.affiliateId, {
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30-day cookie
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax'
+  });
+  res.redirect('/');
+});
+
+// On conversion — attribute to affiliate
+app.post('/api/signup', async (req, res) => {
+  const affiliateId = req.cookies.affiliate_id;
+  if (affiliateId) {
+    await recordConversion({
+      affiliateId,
+      customerId: newUser.id,
+      value: plan.price,
+      type: 'signup'
+    });
+  }
+});
+```
+
+**Cookie window standards:**
+
+| Product type | Cookie window | Rationale |
+|-------------|--------------|-----------|
+| SaaS | 30-90 days | Longer consideration cycle |
+| E-commerce | 7-30 days | Shorter purchase cycle |
+| High-ticket | 90-180 days | Enterprise sales cycle |
+
+**Attribution rules:**
+- Last click wins (standard, simplest)
+- First click wins (rewards discovery, used by Amazon)
+- Linear (split credit) — complex, avoid unless needed
+- Direct traffic always overrides affiliate (prevent self-referral fraud)
+
+### 4. Partner Recruitment
+
+**Ideal affiliate profiles:**
+
+| Type | Characteristics | Approach |
+|------|----------------|----------|
+| Content creators | Blog/YouTube in your niche | Outreach with free product + custom commission |
+| Review sites | G2, Capterra, niche review blogs | Ensure listing, offer affiliate tracking |
+| Influencers | Social following in target audience | Custom landing page + higher commission |
+| Existing customers | Happy users with audience | In-app referral prompt + affiliate upgrade option |
+| Agencies | Serve your target market | Reseller/referral hybrid program |
+
+**Recruitment outreach template:**
+```
+Subject: Partner with [Product] — [X]% commission
+
+Hi [Name],
+
+I've been following your content on [specific topic] — [genuine compliment].
+
+We're building [Product], which helps [audience] with [value prop].
+I think it'd be a natural fit for your audience.
+
+Our affiliate program:
+- [X]% recurring commission (or flat $X per signup)
+- [X]-day cookie window
+- Dedicated affiliate dashboard
+- Custom landing pages and creatives
+
+Interested in trying it out? Happy to set you up with a free account
+and walk through the program.
+
+[Name]
+```
+
+### 5. Compliance
+
+**FTC disclosure requirements:**
+- Affiliates MUST disclose the relationship ("I earn a commission if you buy through my link")
+- Disclosure must be clear, conspicuous, and BEFORE the link
+- "Ad" or "Sponsored" labels on social media
+- Include disclosure guidelines in your affiliate agreement
+
+**Fraud prevention:**
+- Monitor for self-referrals (same IP for click and conversion)
+- Flag unusually high conversion rates (> 20% = suspicious)
+- Require minimum cookie age (> 1 second between click and conversion)
+- Ban coupon/deal sites from bidding on your brand keywords
+- Review top affiliates manually quarterly
+
+### 6. Performance Optimization
+
+**Monthly affiliate dashboard:**
+
+| Metric | Calculate | Benchmark |
+|--------|-----------|-----------|
+| Active affiliates | Affiliates with ≥1 conversion/month | 10-20% of total |
+| Revenue per affiliate | Total affiliate revenue / Active affiliates | Track trend |
+| Conversion rate | Conversions / Clicks | 2-5% (depends on niche) |
+| EPC (Earnings Per Click) | Total commissions / Total clicks | $0.50-2.00 |
+| Average commission | Total paid / Total conversions | Track vs CAC |
+| Affiliate-sourced % | Affiliate revenue / Total revenue | 10-30% target |
+
+**Top performer strategy:**
+- Identify top 10% of affiliates by revenue
+- Offer exclusive commission rates (+5-10%)
+- Provide early access to new features for content
+- Quarterly check-in call with affiliate manager
+- Custom creatives and co-branded landing pages
+
+---
+
+## pricing-optimization
+
+**Category:** conversion | **Version:** 1.0.0
+**Description:** Price testing, value metric selection, packaging strategy, discount frameworks, and willingness-to-pay research.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Pricing Optimization
+
+## Workflow
+
+### 1. Value Metric Selection
+
+The value metric is what you charge for. Get this wrong and everything else fails.
+
+**Good value metric criteria:**
+- Scales with value delivered to customer
+- Easy for customer to understand
+- Predictable for customer to budget
+- Grows as customer succeeds
+
+| Metric type | Examples | Best for |
+|-------------|----------|----------|
+| Per seat | $X/user/month | Collaboration tools |
+| Per usage | $X/API call, $X/GB | Infrastructure, API products |
+| Per feature | Tier-based access | Horizontal SaaS |
+| Per outcome | $X/lead, $X/transaction | Performance tools |
+| Flat rate | $X/month | Simple products |
+
+**Decision framework:**
+- If value scales linearly with users → per seat
+- If value scales with consumption → usage-based
+- If features differentiate segments clearly → tier-based
+- If you can measure outcomes → outcome-based
+- When in doubt → start with per seat (simplest)
+
+### 2. Van Westendorp Price Sensitivity
+
+**Survey questions (ask all 4):**
+1. At what price would this be **so cheap** you'd question the quality?
+2. At what price is this a **bargain** — great buy for the money?
+3. At what price is this **getting expensive** — you'd think twice?
+4. At what price is this **too expensive** — you'd never consider it?
+
+**Analysis:**
+Plot cumulative distributions of all 4 questions. Intersections give:
+
+| Intersection | Meaning |
+|-------------|---------|
+| "Too cheap" ∩ "Getting expensive" | Point of marginal cheapness |
+| "Bargain" ∩ "Too expensive" | Point of marginal expensiveness |
+| "Too cheap" ∩ "Too expensive" | Optimal price point |
+| "Bargain" ∩ "Getting expensive" | Indifference price point |
+
+**Acceptable price range:** Between marginal cheapness and marginal expensiveness.
+
+**Minimum sample:** 200 responses per segment for reliable results.
+
+### 3. Tier Design
+
+**3-tier standard (recommended starting point):**
+
+| Element | Starter | Professional | Enterprise |
+|---------|---------|-------------|------------|
+| Price anchor | Low (attract) | Medium (convert) | High (capture) |
+| Target | Individual / small team | Growing team | Large organization |
+| Value metric limit | Low | Medium | Unlimited or custom |
+| Support | Self-serve | Email + chat | Dedicated CSM |
+| Features | Core only | Core + advanced | All + custom |
+
+**Pricing rules:**
+- Professional should be 2-3x Starter price
+- Enterprise should be 3-5x Professional (or custom)
+- Professional tier should be the obvious "best value" (anchor effect)
+- Include one "decoy" feature in Professional that makes it clearly better than Starter
+- Enterprise always includes "talk to sales" — never self-serve
+
+### 4. Discount Strategy
+
+**Guardrails:**
+
+| Discount type | Max | Approval |
+|---------------|-----|----------|
+| Annual prepay | 20% | Self-serve |
+| Multi-year deal | 30% | Manager approval |
+| Competitive switch | 15% | Manager approval |
+| Volume (10+ seats) | 15% | Auto-calculated |
+| Strategic / Logo | 40% | VP approval + documented justification |
+
+**Rules:**
+- Never discount more than 40% (devalues product permanently)
+- Always trade something: discount for annual commitment, case study, referral
+- Track discount rate by rep (flag reps averaging > 20%)
+- Sunset discounts: "This rate is locked for 12 months, then standard pricing"
+- Document every discount reason in CRM
+
+### 5. Price Localization
+
+**Purchasing Power Parity (PPP) adjustments:**
+
+| Tier | Countries | Adjustment |
+|------|-----------|------------|
+| Full price | US, UK, Canada, Australia, Germany, France | 100% |
+| Tier 2 | Spain, Italy, Portugal, Czech Republic, Poland | 70-80% |
+| Tier 3 | Brazil, Mexico, Turkey, South Africa | 50-60% |
+| Tier 4 | India, Indonesia, Philippines, Nigeria | 30-40% |
+
+**Implementation:**
+- Use IP geolocation for initial pricing display
+- Allow currency switching (not just symbol — actual price adjustment)
+- Don't show the discount — just show the local price
+- Gate enterprise features at full price regardless of region
+
+### 6. Annual vs Monthly
+
+**Best practices:**
+- Default to annual on pricing page (show monthly price as comparison)
+- Annual discount: 15-20% (2 months free is standard messaging)
+- Show monthly price per-month even for annual ("$49/mo billed annually")
+- Offer monthly-to-annual upgrade path with prorated credit
+- Track annual vs monthly mix (target: 60%+ annual for predictable revenue)
+
+### 7. Price Increase Playbook
+
+**Communication timeline:**
+
+| When | Action |
+|------|--------|
+| 90 days before | Internal alignment: sales, CS, support briefed |
+| 60 days before | Email announcement to all customers (clear, empathetic) |
+| 30 days before | Reminder email + lock-in offer (annual at current price) |
+| Day of | Price change live + support team ready for questions |
+| 30 days after | Review churn impact, adjust if needed |
+
+**Email template:**
+```
+Subject: Changes to your [Product] plan
+
+Hi [Name],
+
+On [date], we're updating our pricing. Your plan will change
+from $X/mo to $Y/mo.
+
+Why: [Honest reason — new features, increased costs, market alignment].
+
+What you can do:
+- Lock in current pricing by switching to annual before [date]
+- Upgrade to [plan] to get [specific new value] at the new rate
+- Questions? Reply to this email — we're here to help.
+
+[Name], [Title]
+```
+
+**Expected impact:** Well-communicated 10-20% increase typically sees < 2% incremental churn. Poorly communicated or >30% increase can see 5-10%+ churn.
+
+---
+
+## customer-acquisition
+
+**Category:** growth | **Version:** 1.0.0
+**Description:** CAC optimization, channel mix modeling, attribution analysis, and acquisition strategy for paid and organic channels.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Customer Acquisition
+
+## Workflow
+
+### 1. CAC Calculation
+
+**Blended CAC (company-level):**
+```
+Blended CAC = (Total Sales + Marketing spend) / New customers acquired
+```
+
+**Per-channel CAC (more actionable):**
+```
+Channel CAC = Channel spend (ads + tools + headcount allocation) / Customers from that channel
+```
+
+**Fully-loaded CAC (most accurate):**
+```
+Fully-loaded CAC = (Ad spend + Sales salaries + Marketing salaries + Tools + Agency fees + Content production) / New customers
+```
+
+**What to include:**
+
+| Include | Don't include |
+|---------|---------------|
+| Ad spend (all platforms) | Product development costs |
+| Sales team compensation (base + commission) | Customer success costs |
+| Marketing team compensation | Infrastructure/hosting |
+| Marketing tools (HubSpot, analytics, etc.) | General overhead (rent, legal) |
+| Content production costs | |
+| Agency/contractor fees | |
+| Event/sponsorship costs | |
+
+### 2. Channel Evaluation
+
+**Scoring matrix — rate each channel:**
+
+| Channel | CAC | Scalability | Time to result | LTV of acquired customers | Total score |
+|---------|-----|-------------|---------------|--------------------------|-------------|
+| Organic search | $50 | High | 6-12 months | High | |
+| Paid search (Google) | $150 | High | Immediate | Medium | |
+| Paid social (Meta) | $120 | High | 1-2 weeks | Medium | |
+| LinkedIn ads | $250 | Medium | 1-2 weeks | High (B2B) | |
+| Content marketing | $80 | High | 3-6 months | High | |
+| Referral program | $30 | Medium | 1-3 months | Very high | |
+| Cold outreach | $100 | Medium | 2-4 weeks | High (if targeted) | |
+| Partnerships | $60 | Low-Medium | 3-6 months | High | |
+| Events/conferences | $300 | Low | 1-3 months | High | |
+| Product-led (viral) | $10 | Very high | Varies | Varies | |
+
+### 3. Attribution Models
+
+| Model | How it works | Best for | Bias |
+|-------|-------------|----------|------|
+| First touch | 100% credit to first interaction | Understanding discovery | Over-credits awareness channels |
+| Last touch | 100% credit to last interaction | Understanding conversion | Over-credits bottom-funnel |
+| Linear | Equal credit to all touchpoints | Simple multi-touch | Treats all touches equally (unrealistic) |
+| Time decay | More credit to recent touchpoints | Long sales cycles | Under-credits awareness |
+| Position-based (U-shape) | 40% first, 40% last, 20% middle | Balanced view | Arbitrary weights |
+| Data-driven | ML-based, dynamic weights | Large datasets (1000+ conversions) | Black box |
+
+**Recommendation:** Run first-touch AND last-touch in parallel. Compare results. If they agree on a channel, you have high confidence. If they disagree, dig deeper into that channel.
+
+### 4. LTV:CAC Analysis
+
+**Benchmarks by stage:**
+
+| Metric | Seed/Early | Series A | Series B+ |
+|--------|-----------|----------|-----------|
+| LTV:CAC ratio | > 2:1 | > 3:1 | > 4:1 |
+| CAC payback | < 18 months | < 12 months | < 8 months |
+| CAC as % of first-year ACV | < 100% | < 80% | < 60% |
+
+**By segment:**
+
+| Segment | Typical CAC | Typical LTV | Target LTV:CAC |
+|---------|-------------|-------------|----------------|
+| Self-serve SMB | $50-200 | $500-2,000 | > 5:1 |
+| Inside sales mid-market | $500-2,000 | $5,000-30,000 | > 3:1 |
+| Enterprise field sales | $5,000-50,000 | $50,000-500,000 | > 3:1 |
+
+**Payback period:**
+```
+Payback (months) = CAC / (Monthly ARPU × Gross margin %)
+```
+
+### 5. Channel Saturation Signals
+
+**When to diversify (channel is saturating):**
+- CAC increased >20% in 3 months with no strategy change
+- Impression share hitting ceiling (Google Ads > 90%)
+- Frequency > 3x on paid social (audience fatigue)
+- Organic traffic plateau despite continued investment
+- Diminishing returns on spend increase (2x budget ≠ 2x results)
+
+**Response:**
+1. Optimize existing channel before abandoning
+2. Test new channel with 10-15% of budget
+3. Run for 60-90 days before evaluating
+4. Compare new channel CAC and LTV to established channels
+5. Scale if CAC is within 1.5x of best-performing channel
+
+### 6. Budget Allocation Framework
+
+**Portfolio approach:**
+
+| Category | % of budget | Purpose |
+|----------|------------|---------|
+| Proven channels | 60-70% | Channels with known, acceptable CAC |
+| Scaling channels | 20-25% | Channels showing promise, increasing spend |
+| Experimental | 10-15% | New channels, testing hypotheses |
+
+**Rebalance quarterly:**
+- Move budget from declining-ROI channels to improving ones
+- Kill experiments that haven't shown promise in 90 days
+- Double down on channels where LTV:CAC is improving
+
+### 7. Acquisition Dashboard
+
+| Metric | Cadence | View |
+|--------|---------|------|
+| Blended CAC | Monthly | Trend line, 6-month rolling |
+| Channel CAC | Monthly | Per-channel bar chart |
+| LTV:CAC by channel | Quarterly | Stacked comparison |
+| Payback period | Monthly | Trend vs target |
+| New customer count by source | Weekly | Stacked area chart |
+| CAC efficiency (CAC / ARPU) | Monthly | Track improvement |
+| Pipeline contribution by channel | Weekly | Marketing → Sales attribution |
+
+---
+
+## ascii-banner
+
+**Category:** design | **Version:** 1.0.0
+**Description:** Build animated ASCII banners for CLI tools and web interfaces. Frame-based animation, ANSI color systems, terminal compatibility, accessibility, and web-based ASCII shaders.
+**Platforms:** openclaw, claude-code, cursor, codex
+
+# Animated ASCII Banners
+
+## Overview
+
+Animated ASCII banners create personality in CLI tools and terminal-aesthetic web UIs. This skill covers both terminal-native (Node.js/Python CLI) and web-based (canvas/WebGL) implementations.
+
+**Key challenges:** Terminal inconsistency, ANSI color fragmentation, screen reader accessibility, flicker prevention, and cross-platform rendering.
+
+## Part 1: Terminal ASCII Animation (CLI)
+
+### 1. Frame-Based Animation Architecture
+
+```
+project/
+  frames/           # Each .txt file is one animation frame
+    frame-001.txt
+    frame-002.txt
+    ...
+  colors/           # Color map per frame (optional)
+    frame-001.json
+  src/
+    renderer.ts     # Animation engine
+    palette.ts      # ANSI color role mapping
+    detect.ts       # Terminal capability detection
+```
+
+### 2. Basic Animation Loop (Node.js)
+
+```javascript
+import fs from "fs";
+import readline from "readline";
+
+const frames = fs
+  .readdirSync("./frames")
+  .filter(f => f.endsWith(".txt"))
+  .sort()
+  .map(f => fs.readFileSync(`./frames/${f}`, "utf8"));
+
+let current = 0;
+let running = true;
+
+function render() {
+  if (!running) return;
+  readline.cursorTo(process.stdout, 0, 0);
+  readline.clearScreenDown(process.stdout);
+  process.stdout.write(frames[current]);
+  current = (current + 1) % frames.length;
+}
+
+// 75ms = ~13fps — safe for most terminals
+const interval = setInterval(render, 75);
+
+// Graceful cleanup
+process.on("SIGINT", () => {
+  running = false;
+  clearInterval(interval);
+  readline.cursorTo(process.stdout, 0, 0);
+  readline.clearScreenDown(process.stdout);
+  process.exit(0);
+});
+
+// Auto-stop after one loop
+setTimeout(() => {
+  clearInterval(interval);
+  running = false;
+}, frames.length * 75);
+```
+
+### 3. ANSI Color System
+
+**Use semantic color roles, not hardcoded values.** Terminals remap colors based on user themes.
+
+```javascript
+// Color role mapping — degrade gracefully across terminals
+const ANSI_ROLES = {
+  primary:   "\x1b[32m",   // Green (accent)
+  secondary: "\x1b[36m",   // Cyan
+  highlight: "\x1b[97m",   // Bright white
+  shadow:    "\x1b[90m",   // Dark gray
+  dim:       "\x1b[2m",    // Dim modifier
+  reset:     "\x1b[0m",
+};
+
+function colorize(char, role) {
+  if (!role || role === "none") return char;
+  return `${ANSI_ROLES[role] || ""}${char}${ANSI_ROLES.reset}`;
+}
+```
+
+**ANSI color modes:**
+
+| Mode | Colors | Support | Use |
+|------|--------|---------|-----|
+| 4-bit | 16 colors | Universal | Safe default — use this |
+| 8-bit | 256 colors | Most modern terminals | Extended palette |
+| 24-bit (truecolor) | 16M colors | iTerm2, Kitty, modern terminals | Brand-exact colors |
+
+**Terminal detection:**
+```javascript
+function getColorSupport() {
+  const env = process.env;
+  if (env.NO_COLOR) return "none";
+  if (env.COLORTERM === "truecolor" || env.COLORTERM === "24bit") return "24bit";
+  if (env.TERM_PROGRAM === "iTerm.app") return "24bit";
+  if (env.TERM?.includes("256color")) return "8bit";
+  if (process.stdout.isTTY) return "4bit";
+  return "none";
+}
+```
+
+### 4. Flicker Prevention
+
+**Problem:** `clearScreen` + full repaint causes visible flicker.
+
+**Solution:** Differential rendering — only repaint changed characters:
+
+```javascript
+let previousFrame = "";
+
+function renderDiff(frame) {
+  const lines = frame.split("\n");
+  const prevLines = previousFrame.split("\n");
+
+  for (let y = 0; y < lines.length; y++) {
+    if (lines[y] !== prevLines[y]) {
+      readline.cursorTo(process.stdout, 0, y);
+      process.stdout.write(lines[y] + "\x1b[K"); // Clear to end of line
+    }
+  }
+  previousFrame = frame;
+}
+```
+
+**Additional techniques:**
+- Use alternate screen buffer (`\x1b[?1049h` to enter, `\x1b[?1049l` to exit)
+- Hide cursor during animation (`\x1b[?25l`, restore with `\x1b[?25h`)
+- Batch writes using a string buffer, write once per frame
+
+### 5. Accessibility
+
+**Mandatory requirements:**
+
+| Requirement | Implementation |
+|-------------|---------------|
+| Opt-in animation | Behind a flag (`--banner`, `--animate`) — never auto-play |
+| Screen reader safe | Use `aria-live` equivalent: announce start/end, skip frames |
+| Reduced motion | Respect `REDUCE_MOTION` env var or OS setting |
+| Graceful degradation | Static ASCII art fallback when animation is disabled |
+| Color-independent | Art must be recognizable without color (shape > color) |
+
+```javascript
+function shouldAnimate() {
+  if (process.env.NO_ANIMATION) return false;
+  if (process.env.REDUCE_MOTION) return false;
+  if (!process.stdout.isTTY) return false;
+  if (process.env.TERM === "dumb") return false;
+  return true;
+}
+```
+
+### 6. ASCII Art Design
+
+**Character density (for shading):**
+```
+Light → Dense:  . : - = + * # % @
+```
+
+**Common block characters:**
+```
+Borders:    ┌ ─ ┐ │ └ ┘ ╔ ═ ╗ ║ ╚ ╝
+Blocks:     ░ ▒ ▓ █ ▄ ▀ ▐ ▌
+Geometry:   ╱ ╲ △ ▽ ◇ ○ ●
+Arrows:     → ← ↑ ↓ ⟶ ⟵
+```
+
+**figlet for text banners:**
+```bash
+# Install
+npm install figlet
+# or
+pip install pyfiglet
+
+# Generate
+figlet -f slant "SKILLS"
+pyfiglet -f slant "SKILLS"
+```
+
+**Popular figlet fonts:** `slant`, `banner3`, `big`, `doom`, `standard`, `small`
+
+## Part 2: Web ASCII Animation (Canvas/WebGL)
+
+### 7. Canvas-Based ASCII Renderer
+
+Convert any visual (3D scene, video, image) to ASCII in the browser:
+
+```javascript
+const CHARS = " .:-=+*#%@";
+
+function renderAscii(ctx, canvas, source, cellW, cellH) {
+  // Draw source to small offscreen canvas
+  const cols = Math.floor(canvas.width / cellW);
+  const rows = Math.floor(canvas.height / cellH);
+  const offscreen = new OffscreenCanvas(cols, rows);
+  const offCtx = offscreen.getContext("2d");
+  offCtx.drawImage(source, 0, 0, cols, rows);
+  const pixels = offCtx.getImageData(0, 0, cols, rows).data;
+
+  ctx.fillStyle = "#0a0a0a";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.font = `${cellH - 2}px monospace`;
+
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      const i = (y * cols + x) * 4;
+      const brightness = (pixels[i] * 0.299 + pixels[i+1] * 0.587 + pixels[i+2] * 0.114) / 255;
+      if (brightness < 0.02) continue;
+
+      const char = CHARS[Math.floor(brightness * (CHARS.length - 1))];
+      const green = Math.floor(40 + brightness * 215);
+      ctx.fillStyle = `rgba(0,${green},${Math.floor(green*0.55)},${0.3 + brightness * 0.7})`;
+      ctx.fillText(char, x * cellW, y * cellH + cellH - 2);
+    }
+  }
+}
+```
+
+### 8. Three.js + ASCII Post-Processing
+
+For animated 3D scenes rendered as ASCII:
+
+```javascript
+import * as THREE from "three";
+
+// 1. Create scene with geometry
+const scene = new THREE.Scene();
+const geometry = new THREE.TorusKnotGeometry(1, 0.35, 128, 32);
+const material = new THREE.MeshStandardMaterial({ color: 0x00ff88 });
+const mesh = new THREE.Mesh(geometry, material);
+scene.add(mesh);
+
+// 2. Render to offscreen WebGL
+const renderer = new THREE.WebGLRenderer();
+renderer.setSize(width, height);
+
+// 3. Read pixels → ASCII conversion (same as canvas method)
+// 4. Output to visible canvas as ASCII characters
+
+// Animation loop
+function animate() {
+  mesh.rotation.x += 0.01;
+  mesh.rotation.y += 0.007;
+  renderer.render(scene, camera);
+  renderAscii(asciiCtx, asciiCanvas, renderer.domElement, 8, 14);
+  requestAnimationFrame(animate);
+}
+```
+
+### 9. Performance Optimization
+
+| Technique | Impact | Implementation |
+|-----------|--------|---------------|
+| Skip black pixels | 30-50% fewer draw calls | `if (brightness < threshold) continue` |
+| Throttle FPS | Reduce CPU usage | `requestAnimationFrame` with timestamp check |
+| Reduce resolution | Fewer cells to render | Smaller offscreen canvas |
+| Cache character metrics | Avoid repeated `measureText` | Pre-compute once |
+| Use `willReadFrequently` | Faster `getImageData` | Pass to canvas context options |
+| Gradient fade | Visual polish | CSS gradient overlay at edges |
+
+### 10. Static ASCII Art Generation
+
+**From image to ASCII (Python):**
+```python
+from PIL import Image
+
+CHARS = " .:-=+*#%@"
+
+def image_to_ascii(path, width=80):
+    img = Image.open(path).convert("L")
+    aspect = img.height / img.width
+    height = int(width * aspect * 0.5)  # Terminal chars are ~2:1
+    img = img.resize((width, height))
+
+    ascii_art = ""
+    for y in range(height):
+        for x in range(width):
+            brightness = img.getpixel((x, y)) / 255
+            ascii_art += CHARS[int(brightness * (len(CHARS) - 1))]
+        ascii_art += "\n"
+    return ascii_art
+```
+
+**From text to ASCII banner:**
+```bash
+# Quick branded banner
+figlet -f slant "skills.ws" | sed 's/^/  /'
+
+# With color (bash)
+echo -e "\033[32m$(figlet -f slant 'skills.ws')\033[0m"
+```
+
+## Checklist
+
+- [ ] Terminal capability detection before rendering
+- [ ] Fallback to static art when animation disabled
+- [ ] Respect NO_COLOR and REDUCE_MOTION env vars
+- [ ] Hide cursor during animation, restore after
+- [ ] Use alternate screen buffer for full-screen animations
+- [ ] Differential rendering to prevent flicker
+- [ ] Test on: iTerm2, Terminal.app, Windows Terminal, Alacritty, VS Code terminal
+- [ ] Cleanup on SIGINT (restore cursor, clear buffer)
+- [ ] Keep animation under 3 seconds (respect user's time)
+- [ ] Web: add gradient fade, throttle to 30fps max
+
+---
