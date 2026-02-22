@@ -43,6 +43,32 @@ export default function Home() {
 
       <SkillsGrid skills={skills} categories={categories} />
 
+      <div className="bg-bg-card border border-border rounded-xl px-6 py-6 mt-12">
+        <h2 className="text-sm font-semibold text-text-main font-sans mb-3">Security</h2>
+        <p className="text-[13px] text-text-dim font-sans leading-relaxed mb-3">
+          Every skill is built in-house — no third-party code, no external dependencies at runtime.
+          All scripts read credentials from environment variables only. No eval(), no exec(), no child_process.
+        </p>
+        <div className="flex flex-wrap gap-4 text-[12px] text-text-muted">
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+            VirusTotal scanned
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+            No external dependencies
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+            Env-only credentials
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+            No code execution patterns
+          </span>
+        </div>
+      </div>
+
       <div className="flex justify-center gap-10 py-8 mt-12 border-t border-border max-sm:gap-6">
         <div className="text-center">
           <div className="text-[28px] font-bold text-accent font-sans max-sm:text-[22px]">
