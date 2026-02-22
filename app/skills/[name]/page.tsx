@@ -119,7 +119,7 @@ export default function SkillPage({ params }: { params: { name: string } }) {
               priceCurrency: "USD",
             },
             url: `https://skills-ws.vercel.app/skills/${skill.name}`,
-          }),
+          }).replace(/</g, "\\u003c"),
         }}
       />
     </div>

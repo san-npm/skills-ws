@@ -35,8 +35,7 @@ export default function SkillContent({ content }: { content: string }) {
             </li>
           ),
           code: ({ className, children }) => {
-            const isBlock = className?.includes("language-");
-            if (isBlock) {
+            if (className?.includes("language-")) {
               return (
                 <code className="block bg-[#060606] border border-border rounded-lg p-4 text-[12px] font-mono text-text-main overflow-x-auto whitespace-pre leading-5">
                   {children}
@@ -49,7 +48,11 @@ export default function SkillContent({ content }: { content: string }) {
               </code>
             );
           },
-          pre: ({ children }) => <pre className="mb-4 overflow-x-auto">{children}</pre>,
+          pre: ({ children }) => (
+            <pre className="mb-4 overflow-x-auto [&>code]:block [&>code]:bg-[#060606] [&>code]:border [&>code]:border-border [&>code]:rounded-lg [&>code]:p-4 [&>code]:text-[12px] [&>code]:font-mono [&>code]:text-text-main [&>code]:whitespace-pre [&>code]:leading-5 [&>code]:break-normal">
+              {children}
+            </pre>
+          ),
           a: ({ href, children }) => (
             <a href={href} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
               {children}
