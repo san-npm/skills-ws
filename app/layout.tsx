@@ -2,18 +2,18 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "skills.ws — Agent Skills by Dr Clawdberg",
+  title: "skills.ws — Agent Skills for AI Coding Assistants",
   description:
-    "Curated agent skills for AI coding assistants. Marketing, web3, design, and conversion optimization skills for OpenClaw, Claude Code, Cursor, and Codex.",
+    "Agent skills for AI coding assistants. Marketing, growth, web3, design, and conversion optimization. Built for OpenClaw, Claude Code, Cursor, and Codex.",
   openGraph: {
-    title: "skills.ws — Agent Skills by Dr Clawdberg",
-    description: "Curated agent skills for AI coding assistants. Install with a single command.",
-    url: "https://skills.ws",
+    title: "skills.ws — Agent Skills for AI Coding Assistants",
+    description: "Agent skills built for marketing, growth, and conversion. Install with a single command.",
+    url: "https://skills-ws.vercel.app",
     type: "website",
   },
   twitter: { card: "summary_large_image" },
   icons: {
-    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌟</text></svg>",
+    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>/</text></svg>",
   },
 };
 
@@ -29,8 +29,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               "@context": "https://schema.org",
               "@type": "WebSite",
               name: "skills.ws",
-              description: "Curated agent skills by Dr Clawdberg for AI coding assistants",
-              url: "https://skills.ws",
+              description: "Agent skills for AI coding assistants. Marketing, growth, conversion, and web3.",
+              url: "https://skills-ws.vercel.app",
             }),
           }}
         />

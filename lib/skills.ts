@@ -4,10 +4,11 @@ export interface Skill {
   name: string;
   version: string;
   description: string;
-  icon: string;
   color: string;
   category: string;
   platforms: string[];
+  features?: string[];
+  useCases?: string[];
 }
 
 export interface SkillsConfig {

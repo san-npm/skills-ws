@@ -15,9 +15,9 @@ export function generateMetadata({ params }: { params: { name: string } }): Meta
     title: `${skill.name} — skills.ws`,
     description: skill.description,
     openGraph: {
-      title: `${skill.name} — Agent Skill by Dr Clawdberg`,
+      title: `${skill.name} — Agent Skill`,
       description: skill.description,
-      url: `https://skills.ws/skills/${skill.name}`,
+      url: `https://skills-ws.vercel.app/skills/${skill.name}`,
     },
   };
 }
@@ -37,26 +37,21 @@ export default function SkillPage({ params }: { params: { name: string } }) {
         href="/"
         className="text-text-muted text-sm hover:text-accent transition-colors mb-8 inline-block"
       >
-        ← back to all skills
+        back to all skills
       </Link>
 
       <div className="bg-bg-card border border-border rounded-xl p-8 mt-4">
-        <div className="flex items-start gap-5 mb-6">
-          <div className="text-[40px] w-16 h-16 flex items-center justify-center bg-bg rounded-xl border border-border shrink-0">
-            {skill.icon}
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold font-sans text-text-main mb-2">
-              {skill.name}
-            </h1>
-            <div className="flex items-center gap-3">
-              <span
-                className={`text-[11px] uppercase tracking-wide font-medium px-2.5 py-1 rounded ${colors.text} ${colors.bg}`}
-              >
-                {skill.category}
-              </span>
-              <span className="text-[11px] text-text-muted">v{skill.version}</span>
-            </div>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold font-sans text-text-main mb-2">
+            {skill.name}
+          </h1>
+          <div className="flex items-center gap-3">
+            <span
+              className={`text-[11px] uppercase tracking-wide font-medium px-2.5 py-1 rounded ${colors.text} ${colors.bg}`}
+            >
+              {skill.category}
+            </span>
+            <span className="text-[11px] text-text-muted">v{skill.version}</span>
           </div>
         </div>
 
@@ -64,11 +59,42 @@ export default function SkillPage({ params }: { params: { name: string } }) {
           {skill.description}
         </p>
 
+        {skill.features && skill.features.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xs uppercase tracking-wider text-text-muted mb-4">
+              What it does
+            </h2>
+            <ul className="space-y-2.5">
+              {skill.features.map((feature, i) => (
+                <li key={i} className="flex items-start gap-3 text-[13px] text-text-dim font-sans leading-relaxed">
+                  <span className="w-1 h-1 rounded-full bg-accent mt-2 shrink-0" />
+                  {feature}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {skill.useCases && skill.useCases.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xs uppercase tracking-wider text-text-muted mb-4">
+              Use cases
+            </h2>
+            <div className="grid gap-2">
+              {skill.useCases.map((useCase, i) => (
+                <div key={i} className="bg-bg border border-border rounded-lg px-4 py-3 text-[13px] text-text-dim font-sans">
+                  {useCase}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="mb-8">
           <h2 className="text-xs uppercase tracking-wider text-text-muted mb-3">
             Install
           </h2>
-          <InstallBox command={`npx skillsadd clawdberg-skills --skill ${skill.name}`} />
+          <InstallBox command={`npx skillsadd commit-skills --skill ${skill.name}`} />
         </div>
 
         <div>
@@ -104,7 +130,7 @@ export default function SkillPage({ params }: { params: { name: string } }) {
               price: "0",
               priceCurrency: "USD",
             },
-            url: `https://skills.ws/skills/${skill.name}`,
+            url: `https://skills-ws.vercel.app/skills/${skill.name}`,
           }),
         }}
       />

@@ -92,8 +92,11 @@ export default function SkillsGrid({
               className="bg-bg-card border border-border rounded-xl px-6 py-5 grid grid-cols-[auto_1fr_auto] items-start gap-4 transition-all hover:border-border-hover hover:bg-bg-hover hover:-translate-y-px no-underline text-inherit animate-fade-in"
               style={{ animationDelay: `${i * 50}ms` }}
             >
-              <div className="text-[28px] w-11 h-11 flex items-center justify-center bg-bg rounded-lg border border-border max-sm:hidden">
-                {skill.icon}
+              <div
+                className="w-11 h-11 flex items-center justify-center rounded-lg border border-border max-sm:hidden"
+                style={{ backgroundColor: `#${skill.color}15`, borderColor: `#${skill.color}30` }}
+              >
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: `#${skill.color}` }} />
               </div>
               <div className="min-w-0">
                 <div className="text-base font-semibold text-text-main mb-1.5 font-sans">

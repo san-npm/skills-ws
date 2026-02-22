@@ -1,189 +1,449 @@
 {
   "version": "1.0.0",
-  "name": "Clawdberg Skills",
-  "description": "Agent Skills by Dr Clawdberg — for OpenClaw and beyond",
+  "name": "Skills",
+  "description": "Agent skills for AI coding assistants — built for OpenClaw, Claude Code, Cursor, and Codex",
   "repository": "https://github.com/san-npm/skills-ws",
-  "website": "https://skills.ws",
+  "website": "https://skills-ws.vercel.app",
   "skills": [
     {
       "name": "seo-geo",
       "version": "1.0.0",
       "description": "SEO & GEO (Generative Engine Optimization) for websites. Optimize for AI search engines and traditional search.",
-      "icon": "🔍",
       "color": "10B981",
       "category": "marketing",
-      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"],
+      "features": [
+        "Technical SEO audits with actionable fixes",
+        "Generative Engine Optimization for ChatGPT, Perplexity, Gemini, Google AI Overview",
+        "Schema markup generation (10+ JSON-LD types)",
+        "Keyword research and competitor gap analysis",
+        "E-E-A-T assessment and improvement",
+        "Core Web Vitals diagnostics",
+        "International SEO and hreflang setup"
+      ],
+      "useCases": [
+        "Audit a website for technical SEO issues",
+        "Optimize content for AI search engines",
+        "Generate structured data for rich snippets",
+        "Research keywords and content gaps"
+      ]
     },
     {
       "name": "content-strategy",
       "version": "1.0.0",
       "description": "Plan content strategy, decide what to create, figure out what topics to cover for SaaS and software products.",
-      "icon": "📝",
       "color": "6366F1",
       "category": "marketing",
-      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"],
+      "features": [
+        "Topic cluster and pillar page planning",
+        "Content calendar generation",
+        "Competitor content audit and gap analysis",
+        "Data-driven topic scoring matrix",
+        "Content ROI frameworks",
+        "Editorial workflow design"
+      ],
+      "useCases": [
+        "Plan a 90-day content roadmap for a SaaS blog",
+        "Identify content gaps vs competitors",
+        "Build topic clusters around target keywords",
+        "Score and prioritize content ideas by potential impact"
+      ]
     },
     {
       "name": "copywriting",
       "version": "1.0.0",
       "description": "Write, rewrite, or improve marketing copy for any page — homepage, landing, pricing, feature, about, or product pages.",
-      "icon": "✍️",
       "color": "F59E0B",
       "category": "marketing",
-      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"],
+      "features": [
+        "Headline frameworks: PAS, AIDA, 4Us, BAB, and 20+ more",
+        "CTA optimization and placement strategy",
+        "Voice and tone guidelines",
+        "Before/after copy rewrites with reasoning",
+        "50+ proven copy patterns from swipe file"
+      ],
+      "useCases": [
+        "Rewrite a homepage hero section for higher conversion",
+        "Write pricing page copy that addresses objections",
+        "Craft feature page copy from product specs",
+        "Improve CTAs across an entire site"
+      ]
     },
     {
       "name": "page-cro",
       "version": "1.0.0",
       "description": "Optimize, improve, or increase conversions on any marketing page — homepage, landing, pricing, feature pages.",
-      "icon": "📈",
       "color": "EF4444",
       "category": "conversion",
-      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"],
+      "features": [
+        "Page-level conversion audit with prioritized fixes",
+        "Above-the-fold optimization",
+        "Social proof and trust signal placement",
+        "Friction analysis and removal",
+        "Mobile conversion optimization",
+        "A/B test hypothesis generation"
+      ],
+      "useCases": [
+        "Audit a landing page and get prioritized improvement list",
+        "Increase homepage-to-signup conversion rate",
+        "Optimize pricing page layout and copy",
+        "Generate A/B test ideas for underperforming pages"
+      ]
     },
     {
       "name": "email-sequence",
       "version": "1.0.0",
       "description": "Create or optimize email sequences, drip campaigns, automated flows, and lifecycle email programs.",
-      "icon": "📧",
       "color": "8B5CF6",
       "category": "marketing",
-      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"],
+      "features": [
+        "Complete sequence templates: welcome, onboarding, re-engagement, abandoned cart, win-back",
+        "Subject line optimization with proven formulas",
+        "Deliverability best practices",
+        "Segmentation and trigger logic",
+        "Email copy frameworks"
+      ],
+      "useCases": [
+        "Build a 7-email onboarding sequence for a SaaS product",
+        "Optimize subject lines for higher open rates",
+        "Design a re-engagement campaign for churned users",
+        "Set up automated lifecycle email triggers"
+      ]
     },
     {
       "name": "ethereum-wingman",
       "version": "1.0.0",
       "description": "Ethereum development tutor and builder for Scaffold-ETH 2 projects. Build dApps, smart contracts, DeFi.",
-      "icon": "⟠",
       "color": "627EEA",
       "category": "web3",
-      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"],
+      "features": [
+        "Scaffold-ETH 2 project setup and configuration",
+        "Solidity smart contract development with best practices",
+        "DeFi protocol integration (Uniswap, Aave, Compound)",
+        "Fork mode testing against real protocol state",
+        "Frontend integration with wagmi and viem",
+        "Contract deployment and verification"
+      ],
+      "useCases": [
+        "Build a token swap interface from scratch",
+        "Write and test a Solidity smart contract",
+        "Fork mainnet and test against live protocol state",
+        "Create a full-stack dApp with Scaffold-ETH 2"
+      ]
     },
     {
       "name": "ui-ux-pro-max",
       "version": "1.0.0",
       "description": "UI/UX design intelligence. 50 styles, 21 palettes, 50 font pairings. Plan, build, review, fix any UI.",
-      "icon": "🎨",
       "color": "EC4899",
       "category": "design",
-      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"],
+      "features": [
+        "50 design styles: glassmorphism, brutalism, neumorphism, bento grid, and more",
+        "21 curated color palettes with accessibility scores",
+        "50 font pairings with usage guidelines",
+        "20 chart and data visualization types",
+        "9 framework stacks: React, Next.js, Vue, Svelte, SwiftUI, Flutter, Tailwind, shadcn/ui",
+        "Responsive design patterns and dark mode"
+      ],
+      "useCases": [
+        "Design a dashboard with glassmorphism style",
+        "Pick an accessible color palette for a SaaS app",
+        "Review UI code for accessibility and best practices",
+        "Build a landing page with modern design patterns"
+      ]
     },
     {
       "name": "paid-ads",
       "version": "1.0.0",
       "description": "Paid advertising campaigns on Google Ads, Meta, LinkedIn, Twitter/X. Strategy, copy, targeting, optimization.",
-      "icon": "💰",
       "color": "F97316",
       "category": "marketing",
-      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"],
+      "features": [
+        "Campaign structure design per platform",
+        "Ad copy formulas with character limit compliance",
+        "Audience targeting and lookalike strategies",
+        "Bidding strategy selection and optimization",
+        "ROAS tracking and optimization",
+        "A/B testing frameworks for ad creative",
+        "Negative keyword lists and brand safety"
+      ],
+      "useCases": [
+        "Set up a Google Ads campaign structure from scratch",
+        "Write Meta ad copy variants for A/B testing",
+        "Build LinkedIn audience targeting for B2B SaaS",
+        "Optimize ad spend allocation across platforms"
+      ]
     },
     {
       "name": "signup-flow-cro",
       "version": "1.0.0",
       "description": "Optimize signup, registration, account creation, or trial activation flows for higher conversion.",
-      "icon": "🚀",
       "color": "14B8A6",
       "category": "conversion",
-      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"],
+      "features": [
+        "Signup flow audit with friction scoring",
+        "Progressive profiling and multi-step form design",
+        "Social login and SSO integration patterns",
+        "Trial activation optimization",
+        "Onboarding handoff design",
+        "Drop-off analysis and recovery"
+      ],
+      "useCases": [
+        "Reduce signup form abandonment rate",
+        "Design a frictionless trial-to-paid flow",
+        "Add progressive profiling to reduce upfront fields",
+        "Optimize the signup-to-first-value path"
+      ]
     },
     {
       "name": "popup-cro",
       "version": "1.0.0",
       "description": "Create or optimize popups, modals, overlays, slide-ins, and banners for conversion. Exit intent, lead capture, announcements.",
-      "icon": "💬",
       "color": "A855F7",
       "category": "conversion",
-      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"],
+      "features": [
+        "Exit intent popup design and timing",
+        "Lead capture modal optimization",
+        "Scroll-triggered and time-delayed overlays",
+        "Mobile-friendly popup patterns",
+        "A/B test frameworks for popup variants",
+        "Frequency capping and user experience balance"
+      ],
+      "useCases": [
+        "Design an exit-intent popup that converts without annoying users",
+        "Build a lead capture modal with progressive disclosure",
+        "Optimize popup timing and frequency rules",
+        "Create announcement banners for product launches"
+      ]
     },
     {
       "name": "programmatic-seo",
       "version": "1.0.0",
       "description": "Create SEO-driven pages at scale using templates and data. Directory pages, location pages, comparison pages.",
-      "icon": "🏗️",
       "color": "0EA5E9",
       "category": "marketing",
-      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"],
+      "features": [
+        "Template page architecture for scale",
+        "Data source integration and content generation",
+        "Internal linking automation",
+        "Canonical and pagination strategy",
+        "Quality control at scale",
+        "Location page and comparison page templates"
+      ],
+      "useCases": [
+        "Build 500+ city-specific landing pages from a template",
+        "Create comparison pages for competitor alternatives",
+        "Generate integration directory pages from API data",
+        "Set up automated internal linking between programmatic pages"
+      ]
     },
     {
       "name": "growth-hacking",
       "version": "1.0.0",
       "description": "Growth hacking strategies and tactics. Viral loops, referral programs, activation funnels, retention hooks.",
-      "icon": "📊",
       "color": "22C55E",
       "category": "marketing",
-      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"],
+      "features": [
+        "Viral loop design and K-factor optimization",
+        "Referral program mechanics and incentive structure",
+        "Activation funnel mapping and optimization",
+        "Retention hook design (habit loops, streaks, notifications)",
+        "Growth experiment prioritization (ICE/RICE scoring)",
+        "Channel-specific growth playbooks"
+      ],
+      "useCases": [
+        "Design a viral referral loop for a SaaS product",
+        "Map and optimize the activation funnel",
+        "Prioritize growth experiments with ICE scoring",
+        "Build retention mechanics that reduce churn"
+      ]
     },
     {
       "name": "landing-page-builder",
       "version": "1.0.0",
       "description": "Build high-converting landing pages from scratch. Copy, layout, CTAs, social proof, and responsive design.",
-      "icon": "🏠",
       "color": "3B82F6",
       "category": "design",
-      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"],
+      "features": [
+        "Full landing page architecture from hero to footer",
+        "Conversion-optimized section ordering",
+        "Social proof and testimonial patterns",
+        "Responsive design with mobile-first approach",
+        "CTA placement and design strategy",
+        "Above-the-fold optimization"
+      ],
+      "useCases": [
+        "Build a complete SaaS landing page from product specs",
+        "Design a product launch page with countdown and waitlist",
+        "Create a webinar registration page",
+        "Build a comparison landing page for paid ads"
+      ]
     },
     {
       "name": "lead-scoring",
       "version": "1.0.0",
       "description": "Design and implement lead scoring models. Qualify leads based on behavior, demographics, and engagement.",
-      "icon": "🎯",
       "color": "DC2626",
       "category": "conversion",
-      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"],
+      "features": [
+        "Scoring model design (behavioral + demographic)",
+        "Engagement scoring rules and thresholds",
+        "MQL/SQL qualification criteria",
+        "Score decay and recency weighting",
+        "CRM integration patterns",
+        "Score calibration and validation"
+      ],
+      "useCases": [
+        "Build a lead scoring model for a B2B SaaS funnel",
+        "Define MQL and SQL criteria based on engagement data",
+        "Set up score decay rules for inactive leads",
+        "Integrate scoring with HubSpot or Salesforce workflows"
+      ]
     },
     {
       "name": "local-seo",
       "version": "1.0.0",
       "description": "Local SEO optimization. Google Business Profile, local citations, reviews, location pages, map pack ranking.",
-      "icon": "📍",
       "color": "059669",
       "category": "marketing",
-      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"],
+      "features": [
+        "Google Business Profile optimization",
+        "Local citation building and NAP consistency",
+        "Review management and response templates",
+        "Location page content strategy",
+        "Map pack ranking factors and optimization",
+        "Local schema markup (LocalBusiness, FAQ)"
+      ],
+      "useCases": [
+        "Optimize a Google Business Profile for local search",
+        "Build location-specific landing pages for multi-location business",
+        "Create a review acquisition and response strategy",
+        "Audit and fix local citation inconsistencies"
+      ]
     },
     {
       "name": "marketing-analytics",
       "version": "1.0.0",
       "description": "Marketing analytics setup and optimization. GA4, attribution, dashboards, KPIs, funnel analysis.",
-      "icon": "📉",
       "color": "7C3AED",
       "category": "marketing",
-      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"],
+      "features": [
+        "GA4 setup and event taxonomy design",
+        "UTM strategy and naming conventions",
+        "Attribution modeling (first-touch, last-touch, linear, time-decay)",
+        "KPI dashboard design and metric selection",
+        "Funnel analysis and drop-off diagnostics",
+        "Conversion tracking implementation"
+      ],
+      "useCases": [
+        "Set up GA4 with a structured event taxonomy",
+        "Design a UTM naming convention for all marketing channels",
+        "Build a marketing KPI dashboard",
+        "Implement multi-touch attribution for paid campaigns"
+      ]
     },
     {
       "name": "crm-builder",
       "version": "1.0.0",
       "description": "Design and implement CRM workflows. Pipeline management, automation, lead nurturing, deal tracking.",
-      "icon": "🗂️",
       "color": "2563EB",
       "category": "conversion",
-      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"],
+      "features": [
+        "Sales pipeline stage design",
+        "Automation workflow templates",
+        "Lead nurturing sequences",
+        "Deal tracking and forecasting",
+        "Custom field and property architecture",
+        "Integration patterns for common CRM platforms"
+      ],
+      "useCases": [
+        "Design a sales pipeline for a B2B SaaS product",
+        "Build automated lead nurturing workflows",
+        "Set up deal tracking with revenue forecasting",
+        "Create custom CRM properties for better segmentation"
+      ]
     },
     {
       "name": "sales-funnel",
       "version": "1.0.0",
       "description": "Design and optimize sales funnels. TOFU/MOFU/BOFU content, qualification stages, conversion paths.",
-      "icon": "🔻",
       "color": "D946EF",
       "category": "conversion",
-      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"],
+      "features": [
+        "Full funnel architecture (TOFU/MOFU/BOFU)",
+        "Content mapping to funnel stages",
+        "Lead qualification stage design",
+        "Conversion path optimization",
+        "Funnel velocity metrics",
+        "Bottleneck identification and resolution"
+      ],
+      "useCases": [
+        "Map content to each stage of the buyer journey",
+        "Identify and fix funnel bottlenecks",
+        "Design qualification criteria for each funnel stage",
+        "Optimize the path from first touch to closed deal"
+      ]
     },
     {
       "name": "smart-contract-auditor",
       "version": "1.0.0",
       "description": "Audit Solidity smart contracts for vulnerabilities, gas optimization, and best practices.",
-      "icon": "🛡️",
       "color": "F59E0B",
       "category": "web3",
-      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"],
+      "features": [
+        "Vulnerability scanning (reentrancy, overflow, access control)",
+        "Gas optimization recommendations",
+        "Best practice compliance checks",
+        "Common attack vector detection",
+        "Upgrade pattern safety analysis",
+        "Test coverage assessment"
+      ],
+      "useCases": [
+        "Audit a smart contract before deployment",
+        "Identify gas optimization opportunities",
+        "Check for common vulnerability patterns",
+        "Review upgrade proxy implementation safety"
+      ]
     },
     {
       "name": "social-media-kit",
       "version": "1.0.0",
       "description": "Create social media content kits. Platform-specific posts, hashtag strategies, content calendars, engagement tactics.",
-      "icon": "📱",
       "color": "E11D48",
       "category": "marketing",
-      "platforms": ["openclaw", "claude-code", "cursor", "codex"]
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"],
+      "features": [
+        "Platform-specific content formatting (LinkedIn, Twitter/X, Instagram, TikTok)",
+        "Hashtag research and strategy",
+        "Content calendar with posting schedule",
+        "Engagement tactics and community building",
+        "Content repurposing workflows",
+        "Social proof and UGC strategy"
+      ],
+      "useCases": [
+        "Create a month of LinkedIn posts from blog content",
+        "Build a Twitter/X content calendar with engagement hooks",
+        "Design a hashtag strategy for Instagram growth",
+        "Repurpose long-form content into social media formats"
+      ]
     }
   ]
 }

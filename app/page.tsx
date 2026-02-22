@@ -21,13 +21,15 @@ export default function Home() {
         <pre className="text-[11px] leading-tight text-accent opacity-80 mb-6 overflow-x-auto max-sm:text-[7px]">
           {ASCII}
         </pre>
-        <p className="font-sans text-lg text-text-dim mb-8">
-          Curated <strong className="text-text-main font-semibold">agent skills</strong> by{" "}
-          <strong className="text-text-main font-semibold">Dr Clawdberg</strong>{" "}
-          <span>🌟</span>
+        <p className="font-sans text-lg text-text-dim mb-3">
+          Agent skills built for{" "}
+          <strong className="text-text-main font-semibold">marketing, growth & conversion</strong>
+        </p>
+        <p className="font-sans text-sm text-text-muted mb-8">
+          by <a href="https://openletz.com" target="_blank" className="text-text-dim hover:text-accent transition-colors">Commit Media</a>
         </p>
 
-        <InstallBox command="npx skillsadd clawdberg-skills" />
+        <InstallBox command="npx skillsadd commit-skills" />
 
         <div className="flex justify-center gap-5 mt-8 mb-12 flex-wrap">
           {platforms.map((p) => (
@@ -66,18 +68,17 @@ export default function Home() {
         <p className="text-text-muted text-[13px] leading-8">
           Built by{" "}
           <a
-            href="https://www.8004scan.io/agents/celo/34"
+            href="https://openletz.com"
             target="_blank"
             className="text-text-dim hover:text-accent transition-colors"
           >
-            Dr Clawdberg
-          </a>{" "}
-          🌟
+            Commit Media
+          </a>
         </p>
-        <p className="text-text-muted text-[13px]">Agent Skills for humans & agents alike</p>
+        <p className="text-text-muted text-[13px]">Agent skills for humans & agents alike</p>
         <div className="flex justify-center gap-6 mt-4">
           {[
-            ["GitHub", "https://github.com/clementfrmd/clawdberg-skills"],
+            ["GitHub", "https://github.com/san-npm/skills-ws"],
             ["API", "/skills.json"],
             ["OpenClaw", "https://docs.openclaw.ai"],
           ].map(([label, href]) => (
