@@ -1,80 +1,159 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import * as THREE from "three";
 
-const CHARS = " .:-=+*#%@";
+const ASCII_CHARS = " .,:-~=+*!#%$@";
 
 export default function AsciiBackground() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    const container = containerRef.current;
+    if (!container) return;
 
-    let animId: number;
-    let time = 0;
+    // Setup Three.js scene
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 100);
+    camera.position.z = 3;
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x000000, 1);
+
+    // ASCII overlay canvas
+    const asciiCanvas = document.createElement("canvas");
+    const asciiCtx = asciiCanvas.getContext("2d")!;
+    asciiCanvas.style.position = "absolute";
+    asciiCanvas.style.inset = "0";
+    asciiCanvas.style.width = "100%";
+    asciiCanvas.style.height = "100%";
+    container.appendChild(asciiCanvas);
+
+    // Hidden offscreen canvas for reading 3D render
+    const offscreen = document.createElement("canvas");
+
+    // 3D objects — rotating torus knot and floating spheres
+    const torusGeo = new THREE.TorusKnotGeometry(1, 0.35, 128, 32);
+    const torusMat = new THREE.MeshStandardMaterial({ color: 0x00ff88, roughness: 0.4, metalness: 0.6 });
+    const torus = new THREE.Mesh(torusGeo, torusMat);
+    scene.add(torus);
+
+    // Floating particles
+    const particlesGeo = new THREE.BufferGeometry();
+    const particleCount = 200;
+    const positions = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount * 3; i++) {
+      positions[i] = (Math.random() - 0.5) * 8;
+    }
+    particlesGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    const particlesMat = new THREE.PointsMaterial({ color: 0x00ff88, size: 0.08 });
+    const particles = new THREE.Points(particlesGeo, particlesMat);
+    scene.add(particles);
+
+    // Lighting
+    const light1 = new THREE.DirectionalLight(0x00ff88, 2);
+    light1.position.set(2, 3, 4);
+    scene.add(light1);
+    const light2 = new THREE.DirectionalLight(0x008844, 1);
+    light2.position.set(-2, -1, 2);
+    scene.add(light2);
+    scene.add(new THREE.AmbientLight(0x001a0d, 0.5));
+
+    const cellW = 8;
+    const cellH = 14;
+    const fontSize = 11;
 
     const resize = () => {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+
+      const cols = Math.floor(w / cellW);
+      const rows = Math.floor(h / cellH);
+      offscreen.width = cols;
+      offscreen.height = rows;
+      asciiCanvas.width = w;
+      asciiCanvas.height = h;
     };
     resize();
     window.addEventListener("resize", resize);
 
-    const cellW = 10;
-    const cellH = 16;
-    const fontSize = 12;
+    let animId: number;
+    const offCtx = offscreen.getContext("2d", { willReadFrequently: true })!;
 
-    const draw = () => {
-      time += 0.008;
-      const cols = Math.floor(canvas.width / cellW);
-      const rows = Math.floor(canvas.height / cellH);
+    const animate = () => {
+      const time = performance.now() * 0.001;
 
-      ctx.fillStyle = "#0a0a0a";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.font = `${fontSize}px monospace`;
+      torus.rotation.x = time * 0.3;
+      torus.rotation.y = time * 0.2;
+      torus.rotation.z = time * 0.1;
+
+      particles.rotation.y = time * 0.05;
+      particles.rotation.x = Math.sin(time * 0.1) * 0.2;
+
+      // Render 3D scene
+      renderer.render(scene, camera);
+
+      // Read pixels at low resolution
+      const cols = offscreen.width;
+      const rows = offscreen.height;
+      if (cols <= 0 || rows <= 0) { animId = requestAnimationFrame(animate); return; }
+
+      offCtx.drawImage(renderer.domElement, 0, 0, cols, rows);
+      const imageData = offCtx.getImageData(0, 0, cols, rows);
+      const pixels = imageData.data;
+
+      // Render ASCII
+      asciiCtx.fillStyle = "#0a0a0a";
+      asciiCtx.fillRect(0, 0, asciiCanvas.width, asciiCanvas.height);
+      asciiCtx.font = `${fontSize}px monospace`;
 
       for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
-          const nx = x / cols;
-          const ny = y / rows;
+          const i = (y * cols + x) * 4;
+          const r = pixels[i];
+          const g = pixels[i + 1];
+          const b = pixels[i + 2];
+          const brightness = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
 
-          // Layered sine waves creating flowing patterns
-          const v1 = Math.sin(nx * 6 + time * 0.7) * Math.cos(ny * 4 - time * 0.5);
-          const v2 = Math.sin((nx + ny) * 3 + time * 0.3);
-          const v3 = Math.sin(Math.sqrt((nx - 0.5) ** 2 + (ny - 0.5) ** 2) * 8 - time * 1.2);
-          const v = (v1 + v2 + v3) / 3;
+          if (brightness < 0.02) continue; // skip black
 
-          const normalized = (v + 1) / 2;
-          const charIdx = Math.floor(normalized * (CHARS.length - 1));
-          const char = CHARS[charIdx];
+          const charIdx = Math.floor(brightness * (ASCII_CHARS.length - 1));
+          const char = ASCII_CHARS[charIdx];
 
-          // Green accent with varying brightness
-          const brightness = Math.floor(normalized * 40 + 15);
-          const green = Math.floor(normalized * 255 * 0.3 + 30);
-          ctx.fillStyle = `rgba(0, ${green}, ${Math.floor(green * 0.55)}, ${brightness / 100})`;
-          ctx.fillText(char, x * cellW, y * cellH + fontSize);
+          const green = Math.floor(40 + brightness * 215);
+          const alpha = 0.3 + brightness * 0.7;
+          asciiCtx.fillStyle = `rgba(0, ${green}, ${Math.floor(green * 0.55)}, ${alpha})`;
+          asciiCtx.fillText(char, x * cellW, y * cellH + fontSize);
         }
       }
 
-      animId = requestAnimationFrame(draw);
+      animId = requestAnimationFrame(animate);
     };
 
-    draw();
+    animate();
 
     return () => {
       cancelAnimationFrame(animId);
       window.removeEventListener("resize", resize);
+      renderer.dispose();
+      torusGeo.dispose();
+      torusMat.dispose();
+      particlesGeo.dispose();
+      particlesMat.dispose();
+      if (asciiCanvas.parentNode) asciiCanvas.parentNode.removeChild(asciiCanvas);
     };
   }, []);
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="absolute inset-0 w-full h-full pointer-events-none"
-      style={{ opacity: 0.35 }}
+    <div
+      ref={containerRef}
+      className="absolute inset-0 w-full h-full overflow-hidden"
+      style={{ opacity: 0.5 }}
     />
   );
 }
