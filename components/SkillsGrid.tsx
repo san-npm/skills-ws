@@ -5,6 +5,29 @@ import Link from "next/link";
 import type { Skill } from "@/lib/skills";
 import { categoryColors } from "@/lib/skills";
 
+function useNpmDownloads() {
+  const [downloads, setDownloads] = useState<number | null>(null);
+  useEffect(() => {
+    const cached = sessionStorage.getItem("npm-dl");
+    const cachedAt = sessionStorage.getItem("npm-dl-at");
+    if (cached && cachedAt && Date.now() - Number(cachedAt) < 86400000) {
+      setDownloads(Number(cached));
+      return;
+    }
+    fetch("https://api.npmjs.org/downloads/point/last-month/skills-ws")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.downloads != null) {
+          setDownloads(data.downloads);
+          sessionStorage.setItem("npm-dl", String(data.downloads));
+          sessionStorage.setItem("npm-dl-at", String(Date.now()));
+        }
+      })
+      .catch(() => {});
+  }, []);
+  return downloads;
+}
+
 export default function SkillsGrid({
   skills,
   categories,
@@ -14,6 +37,7 @@ export default function SkillsGrid({
 }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
+  const npmDownloads = useNpmDownloads();
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -105,6 +129,11 @@ export default function SkillsGrid({
                   {skill.description}
                 </div>
                 <div className="flex items-center gap-4 mt-2.5">
+                  {npmDownloads != null && (
+                    <span className="text-[11px] text-text-muted font-mono">
+                      {npmDownloads.toLocaleString()} installs
+                    </span>
+                  )}
                   <span className="flex items-center gap-1 text-[11px] text-text-muted font-mono">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500/70" />
                     VT clean
