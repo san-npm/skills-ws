@@ -18,8 +18,8 @@ export default function Home() {
 
   return (
     <div className="max-w-[900px] mx-auto px-4 sm:px-6">
-      <header className="pt-20 pb-10 text-center sm:pt-20 max-sm:pt-12 relative">
-        <div className="absolute inset-0 -mx-6 overflow-hidden" style={{ height: "500px", top: "-40px" }}>
+      <header className="pt-20 pb-10 text-center sm:pt-20 max-sm:pt-12 relative overflow-visible">
+        <div className="absolute inset-0 -mx-4 sm:-mx-6 overflow-hidden pointer-events-none" style={{ height: "500px", top: "-40px" }}>
           <AsciiBackground />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0a0a0a]" />
         </div>
@@ -44,7 +44,9 @@ export default function Home() {
         </div>
       </header>
 
-      <SkillsGrid skills={skills} categories={categories} />
+      <div className="relative z-10">
+        <SkillsGrid skills={skills} categories={categories} />
+      </div>
 
       <div className="bg-bg-card border border-border rounded-xl px-6 py-6 mt-12">
         <h2 className="text-sm font-semibold text-text-main font-sans mb-3">Security</h2>

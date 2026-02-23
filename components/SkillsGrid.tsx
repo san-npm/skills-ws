@@ -41,7 +41,7 @@ export default function SkillsGrid({
 
   return (
     <>
-      <div className="mb-8 overflow-hidden">
+      <div className="mb-8">
         <input
           id="search-input"
           type="text"

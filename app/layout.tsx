@@ -81,7 +81,10 @@ export const metadata: Metadata = {
   },
   category: "technology",
   icons: {
-    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>/</text></svg>",
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
   },
   other: {
     "google-site-verification": "",
