@@ -105,9 +105,6 @@ export default function SkillsGrid({
                   {skill.description}
                 </div>
                 <div className="flex items-center gap-4 mt-2.5">
-                  <span className="text-[11px] text-text-muted font-mono">
-                    {(skill.installs ?? 0).toLocaleString()} installs
-                  </span>
                   <span className="flex items-center gap-1 text-[11px] text-text-muted font-mono">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500/70" />
                     VT clean
