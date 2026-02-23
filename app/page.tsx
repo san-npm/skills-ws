@@ -30,10 +30,6 @@ export default function Home() {
           Agent skills built for{" "}
           <strong className="text-text-main font-semibold">marketing, growth, analytics & conversion</strong>
         </p>
-        <p className="relative z-10 font-sans text-sm text-text-muted mb-8">
-          by <a href="https://openletz.com" target="_blank" rel="noopener noreferrer" className="text-text-dim hover:text-accent transition-colors">Commit Media</a>
-        </p>
-
         <div className="relative z-10">
           <InstallBox command="npx skills-ws" />
         </div>
