@@ -1,90 +1,10 @@
-# skills.ws
+# skills.ws — Full Skill Reference
 
-> Agent skills for AI coding assistants. Install with npx skills-ws.
-
-skills.ws provides SKILL.md files that give AI coding assistants specialized knowledge — workflows, checklists, code patterns, and domain expertise. Drop them into your project and your AI gets smarter.
-
-## Platforms
-- OpenClaw
-- Claude Code
-- Cursor
-- Codex
-
-## Install
-```
-npx skills-ws install          # interactive picker
-npx skills-ws install seo-geo  # install specific skill
-npx skills-ws install all      # install all skills
-```
-
-## Skills
-
-### Analytics
-- [data-analytics](https://skills-ws.vercel.app/skills/data-analytics): Data analysis workflows, SQL query patterns, dashboard design, KPI frameworks, and data storytelling for business intelligence.
-- [data-management](https://skills-ws.vercel.app/skills/data-management): Data governance, pipeline design, ETL workflows, data quality frameworks, and warehouse architecture for growing teams.
-- [google-analytics](https://skills-ws.vercel.app/skills/google-analytics): GA4 setup, event taxonomy, custom dimensions, conversion tracking, audience segments, and reporting automation.
-- [search-console](https://skills-ws.vercel.app/skills/search-console): Google Search Console optimization. Index coverage, performance analysis, sitemap management, and search appearance debugging.
-- [bing-webmaster](https://skills-ws.vercel.app/skills/bing-webmaster): Bing Webmaster Tools setup, IndexNow protocol, URL submission, backlink analysis, and Bing-specific SEO optimization.
-- [yandex-webmaster](https://skills-ws.vercel.app/skills/yandex-webmaster): Yandex Webmaster setup, Yandex-specific SEO, regional targeting, Turbo pages, and Russian market search optimization.
-- [retention-analytics](https://skills-ws.vercel.app/skills/retention-analytics): Churn analysis, cohort retention, engagement scoring, health scoring, and win-back strategies for SaaS products.
-
-### Conversion
-- [page-cro](https://skills-ws.vercel.app/skills/page-cro): Optimize, improve, or increase conversions on any marketing page — homepage, landing, pricing, feature pages.
-- [signup-flow-cro](https://skills-ws.vercel.app/skills/signup-flow-cro): Optimize signup, registration, account creation, or trial activation flows for higher conversion.
-- [popup-cro](https://skills-ws.vercel.app/skills/popup-cro): Create or optimize popups, modals, overlays, slide-ins, and banners for conversion. Exit intent, lead capture, announcements.
-- [lead-scoring](https://skills-ws.vercel.app/skills/lead-scoring): Design and implement lead scoring models. Qualify leads based on behavior, demographics, and engagement.
-- [crm-builder](https://skills-ws.vercel.app/skills/crm-builder): Design and implement CRM workflows. Pipeline management, automation, lead nurturing, deal tracking.
-- [sales-funnel](https://skills-ws.vercel.app/skills/sales-funnel): Design and optimize sales funnels. TOFU/MOFU/BOFU content, qualification stages, conversion paths.
-- [ab-testing](https://skills-ws.vercel.app/skills/ab-testing): A/B test design, statistical analysis, sample size calculation, experiment prioritization, and results interpretation.
-- [pricing-optimization](https://skills-ws.vercel.app/skills/pricing-optimization): Price testing, value metric selection, packaging strategy, discount frameworks, and willingness-to-pay research.
-
-### Design
-- [landing-page-builder](https://skills-ws.vercel.app/skills/landing-page-builder): Build high-converting landing pages from scratch. Copy, layout, CTAs, social proof, and responsive design.
-- [ascii-banner](https://skills-ws.vercel.app/skills/ascii-banner): Build animated ASCII banners for CLI tools and web interfaces. Frame-based animation, ANSI color systems, terminal compatibility, accessibility, and web-based ASCII shaders.
-
-### Growth
-- [business-development](https://skills-ws.vercel.app/skills/business-development): BD strategy, partnership frameworks, outreach templates, deal pipeline management, and negotiation playbooks for B2B SaaS.
-- [cold-outreach](https://skills-ws.vercel.app/skills/cold-outreach): Cold email and LinkedIn outreach. Personalization frameworks, follow-up sequences, deliverability, and reply rate optimization.
-- [social-media-growth](https://skills-ws.vercel.app/skills/social-media-growth): Platform-specific growth tactics. Algorithmic optimization, engagement hacking, viral mechanics, and community building at scale.
-- [competitor-intelligence](https://skills-ws.vercel.app/skills/competitor-intelligence): Competitive analysis frameworks, market positioning, feature comparison matrices, and win/loss analysis for strategic planning.
-- [affiliate-marketing](https://skills-ws.vercel.app/skills/affiliate-marketing): Affiliate program design, commission structures, partner recruitment, tracking implementation, and performance optimization.
-- [customer-acquisition](https://skills-ws.vercel.app/skills/customer-acquisition): CAC optimization, channel mix modeling, attribution analysis, and acquisition strategy for paid and organic channels.
-
-### Marketing
-- [seo-geo](https://skills-ws.vercel.app/skills/seo-geo): SEO & GEO (Generative Engine Optimization) for websites. Optimize for AI search engines and traditional search.
-- [content-strategy](https://skills-ws.vercel.app/skills/content-strategy): Plan content strategy, decide what to create, figure out what topics to cover for SaaS and software products.
-- [copywriting](https://skills-ws.vercel.app/skills/copywriting): Write, rewrite, or improve marketing copy for any page — homepage, landing, pricing, feature, about, or product pages.
-- [email-sequence](https://skills-ws.vercel.app/skills/email-sequence): Create or optimize email sequences, drip campaigns, automated flows, and lifecycle email programs.
-- [paid-ads](https://skills-ws.vercel.app/skills/paid-ads): Paid advertising campaigns on Google Ads, Meta, LinkedIn, Twitter/X. Strategy, copy, targeting, optimization.
-- [programmatic-seo](https://skills-ws.vercel.app/skills/programmatic-seo): Create SEO-driven pages at scale using templates and data. Directory pages, location pages, comparison pages.
-- [growth-hacking](https://skills-ws.vercel.app/skills/growth-hacking): Growth hacking strategies and tactics. Viral loops, referral programs, activation funnels, retention hooks.
-- [local-seo](https://skills-ws.vercel.app/skills/local-seo): Local SEO optimization. Google Business Profile, local citations, reviews, location pages, map pack ranking.
-- [marketing-analytics](https://skills-ws.vercel.app/skills/marketing-analytics): Marketing analytics setup and optimization. GA4, attribution, dashboards, KPIs, funnel analysis.
-- [social-media-kit](https://skills-ws.vercel.app/skills/social-media-kit): Create social media content kits. Platform-specific posts, hashtag strategies, content calendars, engagement tactics.
-
-### Operations
-- [accounting-finance](https://skills-ws.vercel.app/skills/accounting-finance): Financial modeling, bookkeeping automation, invoicing workflows, tax compliance checklists, and P&L analysis for SMEs and startups.
-- [crm-operations](https://skills-ws.vercel.app/skills/crm-operations): CRM setup, pipeline automation, lead routing, deal tracking, and operational workflows for HubSpot, Salesforce, Pipedrive.
-- [revenue-operations](https://skills-ws.vercel.app/skills/revenue-operations): RevOps frameworks, funnel metrics, forecasting models, GTM alignment, and operational efficiency for scaling teams.
-
-### Web3
-- [smart-contract-auditor](https://skills-ws.vercel.app/skills/smart-contract-auditor): Audit Solidity smart contracts for vulnerabilities, gas optimization, and best practices.
-
-## Links
-- Website: https://skills-ws.vercel.app
-- npm: https://www.npmjs.com/package/skills-ws
-- GitHub: https://github.com/san-npm/skills-ws
-- Publisher: Commit Media (https://openletz.com)
+> Complete SKILL.md content for all 40 skills.
 
 ---
 
-# Full Skill Documentation
-
-## seo-geo
-
-**Category:** marketing | **Version:** 1.0.0
-**Description:** SEO & GEO (Generative Engine Optimization) for websites. Optimize for AI search engines and traditional search.
-**Platforms:** openclaw, claude-code, cursor, codex
+## seo-geo (marketing)
 
 # SEO & GEO Optimization v2
 
@@ -222,11 +142,7 @@ Flag any URLs with detections > 0 in recommendations.
 
 ---
 
-## content-strategy
-
-**Category:** marketing | **Version:** 1.0.0
-**Description:** Plan content strategy, decide what to create, figure out what topics to cover for SaaS and software products.
-**Platforms:** openclaw, claude-code, cursor, codex
+## content-strategy (marketing)
 
 # Content Strategy v2
 
@@ -311,11 +227,7 @@ Track per piece:
 
 ---
 
-## copywriting
-
-**Category:** marketing | **Version:** 1.0.0
-**Description:** Write, rewrite, or improve marketing copy for any page — homepage, landing, pricing, feature, about, or product pages.
-**Platforms:** openclaw, claude-code, cursor, codex
+## copywriting (marketing)
 
 # Copywriting v2
 
@@ -403,11 +315,7 @@ Rules:
 
 ---
 
-## page-cro
-
-**Category:** conversion | **Version:** 1.0.0
-**Description:** Optimize, improve, or increase conversions on any marketing page — homepage, landing, pricing, feature pages.
-**Platforms:** openclaw, claude-code, cursor, codex
+## page-cro (conversion)
 
 # Page CRO v2
 
@@ -487,11 +395,7 @@ Full testing guide: references/ab-testing.md
 
 ---
 
-## email-sequence
-
-**Category:** marketing | **Version:** 1.0.0
-**Description:** Create or optimize email sequences, drip campaigns, automated flows, and lifecycle email programs.
-**Platforms:** openclaw, claude-code, cursor, codex
+## email-sequence (marketing)
 
 # Email Sequence v2
 
@@ -572,11 +476,7 @@ Rule: The more personalized the segment, the higher the conversion rate. Aim for
 
 ---
 
-## paid-ads
-
-**Category:** marketing | **Version:** 1.0.0
-**Description:** Paid advertising campaigns on Google Ads, Meta, LinkedIn, Twitter/X. Strategy, copy, targeting, optimization.
-**Platforms:** openclaw, claude-code, cursor, codex
+## paid-ads (marketing)
 
 # Paid Ads v2
 
@@ -686,11 +586,7 @@ Frequency cap: 3-5 impressions per person per week.
 
 ---
 
-## signup-flow-cro
-
-**Category:** conversion | **Version:** 1.0.0
-**Description:** Optimize signup, registration, account creation, or trial activation flows for higher conversion.
-**Platforms:** openclaw, claude-code, cursor, codex
+## signup-flow-cro (conversion)
 
 # Signup Flow CRO v2
 
@@ -754,11 +650,7 @@ Within 5 seconds of signup:
 
 ---
 
-## popup-cro
-
-**Category:** conversion | **Version:** 1.0.0
-**Description:** Create or optimize popups, modals, overlays, slide-ins, and banners for conversion. Exit intent, lead capture, announcements.
-**Platforms:** openclaw, claude-code, cursor, codex
+## popup-cro (conversion)
 
 # Popup CRO v2
 
@@ -810,11 +702,7 @@ The "no thanks" text should make saying no feel slightly silly (but never manipu
 
 ---
 
-## programmatic-seo
-
-**Category:** marketing | **Version:** 1.0.0
-**Description:** Create SEO-driven pages at scale using templates and data. Directory pages, location pages, comparison pages.
-**Platforms:** openclaw, claude-code, cursor, codex
+## programmatic-seo (marketing)
 
 # Programmatic SEO v2
 
@@ -879,11 +767,7 @@ Data pipeline architecture: references/data-pipeline.md
 
 ---
 
-## growth-hacking
-
-**Category:** marketing | **Version:** 1.0.0
-**Description:** Growth hacking strategies and tactics. Viral loops, referral programs, activation funnels, retention hooks.
-**Platforms:** openclaw, claude-code, cursor, codex
+## growth-hacking (marketing)
 
 # Growth Hacking
 
@@ -958,11 +842,7 @@ Details: references/experiment-frameworks.md
 
 ---
 
-## landing-page-builder
-
-**Category:** design | **Version:** 1.0.0
-**Description:** Build high-converting landing pages from scratch. Copy, layout, CTAs, social proof, and responsive design.
-**Platforms:** openclaw, claude-code, cursor, codex
+## landing-page-builder (design)
 
 # Landing Page Builder
 
@@ -1055,11 +935,7 @@ Subtitle: Urgency or risk reversal
 
 ---
 
-## lead-scoring
-
-**Category:** conversion | **Version:** 1.0.0
-**Description:** Design and implement lead scoring models. Qualify leads based on behavior, demographics, and engagement.
-**Platforms:** openclaw, claude-code, cursor, codex
+## lead-scoring (conversion)
 
 # Lead Scoring
 
@@ -1123,11 +999,7 @@ Details: references/scoring-models.md
 
 ---
 
-## local-seo
-
-**Category:** marketing | **Version:** 1.0.0
-**Description:** Local SEO optimization. Google Business Profile, local citations, reviews, location pages, map pack ranking.
-**Platforms:** openclaw, claude-code, cursor, codex
+## local-seo (marketing)
 
 # Local SEO
 
@@ -1197,11 +1069,7 @@ For each location:
 
 ---
 
-## marketing-analytics
-
-**Category:** marketing | **Version:** 1.0.0
-**Description:** Marketing analytics setup and optimization. GA4, attribution, dashboards, KPIs, funnel analysis.
-**Platforms:** openclaw, claude-code, cursor, codex
+## marketing-analytics (marketing)
 
 # Marketing Analytics
 
@@ -1307,11 +1175,7 @@ Details: references/attribution-models.md
 
 ---
 
-## crm-builder
-
-**Category:** conversion | **Version:** 1.0.0
-**Description:** Design and implement CRM workflows. Pipeline management, automation, lead nurturing, deal tracking.
-**Platforms:** openclaw, claude-code, cursor, codex
+## crm-builder (conversion)
 
 # CRM Builder
 
@@ -1397,11 +1261,7 @@ Essential reports:
 
 ---
 
-## sales-funnel
-
-**Category:** conversion | **Version:** 1.0.0
-**Description:** Design and optimize sales funnels. TOFU/MOFU/BOFU content, qualification stages, conversion paths.
-**Platforms:** openclaw, claude-code, cursor, codex
+## sales-funnel (conversion)
 
 # Sales Funnel
 
@@ -1457,11 +1317,7 @@ Detailed funnel blueprints by business type: references/funnel-templates.md
 
 ---
 
-## smart-contract-auditor
-
-**Category:** web3 | **Version:** 1.0.0
-**Description:** Audit Solidity smart contracts for vulnerabilities, gas optimization, and best practices.
-**Platforms:** openclaw, claude-code, cursor, codex
+## smart-contract-auditor (web3)
 
 # Smart Contract Auditor
 
@@ -1525,11 +1381,7 @@ Complete audit process: references/audit-checklist.md
 
 ---
 
-## social-media-kit
-
-**Category:** marketing | **Version:** 1.0.0
-**Description:** Create social media content kits. Platform-specific posts, hashtag strategies, content calendars, engagement tactics.
-**Platforms:** openclaw, claude-code, cursor, codex
+## social-media-kit (marketing)
 
 # Social Media Kit
 
@@ -1585,11 +1437,7 @@ See references/content-calendar.md for weekly planning template.
 
 ---
 
-## business-development
-
-**Category:** growth | **Version:** 1.0.0
-**Description:** BD strategy, partnership frameworks, outreach templates, deal pipeline management, and negotiation playbooks for B2B SaaS.
-**Platforms:** openclaw, claude-code, cursor, codex
+## business-development (growth)
 
 # Business Development
 
@@ -1729,11 +1577,7 @@ to explore [partnership type], I'm here.
 
 ---
 
-## cold-outreach
-
-**Category:** growth | **Version:** 1.0.0
-**Description:** Cold email and LinkedIn outreach. Personalization frameworks, follow-up sequences, deliverability, and reply rate optimization.
-**Platforms:** openclaw, claude-code, cursor, codex
+## cold-outreach (growth)
 
 # Cold Outreach
 
@@ -1902,11 +1746,7 @@ Hi [Name],
 
 ---
 
-## accounting-finance
-
-**Category:** operations | **Version:** 1.0.0
-**Description:** Financial modeling, bookkeeping automation, invoicing workflows, tax compliance checklists, and P&L analysis for SMEs and startups.
-**Platforms:** openclaw, claude-code, cursor, codex
+## accounting-finance (operations)
 
 # Accounting & Finance
 
@@ -2045,11 +1885,7 @@ Runway < 6 months = fundraise or cut costs immediately.
 
 ---
 
-## data-analytics
-
-**Category:** analytics | **Version:** 1.0.0
-**Description:** Data analysis workflows, SQL query patterns, dashboard design, KPI frameworks, and data storytelling for business intelligence.
-**Platforms:** openclaw, claude-code, cursor, codex
+## data-analytics (analytics)
 
 # Data Analytics
 
@@ -2252,11 +2088,7 @@ print(f"Need {sample_size(0.05, 0.10)} users per variant")
 
 ---
 
-## data-management
-
-**Category:** analytics | **Version:** 1.0.0
-**Description:** Data governance, pipeline design, ETL workflows, data quality frameworks, and warehouse architecture for growing teams.
-**Platforms:** openclaw, claude-code, cursor, codex
+## data-management (analytics)
 
 # Data Management
 
@@ -2455,11 +2287,7 @@ Target: > 95% across all dimensions.
 
 ---
 
-## google-analytics
-
-**Category:** analytics | **Version:** 1.0.0
-**Description:** GA4 setup, event taxonomy, custom dimensions, conversion tracking, audience segments, and reporting automation.
-**Platforms:** openclaw, claude-code, cursor, codex
+## google-analytics (analytics)
 
 # Google Analytics 4
 
@@ -2647,11 +2475,7 @@ for row in response.rows:
 
 ---
 
-## search-console
-
-**Category:** analytics | **Version:** 1.0.0
-**Description:** Google Search Console optimization. Index coverage, performance analysis, sitemap management, and search appearance debugging.
-**Platforms:** openclaw, claude-code, cursor, codex
+## search-console (analytics)
 
 # Google Search Console
 
@@ -2810,11 +2634,7 @@ Check Enhancements section for structured data issues:
 
 ---
 
-## bing-webmaster
-
-**Category:** analytics | **Version:** 1.0.0
-**Description:** Bing Webmaster Tools setup, IndexNow protocol, URL submission, backlink analysis, and Bing-specific SEO optimization.
-**Platforms:** openclaw, claude-code, cursor, codex
+## bing-webmaster (analytics)
 
 # Bing Webmaster Tools
 
@@ -2944,11 +2764,7 @@ Bing Webmaster provides free backlink data (competitive with paid tools for basi
 
 ---
 
-## yandex-webmaster
-
-**Category:** analytics | **Version:** 1.0.0
-**Description:** Yandex Webmaster setup, Yandex-specific SEO, regional targeting, Turbo pages, and Russian market search optimization.
-**Platforms:** openclaw, claude-code, cursor, codex
+## yandex-webmaster (analytics)
 
 # Yandex Webmaster
 
@@ -3107,11 +2923,7 @@ for query in r.json().get("queries", []):
 
 ---
 
-## social-media-growth
-
-**Category:** growth | **Version:** 1.0.0
-**Description:** Platform-specific growth tactics. Algorithmic optimization, engagement hacking, viral mechanics, and community building at scale.
-**Platforms:** openclaw, claude-code, cursor, codex
+## social-media-growth (growth)
 
 # Social Media Growth
 
@@ -3257,11 +3069,7 @@ for query in r.json().get("queries", []):
 
 ---
 
-## crm-operations
-
-**Category:** operations | **Version:** 1.0.0
-**Description:** CRM setup, pipeline automation, lead routing, deal tracking, and operational workflows for HubSpot, Salesforce, Pipedrive.
-**Platforms:** openclaw, claude-code, cursor, codex
+## crm-operations (operations)
 
 # CRM Operations
 
@@ -3409,11 +3217,7 @@ Forecast = Σ (Deal value × Stage probability × Rep confidence adjustment)
 
 ---
 
-## competitor-intelligence
-
-**Category:** growth | **Version:** 1.0.0
-**Description:** Competitive analysis frameworks, market positioning, feature comparison matrices, and win/loss analysis for strategic planning.
-**Platforms:** openclaw, claude-code, cursor, codex
+## competitor-intelligence (growth)
 
 # Competitor Intelligence
 
@@ -3558,11 +3362,7 @@ Common axis pairs:
 
 ---
 
-## revenue-operations
-
-**Category:** operations | **Version:** 1.0.0
-**Description:** RevOps frameworks, funnel metrics, forecasting models, GTM alignment, and operational efficiency for scaling teams.
-**Platforms:** openclaw, claude-code, cursor, codex
+## revenue-operations (operations)
 
 # Revenue Operations
 
@@ -3724,11 +3524,7 @@ Handoff format: Internal doc + joint call (AE + CS + customer)
 
 ---
 
-## ab-testing
-
-**Category:** conversion | **Version:** 1.0.0
-**Description:** A/B test design, statistical analysis, sample size calculation, experiment prioritization, and results interpretation.
-**Platforms:** openclaw, claude-code, cursor, codex
+## ab-testing (conversion)
 
 # A/B Testing
 
@@ -3899,11 +3695,7 @@ print(f"P(variant > control): {prob_b_better:.1%}")
 
 ---
 
-## retention-analytics
-
-**Category:** analytics | **Version:** 1.0.0
-**Description:** Churn analysis, cohort retention, engagement scoring, health scoring, and win-back strategies for SaaS products.
-**Platforms:** openclaw, claude-code, cursor, codex
+## retention-analytics (analytics)
 
 # Retention Analytics
 
@@ -4064,11 +3856,7 @@ ORDER BY risk_level DESC, u.contract_end ASC;
 
 ---
 
-## affiliate-marketing
-
-**Category:** growth | **Version:** 1.0.0
-**Description:** Affiliate program design, commission structures, partner recruitment, tracking implementation, and performance optimization.
-**Platforms:** openclaw, claude-code, cursor, codex
+## affiliate-marketing (growth)
 
 # Affiliate Marketing
 
@@ -4220,11 +4008,7 @@ and walk through the program.
 
 ---
 
-## pricing-optimization
-
-**Category:** conversion | **Version:** 1.0.0
-**Description:** Price testing, value metric selection, packaging strategy, discount frameworks, and willingness-to-pay research.
-**Platforms:** openclaw, claude-code, cursor, codex
+## pricing-optimization (conversion)
 
 # Pricing Optimization
 
@@ -4376,11 +4160,7 @@ What you can do:
 
 ---
 
-## customer-acquisition
-
-**Category:** growth | **Version:** 1.0.0
-**Description:** CAC optimization, channel mix modeling, attribution analysis, and acquisition strategy for paid and organic channels.
-**Platforms:** openclaw, claude-code, cursor, codex
+## customer-acquisition (growth)
 
 # Customer Acquisition
 
@@ -4513,11 +4293,7 @@ Payback (months) = CAC / (Monthly ARPU × Gross margin %)
 
 ---
 
-## ascii-banner
-
-**Category:** design | **Version:** 1.0.0
-**Description:** Build animated ASCII banners for CLI tools and web interfaces. Frame-based animation, ANSI color systems, terminal compatibility, accessibility, and web-based ASCII shaders.
-**Platforms:** openclaw, claude-code, cursor, codex
+## ascii-banner (design)
 
 # Animated ASCII Banners
 
@@ -4833,3 +4609,276 @@ echo -e "\033[32m$(figlet -f slant 'skills.ws')\033[0m"
 - [ ] Web: add gradient fade, throttle to 30fps max
 
 ---
+
+## blog-engine (marketing)
+
+# Blog Engine
+
+End-to-end blog post pipeline from topic to publish-ready content.
+
+## Pipeline
+
+### 1. Research
+
+Before writing, gather:
+- Target keyword + 3-5 secondary keywords
+- Top 5 SERP results for the keyword — analyze their structure, word count, headings
+- Questions people ask (People Also Ask, forums, Reddit)
+- Statistics and data points to cite
+- Expert quotes to reference
+
+### 2. Outline
+
+Structure every post with:
+
+```
+# {Headline with primary keyword}
+
+## Introduction (100-150 words)
+- Hook: stat, question, bold claim, or story
+- Problem/context
+- Promise: what the reader will learn
+- Optional: table of contents for 2000+ word posts
+
+## {H2: Main Section 1}
+### {H3: Subsection if needed}
+
+## {H2: Main Section 2}
+
+## {H2: Main Section 3}
+
+## FAQ (3-5 questions with FAQPage schema)
+
+## Conclusion
+- Summary of key points
+- CTA (download, subscribe, try, contact)
+```
+
+### 3. Draft
+
+Writing rules:
+- First sentence answers the search query (featured snippet optimization)
+- Short paragraphs (2-3 sentences max)
+- Use transition words between sections
+- Include a relevant image/diagram every 300-400 words
+- Bucket brigades to maintain engagement ("Here's the thing:", "But wait:", "It gets better:")
+- Write at 8th grade reading level (Flesch-Kincaid 60-70)
+
+### 4. SEO Optimize
+
+Checklist:
+- [ ] Primary keyword in: title, H1, first 100 words, URL slug, meta description
+- [ ] Secondary keywords in H2s and body naturally
+- [ ] Meta description: 150-160 chars, includes keyword, has CTA
+- [ ] Alt text on all images (descriptive, keyword where natural)
+- [ ] Internal links: 3-5 to related posts/pages
+- [ ] External links: 2-3 to authoritative sources
+- [ ] URL slug: short, hyphenated, includes keyword
+- [ ] FAQPage schema markup for FAQ section
+
+### 5. Featured Snippet Optimization
+
+Target snippet formats:
+- **Paragraph snippet**: Answer the question in 40-60 words directly after the H2
+- **List snippet**: Use ordered/unordered lists with 5-8 items
+- **Table snippet**: Use HTML tables for comparison data
+- **Definition snippet**: "X is..." format immediately after "What is X?" heading
+
+### 6. Publish Checklist
+
+- [ ] Proofread for grammar and spelling
+- [ ] All links working
+- [ ] Images compressed and have alt text
+- [ ] Schema markup added (Article + FAQPage)
+- [ ] Open Graph tags set
+- [ ] Internal links added from existing content TO this new post
+- [ ] Scheduled social media promotion
+
+## References
+
+- [references/headline-formulas.md](references/headline-formulas.md) — 50+ proven headline templates
+- [references/blog-templates.md](references/blog-templates.md) — Post templates by type
+
+
+---
+
+## ui-ux-pro-max (design)
+
+# UI/UX Pro Max v2
+
+## Design System Quick Start
+
+### 1. Color Palette
+Choose a primary, secondary, and neutral:
+- **Primary**: Brand color, used for CTAs and key actions
+- **Secondary**: Complementary, used for highlights
+- **Neutral**: Gray scale for text, borders, backgrounds
+- **Semantic**: Success (green), Warning (amber), Error (red), Info (blue)
+
+Ensure 4.5:1 contrast ratio for text on all backgrounds (WCAG AA).
+
+Palette examples: [references/color-palettes.md](references/color-palettes.md)
+
+### 2. Typography
+- Max 2 fonts: one for headings, one for body
+- System font stack for performance: `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`
+- Scale: 12, 14, 16, 18, 20, 24, 30, 36, 48, 60
+- Line height: 1.5 for body, 1.2 for headings
+- Max line width: 65-75 characters
+
+Font pairing suggestions: [references/font-pairings.md](references/font-pairings.md)
+
+### 3. Spacing
+Use a 4px or 8px base grid:
+- 4px (xs), 8px (sm), 12px (md), 16px (lg), 24px (xl), 32px (2xl), 48px (3xl), 64px (4xl)
+- Consistent padding and margins throughout
+
+### 4. Components
+Standard component patterns: [references/component-patterns.md](references/component-patterns.md)
+
+## Accessibility Audit (WCAG 2.1 AA)
+
+Full checklist: [references/a11y-checklist.md](references/a11y-checklist.md)
+
+Quick checks:
+- [ ] Color contrast ≥ 4.5:1 (text), ≥ 3:1 (large text, UI components)
+- [ ] All images have alt text
+- [ ] Keyboard navigable (Tab, Enter, Escape, Arrow keys)
+- [ ] Focus indicators visible
+- [ ] Form labels associated with inputs
+- [ ] Error messages descriptive and associated with fields
+- [ ] No content conveys meaning through color alone
+- [ ] Skip navigation link for screen readers
+- [ ] Heading hierarchy (H1→H2→H3, no skipping)
+- [ ] Touch targets ≥ 44px × 44px
+
+## Responsive Breakpoints
+
+```css
+/* Mobile first */
+/* sm: 640px */
+/* md: 768px */
+/* lg: 1024px */
+/* xl: 1280px */
+/* 2xl: 1536px */
+```
+
+Design mobile first, enhance for larger screens.
+
+## References
+
+- [references/a11y-checklist.md](references/a11y-checklist.md) — Complete WCAG 2.1 AA checklist
+- [references/component-patterns.md](references/component-patterns.md) — UI component best practices
+- [references/color-palettes.md](references/color-palettes.md) — 10 ready-to-use palettes
+- [references/font-pairings.md](references/font-pairings.md) — 15 proven font combinations
+
+
+---
+
+## virustotal (dev)
+
+# VirusTotal Scanner
+
+Scan URLs, files, domains, and IPs for threats using VirusTotal.
+
+## Prerequisites
+
+Install vt CLI:
+```bash
+# Download from https://github.com/VirusTotal/vt-cli/releases
+# Or: pip install vt-py (Python library)
+vt init --apikey $VT_API_KEY
+```
+
+Free tier: 4 lookups/minute, 500/day. Premium: higher limits.
+
+## Quick Scans
+
+### Scan URL
+```bash
+vt scan url "https://example.com"
+# Returns analysis ID, then:
+vt url "https://example.com" --include=last_analysis_stats,reputation
+```
+
+### Scan Domain
+```bash
+vt domain "example.com" --include=last_analysis_stats,reputation,registrar,creation_date
+```
+
+### Scan File
+```bash
+vt scan file /path/to/file
+# Or by hash:
+vt file "SHA256_HASH" --include=last_analysis_stats,type_description,size
+```
+
+### Scan IP
+```bash
+vt ip "1.2.3.4" --include=last_analysis_stats,country,as_owner
+```
+
+## Interpreting Results
+
+### Analysis Stats
+```
+harmless: X    — engines found it safe
+malicious: X   — engines flagged as malicious
+suspicious: X  — engines found it suspicious
+undetected: X  — engines didn't flag it
+```
+
+**Decision matrix:**
+- malicious = 0, suspicious = 0 → **Clean**
+- malicious = 1-2 → **Likely false positive**, investigate vendor names
+- malicious = 3-5 → **Suspicious**, proceed with caution
+- malicious > 5 → **Malicious**, do not use/visit
+
+### Reputation Score
+- Positive → community voted safe
+- Negative → community flagged as dangerous
+- 0 → no community votes
+
+## Batch Scanning
+
+Scan multiple URLs from a file:
+```bash
+while IFS= read -r url; do
+  echo "Scanning: $url"
+  vt scan url "$url"
+  sleep 15  # respect rate limit (free tier)
+done < urls.txt
+```
+
+## Python API
+
+```python
+import vt
+import os
+
+client = vt.Client(os.environ["VT_API_KEY"])
+
+# Scan URL
+analysis = client.scan_url("https://example.com")
+# Get results
+url_obj = client.get_object("/urls/{url_id}")
+stats = url_obj.last_analysis_stats
+print(f"Malicious: {stats['malicious']}, Clean: {stats['harmless']}")
+
+client.close()
+```
+
+## Security Audit Workflow
+
+For auditing a website or skill:
+1. Scan the main domain
+2. Scan all external URLs referenced in code/config
+3. Scan any downloadable files
+4. Check domain age and registration (new domains = higher risk)
+5. Report any URL with malicious > 0
+
+## References
+
+- [references/vt-api-guide.md](references/vt-api-guide.md) — API endpoints and advanced usage
+
+

@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 import { getSkills } from "@/lib/skills";
 
-const BASE = "https://skills-ws.vercel.app";
+const BASE = "https://skills.ws";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const skills = getSkills();

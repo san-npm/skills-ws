@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: "FAQ — Agent Skills for AI",
   description:
     "Frequently asked questions about skills.ws — installation, security, compatibility, supported AI assistants, and how agent skills work with OpenClaw, Claude Code, Cursor, and Codex.",
-  alternates: { canonical: "https://skills-ws.vercel.app/faq" },
+  alternates: { canonical: "https://skills.ws/faq" },
 };
 
 const Code = ({ children }: { children: React.ReactNode }) => (

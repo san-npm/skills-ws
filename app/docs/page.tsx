@@ -4,7 +4,7 @@ export const metadata: Metadata = {
   title: "Documentation — How Agent Skills Work",
   description:
     "Learn how SKILL.md agent skills work, how to install them with npx skills-ws, and the security model. Compatible with OpenClaw, Claude Code, Cursor, and Codex.",
-  alternates: { canonical: "https://skills-ws.vercel.app/docs" },
+  alternates: { canonical: "https://skills.ws/docs" },
 };
 
 export default function DocsPage() {

@@ -5,7 +5,7 @@ import { getSkills, getSkill, categoryColors } from "@/lib/skills";
 import InstallBox from "@/components/InstallBox";
 import SkillContent from "@/components/SkillContent";
 
-const BASE_URL = "https://skills-ws.vercel.app";
+const BASE_URL = "https://skills.ws";
 
 export function generateStaticParams() {
   return getSkills().map((s) => ({ name: s.name }));

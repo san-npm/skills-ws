@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
-const BASE_URL = "https://skills-ws.vercel.app";
+const BASE_URL = "https://skills.ws";
 
 export const viewport: Viewport = {
   themeColor: "#0a0a0a",
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     template: "%s | skills.ws",
   },
   description:
-    "39 agent skills for AI coding assistants. Marketing, SEO, growth, analytics, CRO, and operations. Install with npx skills-ws. Built for OpenClaw, Claude Code, Cursor, and Codex.",
+    "40 agent skills for AI coding assistants. Marketing, SEO, growth, analytics, CRO, and operations. Install with npx skills-ws. Built for OpenClaw, Claude Code, Cursor, and Codex.",
   keywords: [
     "AI skills",
     "agent skills",
@@ -58,7 +58,7 @@ export const metadata: Metadata = {
     siteName: "skills.ws",
     title: "skills.ws — Agent Skills for AI Coding Assistants",
     description:
-      "39 agent skills for AI coding assistants. Marketing, SEO, growth, analytics, and CRO. Install with a single command.",
+      "40 agent skills for AI coding assistants. Marketing, SEO, growth, analytics, and CRO. Install with a single command.",
     images: [
       {
         url: `${BASE_URL}/og.png`,
@@ -72,7 +72,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "skills.ws — Agent Skills for AI",
     description:
-      "39 agent skills for marketing, SEO, growth, and CRO. Install with npx skills-ws.",
+      "40 agent skills for marketing, SEO, growth, and CRO. Install with npx skills-ws.",
     creator: "@3615crypto",
     images: [`${BASE_URL}/og.png`],
   },
@@ -100,17 +100,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
-        {/* Google Analytics placeholder */}
-        {process.env.NEXT_PUBLIC_GA_ID && (
-          <>
-            <script async src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`} />
-            <script
-              dangerouslySetInnerHTML={{
-                __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${process.env.NEXT_PUBLIC_GA_ID}');`,
-              }}
-            />
-          </>
-        )}
+        {/* Google tag (gtag.js) */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-SJXHDFFKMD" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-SJXHDFFKMD');`,
+          }}
+        />
       </head>
       <body className="font-mono min-h-screen overflow-x-hidden relative">
         <nav className="sticky top-0 z-50 bg-bg/80 backdrop-blur-md border-b border-border">
@@ -192,7 +188,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               downloadUrl: "https://www.npmjs.com/package/skills-ws",
               softwareVersion: "1.0.4",
               description:
-                "CLI tool to install agent skills for AI coding assistants. 39 skills for marketing, SEO, growth, analytics, and CRO.",
+                "CLI tool to install agent skills for AI coding assistants. 40 skills for marketing, SEO, growth, analytics, and CRO.",
               offers: {
                 "@type": "Offer",
                 price: "0",
