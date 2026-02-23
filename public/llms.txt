@@ -4,7 +4,7 @@
 
 skills.ws provides SKILL.md files that give AI coding assistants specialized knowledge — workflows, checklists, code patterns, and domain expertise. Drop them into your project and your AI gets smarter.
 
-## Skills (40)
+## Skills (58)
 
 ### Marketing
 - [seo-geo](https://skills.ws/skills/seo-geo): SEO & GEO (Generative Engine Optimization) for websites. Optimize for AI search engines and traditional search.
@@ -18,6 +18,10 @@ skills.ws provides SKILL.md files that give AI coding assistants specialized kno
 - [marketing-analytics](https://skills.ws/skills/marketing-analytics): Marketing analytics setup and optimization. GA4, attribution, dashboards, KPIs, funnel analysis.
 - [social-media-kit](https://skills.ws/skills/social-media-kit): Create social media content kits. Platform-specific posts, hashtag strategies, content calendars, engagement tactics.
 - [blog-engine](https://skills.ws/skills/blog-engine): End-to-end blog post creation pipeline: research, outline, draft, SEO optimize, publish-ready. Headline formulas, intro hooks, CTA patterns, internal linking, featured snippet optimization.
+- [pr-media-outreach](https://skills.ws/skills/pr-media-outreach): End-to-end PR and media outreach playbook covering press releases, journalist pitching, crisis comms, and PR measurement.
+- [webinar-events](https://skills.ws/skills/webinar-events): End-to-end webinar funnel design from registration through conversion, including virtual event strategy, email sequences, and content repurposing.
+- [influencer-marketing](https://skills.ws/skills/influencer-marketing): Complete influencer marketing playbook covering identification, outreach, contracts, compliance, and ROI measurement across platforms.
+- [brand-strategy](https://skills.ws/skills/brand-strategy): Brand positioning, messaging hierarchy, visual identity, and brand architecture frameworks for building and managing a cohesive brand system.
 
 ### Conversion
 - [page-cro](https://skills.ws/skills/page-cro): Optimize, improve, or increase conversions on any marketing page — homepage, landing, pricing, feature pages.
@@ -44,11 +48,16 @@ skills.ws provides SKILL.md files that give AI coding assistants specialized kno
 - [competitor-intelligence](https://skills.ws/skills/competitor-intelligence): Competitive analysis frameworks, market positioning, feature comparison matrices, and win/loss analysis for strategic planning.
 - [affiliate-marketing](https://skills.ws/skills/affiliate-marketing): Affiliate program design, commission structures, partner recruitment, tracking implementation, and performance optimization.
 - [customer-acquisition](https://skills.ws/skills/customer-acquisition): CAC optimization, channel mix modeling, attribution analysis, and acquisition strategy for paid and organic channels.
+- [community-building](https://skills.ws/skills/community-building): Playbook for building, growing, and sustaining online communities from zero to 10,000+ members with engagement frameworks and metrics.
+- [customer-feedback](https://skills.ws/skills/customer-feedback): Design and operate a Voice of Customer program — from NPS/CSAT collection through qualitative analysis to roadmap integration.
 
 ### Operations
 - [accounting-finance](https://skills.ws/skills/accounting-finance): Financial modeling, bookkeeping automation, invoicing workflows, tax compliance checklists, and P&L analysis for SMEs and startups.
 - [crm-operations](https://skills.ws/skills/crm-operations): CRM setup, pipeline automation, lead routing, deal tracking, and operational workflows for HubSpot, Salesforce, Pipedrive.
 - [revenue-operations](https://skills.ws/skills/revenue-operations): RevOps frameworks, funnel metrics, forecasting models, GTM alignment, and operational efficiency for scaling teams.
+- [eu-legal-compliance](https://skills.ws/skills/eu-legal-compliance): Navigate GDPR, DSA, DMA, EU AI Act, NIS2, and consumer protection — with specific article references, deadlines, and penalties.
+- [hiring-team-building](https://skills.ws/skills/hiring-team-building): Hire, onboard, and build high-performing teams in the EU — covering labor law, structured interviews, remote work regulations, and team design.
+- [project-management](https://skills.ws/skills/project-management): End-to-end project management frameworks covering sprint planning, OKRs, stakeholder management, risk mitigation, and retrospectives.
 
 ### Analytics
 - [data-analytics](https://skills.ws/skills/data-analytics): Data analysis workflows, SQL query patterns, dashboard design, KPI frameworks, and data storytelling for business intelligence.
@@ -61,6 +70,15 @@ skills.ws provides SKILL.md files that give AI coding assistants specialized kno
 
 ### Dev
 - [virustotal](https://skills.ws/skills/virustotal): URL, file, domain, and IP scanning via VirusTotal CLI and API. Threat detection, reputation checks, malware analysis, phishing detection.
+- [git-workflow](https://skills.ws/skills/git-workflow): Branching strategies, commit conventions, code review, and release workflows for professional teams.
+- [cicd-pipelines](https://skills.ws/skills/cicd-pipelines): Production-grade CI/CD with GitHub Actions, deployment strategies, caching, and release automation.
+- [api-design](https://skills.ws/skills/api-design): REST, GraphQL, and OpenAPI design patterns with auth, error handling, versioning, and webhook best practices.
+- [database-design](https://skills.ws/skills/database-design): Schema design, indexing, migrations, query optimization, and PostgreSQL patterns for production systems.
+- [testing-strategy](https://skills.ws/skills/testing-strategy): Testing pyramid, framework selection, mocking patterns, CI integration, and flaky test management for production codebases.
+- [web-performance](https://skills.ws/skills/web-performance): Core Web Vitals optimization, bundle analysis, caching strategies, and server-side performance for modern web applications.
+- [security-hardening](https://skills.ws/skills/security-hardening): Comprehensive web application security hardening covering OWASP Top 10, secure headers, authentication, and dependency auditing.
+- [prompt-engineering](https://skills.ws/skills/prompt-engineering): Patterns and techniques for designing, evaluating, and optimizing LLM prompts across models and use cases.
+- [ai-agent-design](https://skills.ws/skills/ai-agent-design): Architecture patterns, tool design, memory systems, and deployment strategies for building reliable AI agents.
 
 ## Links
 - Website: https://skills.ws
