@@ -117,7 +117,7 @@ export default function SkillsGrid({
               <div className="flex flex-col items-end gap-2 sm:min-w-fit">
                 <span
                   className={`text-[11px] uppercase tracking-wide font-medium px-2.5 py-1 rounded ${
-                    categoryColors[skill.category]?.text ?? "text-text-dim"
+                    categoryColors[skill.category]?.text ?? "text-text-main"
                   } ${categoryColors[skill.category]?.bg ?? "bg-border/10"}`}
                 >
                   {skill.category}

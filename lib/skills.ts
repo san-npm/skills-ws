@@ -35,12 +35,12 @@ export function getCategories(): string[] {
 }
 
 export const categoryColors: Record<string, { text: string; bg: string }> = {
-  marketing: { text: "text-cat-purple", bg: "bg-cat-purple/10" },
-  web3: { text: "text-cat-blue", bg: "bg-cat-blue/10" },
-  design: { text: "text-cat-pink", bg: "bg-cat-pink/10" },
-  conversion: { text: "text-cat-teal", bg: "bg-cat-teal/10" },
-  dev: { text: "text-cat-orange", bg: "bg-cat-orange/10" },
-  growth: { text: "text-text-dim", bg: "bg-border/10" },
-  analytics: { text: "text-text-dim", bg: "bg-border/10" },
-  operations: { text: "text-text-dim", bg: "bg-border/10" },
+  marketing: { text: "text-text-main", bg: "bg-cat-purple/10" },
+  web3: { text: "text-text-main", bg: "bg-cat-blue/10" },
+  design: { text: "text-text-main", bg: "bg-cat-pink/10" },
+  conversion: { text: "text-text-main", bg: "bg-cat-teal/10" },
+  dev: { text: "text-text-main", bg: "bg-cat-orange/10" },
+  growth: { text: "text-text-main", bg: "bg-border/10" },
+  analytics: { text: "text-text-main", bg: "bg-border/10" },
+  operations: { text: "text-text-main", bg: "bg-border/10" },
 };

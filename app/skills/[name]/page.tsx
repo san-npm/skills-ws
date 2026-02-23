@@ -54,7 +54,7 @@ export default function SkillPage({ params }: { params: { name: string } }) {
   if (!skill) notFound();
 
   const colors = categoryColors[skill.category] ?? {
-    text: "text-text-dim",
+    text: "text-text-main",
     bg: "bg-border/10",
   };
 
