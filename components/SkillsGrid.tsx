@@ -41,19 +41,19 @@ export default function SkillsGrid({
 
   return (
     <>
-      <div className="mb-8">
+      <div className="mb-8 overflow-hidden">
         <input
           id="search-input"
           type="text"
           placeholder="Search skills...  /"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-bg-card border border-border rounded-lg px-5 py-3.5 text-text-main font-mono text-sm outline-none transition-colors focus:border-accent placeholder:text-text-muted"
+          className="w-full bg-bg-card border border-border rounded-lg px-4 py-3.5 text-text-main font-mono text-sm outline-none transition-colors focus:border-accent placeholder:text-text-muted"
           autoComplete="off"
         />
       </div>
 
-      <div className="flex gap-2 mb-8 flex-wrap">
+      <div className="flex gap-2 mb-8 flex-wrap overflow-x-auto">
         <button
           onClick={() => setFilter("all")}
           className={`px-4 py-2 rounded-md font-mono text-sm border transition-all cursor-pointer ${

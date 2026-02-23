@@ -17,7 +17,7 @@ export default function Home() {
   const categories = getCategories();
 
   return (
-    <div className="max-w-[900px] mx-auto px-6">
+    <div className="max-w-[900px] mx-auto px-4 sm:px-6">
       <header className="pt-20 pb-10 text-center sm:pt-20 max-sm:pt-12 relative">
         <div className="absolute inset-0 -mx-6 overflow-hidden" style={{ height: "500px", top: "-40px" }}>
           <AsciiBackground />
