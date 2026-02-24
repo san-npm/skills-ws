@@ -2,6 +2,7 @@ import { getSkills, getCategories } from "@/lib/skills";
 import InstallBox from "@/components/InstallBox";
 import SkillsGrid from "@/components/SkillsGrid";
 import AsciiBackground from "@/components/AsciiBackground";
+import NpmDownloads from "@/components/NpmDownloads";
 
 const ASCII = `███████╗██╗  ██╗██╗██╗     ██╗     ███████╗   ██╗    ██╗███████╗
 ██╔════╝██║ ██╔╝██║██║     ██║     ██╔════╝   ██║    ██║██╔════╝
@@ -92,6 +93,12 @@ export default function Home() {
             {platforms.length}
           </div>
           <div className="text-xs text-text-muted mt-1">platforms</div>
+        </div>
+        <div className="text-center">
+          <div className="text-[28px] font-bold font-sans max-sm:text-[22px]">
+            <NpmDownloads />
+          </div>
+          <div className="text-xs text-text-muted mt-1">npm downloads</div>
         </div>
 
       </div>

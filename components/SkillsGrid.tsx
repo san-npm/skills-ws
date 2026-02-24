@@ -37,7 +37,6 @@ export default function SkillsGrid({
 }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
-  const npmDownloads = useNpmDownloads();
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -129,11 +128,6 @@ export default function SkillsGrid({
                   {skill.description}
                 </div>
                 <div className="flex items-center gap-4 mt-2.5">
-                  {npmDownloads != null && (
-                    <span className="text-[11px] text-text-muted font-mono">
-                      {npmDownloads.toLocaleString()} installs
-                    </span>
-                  )}
                   <span className="flex items-center gap-1 text-[11px] text-text-muted font-mono">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500/70" />
                     VT clean
