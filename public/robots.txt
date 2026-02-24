@@ -1,7 +1,6 @@
-# skills-ws.vercel.app
+# skills.ws
 User-agent: *
 Allow: /
-Disallow: /api/
 
 # AI Crawlers — welcome
 User-agent: GPTBot
@@ -31,4 +30,4 @@ Allow: /
 User-agent: Applebot
 Allow: /
 
-Sitemap: https://skills-ws.vercel.app/sitemap.xml
+Sitemap: https://skills.ws/sitemap.xml

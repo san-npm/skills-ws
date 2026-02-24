@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # skills.ws installer — install agent skills from Commit Media
 # Usage:
-#   curl -fsSL https://skills-ws.vercel.app/install.sh | bash
-#   curl -fsSL https://skills-ws.vercel.app/install.sh | bash -s -- --skill seo-geo
+#   curl -fsSL https://skills.ws/install.sh | bash
+#   curl -fsSL https://skills.ws/install.sh | bash -s -- --skill seo-geo
 
 set -euo pipefail
 
 REPO="san-npm/skills-ws"
 BRANCH="main"
 BASE_URL="https://raw.githubusercontent.com/$REPO/$BRANCH"
-SKILLS_JSON_URL="https://skills-ws.vercel.app/skills.json"
+SKILLS_JSON_URL="https://skills.ws/skills.json"
 
 GREEN='\033[0;32m'
 DIM='\033[2m'
@@ -71,6 +71,11 @@ process.stdin.on('end', () => {
 ")
 
 if [ -n "$SPECIFIC_SKILL" ]; then
+  # Validate skill name to prevent path traversal
+  if ! echo "$SPECIFIC_SKILL" | grep -qE '^[a-z0-9-]+$'; then
+    echo "Error: Invalid skill name. Only lowercase letters, numbers, and hyphens are allowed."
+    exit 1
+  fi
   SKILLS="$SPECIFIC_SKILL"
 fi
 
