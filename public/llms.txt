@@ -4,7 +4,7 @@
 
 skills.ws provides SKILL.md files that give AI coding assistants specialized knowledge — workflows, checklists, code patterns, and domain expertise. Drop them into your project and your AI gets smarter.
 
-## Skills (58)
+## Skills (60)
 
 ### Marketing
 - [seo-geo](https://skills.ws/skills/seo-geo): SEO & GEO (Generative Engine Optimization) for websites. Optimize for AI search engines and traditional search.
@@ -79,6 +79,8 @@ skills.ws provides SKILL.md files that give AI coding assistants specialized kno
 - [security-hardening](https://skills.ws/skills/security-hardening): Comprehensive web application security hardening covering OWASP Top 10, secure headers, authentication, and dependency auditing.
 - [prompt-engineering](https://skills.ws/skills/prompt-engineering): Patterns and techniques for designing, evaluating, and optimizing LLM prompts across models and use cases.
 - [ai-agent-design](https://skills.ws/skills/ai-agent-design): Architecture patterns, tool design, memory systems, and deployment strategies for building reliable AI agents.
+- [mvp-launcher](https://skills.ws/skills/mvp-launcher): Ship MVPs fast: validation frameworks, scoping, build-vs-buy decisions, 3-week sprint plans, launch checklists, and post-launch playbooks.
+- [nextjs-stack](https://skills.ws/skills/nextjs-stack): Opinionated full-stack Next.js blueprint: App Router, Tailwind, shadcn/ui, Prisma, Postgres, Stripe, auth, and deployment.
 
 ## Links
 - Website: https://skills.ws

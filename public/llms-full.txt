@@ -1,6 +1,6 @@
 # skills.ws — Full Skill Reference
 
-> Complete SKILL.md content for all 58 skills.
+> Complete SKILL.md content for all 60 skills.
 
 ---
 
@@ -4158,6 +4158,171 @@ What you can do:
 
 **Expected impact:** Well-communicated 10-20% increase typically sees < 2% incremental churn. Poorly communicated or >30% increase can see 5-10%+ churn.
 
+## 8. Stripe Integration Quickstart
+
+### Checkout Session Creation
+
+```typescript
+import Stripe from 'stripe';
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+async function createCheckout(priceId: string, userId: string) {
+  return stripe.checkout.sessions.create({
+    mode: 'subscription',
+    payment_method_types: ['card'],
+    line_items: [{ price: priceId, quantity: 1 }],
+    success_url: `${process.env.APP_URL}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${process.env.APP_URL}/pricing`,
+    metadata: { userId },
+    subscription_data: { metadata: { userId } },
+  });
+}
+```
+
+### Webhook Handler
+
+```typescript
+// app/api/stripe/webhook/route.ts
+import { headers } from 'next/headers';
+import Stripe from 'stripe';
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+export async function POST(req: Request) {
+  const body = await req.text();
+  const sig = (await headers()).get('stripe-signature')!;
+  let event: Stripe.Event;
+  try {
+    event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!);
+  } catch {
+    return new Response('Invalid signature', { status: 400 });
+  }
+
+  switch (event.type) {
+    case 'checkout.session.completed': {
+      const session = event.data.object as Stripe.Checkout.Session;
+      // Create subscription record, link to userId from metadata
+      break;
+    }
+    case 'invoice.paid': {
+      // Extend subscription period, send receipt
+      break;
+    }
+    case 'customer.subscription.updated': {
+      // Handle plan changes, status transitions
+      break;
+    }
+    case 'customer.subscription.deleted': {
+      // Mark subscription canceled, revoke access
+      break;
+    }
+  }
+  return new Response('OK', { status: 200 });
+}
+```
+
+**Critical:** Never parse the body as JSON before passing to `constructEvent` — it needs the raw string for signature verification.
+
+## 9. Subscription Patterns
+
+| Pattern | Implementation | Best for |
+|---------|---------------|----------|
+| Free trial → paid | `subscription_data: { trial_period_days: 14 }` | Products needing time to show value |
+| Freemium | No Stripe until upgrade; gate features in code | Wide-funnel products |
+| Metered/usage-based | `mode: 'subscription'` + `usage_type: 'metered'` on price | API products, infrastructure |
+
+### Freemium Feature Gates
+
+```typescript
+// lib/subscription.ts
+type Plan = 'free' | 'pro' | 'enterprise';
+const FEATURE_ACCESS: Record<string, Plan[]> = {
+  'export-csv': ['pro', 'enterprise'],
+  'api-access': ['pro', 'enterprise'],
+  'custom-domain': ['enterprise'],
+  'team-members': ['pro', 'enterprise'],
+};
+
+export function hasAccess(feature: string, plan: Plan): boolean {
+  return FEATURE_ACCESS[feature]?.includes(plan) ?? true; // unlisted = free
+}
+```
+
+### Usage-Based Billing
+
+```typescript
+// Report usage at end of billing period or in real-time
+await stripe.subscriptionItems.createUsageRecord(subscriptionItemId, {
+  quantity: apiCallCount,
+  timestamp: Math.floor(Date.now() / 1000),
+  action: 'increment',
+});
+```
+
+## 10. Pricing Page Implementation
+
+### Plan Comparison Component Pattern
+
+```typescript
+const PLANS = [
+  { name: 'Free', price: '$0', priceId: null, features: ['5 projects', 'Community support'] },
+  { name: 'Pro', price: '$29/mo', priceId: 'price_pro_monthly', features: ['Unlimited projects', 'Priority support', 'API access'], popular: true },
+  { name: 'Enterprise', price: 'Custom', priceId: null, cta: 'Contact Sales', features: ['Everything in Pro', 'SSO', 'SLA', 'Dedicated CSM'] },
+] as const;
+```
+
+### Upgrade/Downgrade Flows
+
+```typescript
+// Upgrade: prorate immediately
+await stripe.subscriptions.update(subscriptionId, {
+  items: [{ id: subscriptionItemId, price: newPriceId }],
+  proration_behavior: 'always_invoice', // charge difference now
+});
+
+// Downgrade: apply at period end
+await stripe.subscriptions.update(subscriptionId, {
+  items: [{ id: subscriptionItemId, price: newPriceId }],
+  proration_behavior: 'none',
+  billing_cycle_anchor: 'unchanged', // change takes effect at renewal
+});
+```
+
+### Customer Portal (self-serve management)
+
+```typescript
+const portalSession = await stripe.billingPortal.sessions.create({
+  customer: stripeCustomerId,
+  return_url: `${process.env.APP_URL}/dashboard/billing`,
+});
+// Redirect user to portalSession.url
+```
+
+## 11. Testing Payments
+
+| Item | Details |
+|------|---------|
+| Test card (success) | `4242 4242 4242 4242` any future exp, any CVC |
+| Test card (decline) | `4000 0000 0000 0002` |
+| Test card (3D Secure) | `4000 0025 0000 3155` |
+| Webhook CLI | `stripe listen --forward-to localhost:3000/api/stripe/webhook` |
+
+**Idempotency:** Use `Idempotency-Key` header on Stripe API calls to prevent duplicate charges:
+
+```typescript
+await stripe.charges.create({ amount: 2000, currency: 'usd' }, {
+  idempotencyKey: `charge_${orderId}`,
+});
+```
+
+**Testing checklist:**
+- [ ] Successful checkout → subscription created in DB
+- [ ] Card decline → user sees error, no DB record created
+- [ ] Webhook replay (`stripe trigger checkout.session.completed`) → idempotent
+- [ ] Subscription cancel → access revoked, status updated
+- [ ] Plan upgrade → prorated charge correct
+- [ ] Plan downgrade → takes effect at period end
+
+
 ---
 
 ## customer-acquisition (growth)
@@ -5907,6 +6072,144 @@ npx stryker run
 ## References
 
 See `references/` for CI templates, factory patterns, and load testing scenarios.
+
+## Error Monitoring (Production)
+
+### Sentry Setup (Next.js)
+
+```bash
+npx @sentry/wizard@latest -i nextjs
+# Automatically configures: sentry.client.config.ts, sentry.server.config.ts,
+# sentry.edge.config.ts, instrumentation.ts, next.config.js wrapper
+```
+
+**Source maps:** The wizard configures `@sentry/nextjs` to upload source maps during build. Verify with:
+```bash
+npx sentry-cli sourcemaps list --org=YOUR_ORG --project=YOUR_PROJECT
+```
+
+**Error grouping:** Sentry groups by stack trace by default. Customize with fingerprints:
+```typescript
+Sentry.captureException(error, { fingerprint: ['checkout-flow', error.code] });
+```
+
+**Alert rules (configure in Sentry dashboard):**
+
+| Rule | Condition | Action |
+|------|-----------|--------|
+| New issue spike | >10 events in 5 min | Slack + PagerDuty |
+| Regression | Resolved issue recurs | Slack + email |
+| Error rate | >1% of transactions | PagerDuty |
+| Performance | p95 > 2s | Slack |
+
+**Performance monitoring:** Enabled by default with `tracesSampleRate`. Start at `0.1` (10%) in production, increase if needed:
+```typescript
+Sentry.init({ dsn: '...', tracesSampleRate: 0.1, profilesSampleRate: 0.1 });
+```
+
+## Logging
+
+### Structured Logging (pino)
+
+```typescript
+// src/lib/logger.ts
+import pino from 'pino';
+
+export const logger = pino({
+  level: process.env.LOG_LEVEL ?? 'info',
+  formatters: {
+    level: (label) => ({ level: label }), // "info" not 30
+  },
+  ...(process.env.NODE_ENV === 'development' && {
+    transport: { target: 'pino-pretty' },
+  }),
+});
+
+// Usage with context
+export function createRequestLogger(requestId: string) {
+  return logger.child({ requestId });
+}
+```
+
+### Log Levels
+
+| Level | Use for | Example |
+|-------|---------|---------|
+| `error` | Failures needing attention | Payment failed, DB connection lost |
+| `warn` | Degraded but functional | Rate limit approaching, slow query |
+| `info` | Business events | User signed up, subscription created |
+| `debug` | Development diagnostics | Query params, cache hit/miss |
+
+### Request ID Tracing
+
+```typescript
+// middleware.ts — inject request ID
+import { NextResponse } from 'next/server';
+import { randomUUID } from 'crypto';
+
+export function middleware(request: Request) {
+  const requestId = randomUUID();
+  const headers = new Headers(request.headers);
+  headers.set('x-request-id', requestId);
+  const response = NextResponse.next({ request: { headers } });
+  response.headers.set('x-request-id', requestId);
+  return response;
+}
+```
+
+### Centralized Log Aggregation
+
+| Service | Pino transport | Free tier |
+|---------|---------------|-----------|
+| **Axiom** | `@axiomhq/pino` | 500GB/mo ingest |
+| **Datadog** | `pino-datadog-transport` | 14-day trial |
+| **BetterStack** | `@logtail/pino` | 1GB/mo |
+
+```typescript
+// Production transport example (Axiom)
+import pino from 'pino';
+const transport = pino.transport({
+  target: '@axiomhq/pino',
+  options: { dataset: 'my-app', token: process.env.AXIOM_TOKEN },
+});
+export const logger = pino(transport);
+```
+
+## Observability Checklist
+
+### Must-Have (Day 1)
+- [ ] Error tracking (Sentry) with source maps and alerting
+- [ ] Structured logging with request ID tracing
+- [ ] Uptime monitoring (BetterStack, UptimeRobot) — check `/api/health` every 60s
+- [ ] Basic performance monitoring (Sentry or Vercel Analytics)
+
+### Should-Have (Week 2)
+- [ ] Centralized log aggregation (Axiom/Datadog)
+- [ ] Performance budgets: LCP < 2.5s, FID < 100ms, CLS < 0.1
+- [ ] Database query monitoring (slow query log, connection pool alerts)
+- [ ] Custom business metric dashboards (signup rate, activation, errors by endpoint)
+
+### Nice-to-Have (Month 2+)
+- [ ] Distributed tracing across services
+- [ ] Alerting thresholds with escalation (warn → page)
+- [ ] On-call rotation (PagerDuty/Opsgenie): primary + secondary, 1-week rotations
+- [ ] Runbooks for common incidents (DB down, spike in errors, payment webhook failures)
+- [ ] SLO tracking (99.9% uptime = 8.7h downtime/year budget)
+
+### Health Endpoint
+
+```typescript
+// app/api/health/route.ts
+import { db } from '@/lib/db';
+export async function GET() {
+  try {
+    await db.$queryRaw`SELECT 1`;
+    return Response.json({ status: 'ok', db: 'connected' });
+  } catch {
+    return Response.json({ status: 'degraded', db: 'disconnected' }, { status: 503 });
+  }
+}
+```
 
 
 ---
@@ -8146,5 +8449,383 @@ SAFETY_CONFIG = {
 ```
 
 → See `references/` for framework-specific implementation guides and safety checklists.
+
+
+---
+
+## mvp-launcher (dev)
+
+# MVP Launcher
+
+## 1. Validate Before Building
+
+**Minimum validation checklist (do ALL before writing code):**
+
+- [ ] Problem interviews with 5+ target users (ask about pain, not your solution)
+- [ ] Competitor analysis — list top 5, identify gaps
+- [ ] Landing page + waitlist (Carrd/Framer, $0-$20) — target 100+ signups or 5%+ conversion
+- [ ] Fake door test: advertise the feature, measure clicks before building
+- [ ] Define success metric: "MVP is successful if X users do Y within Z days"
+
+**Kill signals:** <50 waitlist signups after 500 visits, zero users willing to pay, problem already solved well by incumbents.
+
+## 2. Scope with MoSCoW
+
+| Priority | Definition | Example |
+|----------|-----------|---------|
+| **Must** | Product is useless without it | Core value proposition, auth, data persistence |
+| **Should** | Expected but can workaround | Email notifications, search, mobile responsive |
+| **Could** | Nice to have, adds polish | Dark mode, export, keyboard shortcuts |
+| **Won't** | Explicitly cut for v1 | Admin dashboard, API, integrations, i18n |
+
+**The ONE thing test:** Complete this sentence: "Users will choose this over alternatives because ___." If your MVP doesn't nail that sentence, re-scope.
+
+## 3. Build vs Buy
+
+| Feature | Recommendation | Service | Build time if DIY |
+|---------|---------------|---------|-------------------|
+| Auth | **Buy** | Clerk, Supabase Auth, Auth0 | 2-5 days |
+| Payments | **Buy** | Stripe, Lemon Squeezy | 3-7 days |
+| Email (transactional) | **Buy** | Resend, Postmark | 1-2 days |
+| Email (marketing) | **Buy** | Loops, ConvertKit | 2-3 days |
+| File uploads | **Buy** | UploadThing, S3+presigned | 1-3 days |
+| Search | **Buy** (until >100k records) | Algolia, Meilisearch | 3-5 days |
+| Realtime | **Buy** | Ably, Pusher, Supabase Realtime | 2-4 days |
+| Analytics | **Buy** | PostHog, Plausible | 1-2 days |
+| CMS | **Buy** | Sanity, Payload | 3-7 days |
+| Core feature | **Build** | — | That's your product |
+
+**Rule:** If it's not your core differentiator, use a service. Period.
+
+## 4. Tech Stack Selection
+
+| Project type | Frontend | Backend | DB | Deploy |
+|-------------|----------|---------|-----|--------|
+| SaaS | Next.js / Remix | Server Actions / tRPC | Postgres (Neon) | Vercel |
+| Marketplace | Next.js | API routes + queue | Postgres + Redis | Railway |
+| Dev tool / API | Docs site (Mintlify) | Hono / Fastify | Postgres or SQLite | Fly.io |
+| Content site | Astro / Next.js | Headless CMS | CMS-managed | Vercel / Cloudflare |
+| Mobile-first | React Native / Expo | Supabase | Supabase Postgres | EAS |
+
+**Don't overthink this.** Pick what you know. An MVP in a familiar stack ships 3x faster than one in the "right" stack.
+
+## 5. Three-Week Sprint Plan
+
+### Week 1: Core + Foundation
+- [ ] Scaffold project, git repo, CI pipeline
+- [ ] Auth integration (Clerk/Supabase — 2-4 hours)
+- [ ] Database schema + ORM setup (Prisma/Drizzle)
+- [ ] Core feature — the ONE thing — working end-to-end
+- [ ] Basic CRUD for primary entity
+
+### Week 2: UI + Integrations
+- [ ] UI components (shadcn/ui or similar — don't build from scratch)
+- [ ] Payment integration if monetized (Stripe Checkout)
+- [ ] Transactional email (welcome, key actions)
+- [ ] Mobile responsive pass
+- [ ] Error handling + loading states
+
+### Week 3: Polish + Ship
+- [ ] Analytics (PostHog/Plausible)
+- [ ] Error monitoring (Sentry)
+- [ ] SEO basics (meta tags, OG images, sitemap)
+- [ ] Legal pages (privacy policy, terms — use generators)
+- [ ] Production deploy + custom domain
+- [ ] Seed 3-5 beta users, collect feedback
+- [ ] **LAUNCH**
+
+## 6. Launch Checklist
+
+### Infrastructure
+- [ ] Custom domain + DNS configured
+- [ ] SSL/HTTPS enforced
+- [ ] Environment variables set (no secrets in code)
+- [ ] Database backups enabled
+- [ ] CDN for static assets
+
+### Monitoring
+- [ ] Error tracking (Sentry) with source maps
+- [ ] Uptime monitoring (BetterStack, UptimeRobot)
+- [ ] Analytics tracking core events
+
+### SEO & Social
+- [ ] Title + meta description on all pages
+- [ ] OG image (use og-image.vercel.app or similar)
+- [ ] Favicon + web manifest
+- [ ] robots.txt + sitemap.xml
+- [ ] Social profiles linked
+
+### Legal & Payments
+- [ ] Privacy policy page
+- [ ] Terms of service page
+- [ ] Cookie consent (if EU traffic)
+- [ ] Stripe test mode → live mode verified
+- [ ] Refund policy documented
+
+## 7. Post-Launch: First 48 Hours
+
+**Hour 0-6:** Monitor error tracking, watch for 5xx spikes, be in support channels.
+**Hour 6-24:** Share on social, post on relevant communities (HN, Reddit, IndieHackers, Product Hunt).
+**Hour 24-48:** Follow up with every user who signed up. Ask one question: "What almost stopped you from signing up?"
+
+### Metrics to Watch (Week 1)
+
+| Metric | Target | Tool |
+|--------|--------|------|
+| Signups | Track daily | Analytics |
+| Activation (core action done) | >30% of signups | PostHog funnel |
+| Day-1 retention | >20% | PostHog cohort |
+| NPS / feedback sentiment | Qualitative | Manual outreach |
+| Error rate | <1% of requests | Sentry |
+
+### Iterate vs Pivot
+
+**Iterate** if: Users activate but churn (fix retention), users request specific features (roadmap signal), conversion funnel has clear drop-off (optimize).
+**Pivot** if: <5% activation after 2 weeks, feedback is consistently "I don't need this", you can't describe the user who loves it.
+
+## 8. Anti-Patterns
+
+| Don't | Do instead |
+|-------|-----------|
+| Build auth from scratch | Clerk/Supabase Auth (30 min) |
+| Premature optimization | Ship, measure, then optimize hot paths |
+| Over-engineer state management | Server Components + URL state + useState covers 90% |
+| Manual deployments | Git push → auto deploy (Vercel, Railway) |
+| Skip analytics | You're flying blind — add PostHog day 1 |
+| Chase perfection | 80% quality shipped beats 100% quality in dev |
+| Build admin dashboards | Use your DB GUI (Prisma Studio, Supabase dashboard) |
+| Custom design system | shadcn/ui + Tailwind — move on |
+
+
+---
+
+## nextjs-stack (dev)
+
+# Next.js Full-Stack Blueprint
+
+## Stack Overview
+
+| Layer | Choice | Why |
+|-------|--------|-----|
+| Framework | Next.js 14+ (App Router) | RSC, Server Actions, file routing |
+| Styling | Tailwind CSS + shadcn/ui | Fast, consistent, copy-paste components |
+| State | Zustand (client) + Server Components (server) | Minimal boilerplate |
+| API | Server Actions or tRPC | Type-safe, no REST boilerplate |
+| ORM | Prisma | Best DX, great migrations |
+| Database | Postgres (Neon or Supabase) | Serverless-friendly, scalable |
+| Auth | Clerk or Supabase Auth | <1 hour setup, handles edge cases |
+| Payments | Stripe | Industry standard |
+| Uploads | UploadThing | Built for Next.js |
+| Deploy | Vercel | Zero-config for Next.js |
+| Monitoring | Sentry | Error + performance |
+
+## Scaffolding
+
+```bash
+npx create-next-app@latest my-app --ts --tailwind --eslint --app --src-dir --import-alias "@/*"
+cd my-app
+pnpm add prisma @prisma/client stripe @clerk/nextjs zustand
+pnpm add -D @types/node
+npx prisma init
+npx shadcn@latest init
+```
+
+### Folder Structure
+```
+src/
+├── app/             # Routes, layouts, pages
+│   ├── (auth)/      # Auth routes group
+│   ├── (dashboard)/ # Protected routes group
+│   ├── api/         # Route handlers (webhooks)
+│   └── layout.tsx
+├── components/      # UI components
+│   └── ui/          # shadcn/ui components
+├── lib/             # Utilities (db, stripe, utils)
+├── server/          # Server-only code (actions, queries)
+├── hooks/           # Custom React hooks
+└── types/           # Shared TypeScript types
+```
+
+## Auth (Clerk)
+
+```typescript
+// src/middleware.ts
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+const isProtected = createRouteMatcher(['/dashboard(.*)']);
+export default clerkMiddleware(async (auth, req) => {
+  if (isProtected(req)) await auth.protect();
+});
+export const config = { matcher: ['/((?!.*\\..*|_next).*)', '/'] };
+
+// Access user in Server Components
+import { currentUser } from '@clerk/nextjs/server';
+export default async function Page() {
+  const user = await currentUser();
+  // user.id, user.emailAddresses, etc.
+}
+```
+
+## Database (Prisma)
+
+```prisma
+// prisma/schema.prisma
+datasource db { provider = "postgresql"; url = env("DATABASE_URL") }
+generator client { provider = "prisma-client-js" }
+
+model User {
+  id            String   @id @default(cuid())
+  clerkId       String   @unique
+  email         String   @unique
+  subscription  Subscription?
+  createdAt     DateTime @default(now())
+}
+model Subscription {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id])
+  stripeCustomerId String   @unique
+  stripePriceId    String
+  status           String   // active, canceled, past_due
+  currentPeriodEnd DateTime
+}
+```
+
+```bash
+npx prisma migrate dev --name init
+npx prisma generate
+```
+
+```typescript
+// src/lib/db.ts
+import { PrismaClient } from '@prisma/client';
+const globalForPrisma = globalThis as { prisma?: PrismaClient };
+export const db = globalForPrisma.prisma ?? new PrismaClient();
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db;
+```
+
+## API Layer: Server Actions vs tRPC
+
+| Use case | Server Actions | tRPC |
+|----------|---------------|------|
+| Form submissions | ✅ Perfect | Overkill |
+| Simple CRUD | ✅ Great | Fine |
+| Complex queries with caching | Possible | ✅ Better |
+| Client-side data fetching | Awkward | ✅ Built for it |
+| Multi-client (mobile app too) | ❌ | ✅ |
+
+```typescript
+// src/server/actions.ts — Server Actions example
+'use server';
+import { db } from '@/lib/db';
+import { auth } from '@clerk/nextjs/server';
+
+export async function createProject(formData: FormData) {
+  const { userId } = await auth();
+  if (!userId) throw new Error('Unauthorized');
+  const name = formData.get('name') as string;
+  return db.project.create({ data: { name, userId } });
+}
+```
+
+## State Management (Zustand)
+
+```typescript
+// src/hooks/use-store.ts
+import { create } from 'zustand';
+interface AppStore {
+  sidebarOpen: boolean;
+  toggleSidebar: () => void;
+}
+export const useStore = create<AppStore>((set) => ({
+  sidebarOpen: true,
+  toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
+}));
+```
+
+**Rule:** Use Server Components for server data. Zustand for client-only UI state (modals, sidebars, filters). Don't sync server data into Zustand.
+
+## UI (shadcn/ui)
+
+```bash
+npx shadcn@latest add button dialog form input toast data-table dropdown-menu
+```
+
+Dark mode: add `darkMode: 'class'` to `tailwind.config.ts`, use `next-themes` ThemeProvider.
+
+## Payments (Stripe)
+
+```typescript
+// src/app/api/stripe/checkout/route.ts
+import { NextResponse } from 'next/server';
+import Stripe from 'stripe';
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+export async function POST(req: Request) {
+  const { priceId, userId } = await req.json();
+  const session = await stripe.checkout.sessions.create({
+    mode: 'subscription',
+    payment_method_types: ['card'],
+    line_items: [{ price: priceId, quantity: 1 }],
+    success_url: `${process.env.NEXT_PUBLIC_URL}/dashboard?success=true`,
+    cancel_url: `${process.env.NEXT_PUBLIC_URL}/pricing`,
+    metadata: { userId },
+  });
+  return NextResponse.json({ url: session.url });
+}
+
+// src/app/api/stripe/webhook/route.ts
+import { headers } from 'next/headers';
+export async function POST(req: Request) {
+  const body = await req.text();
+  const sig = (await headers()).get('stripe-signature')!;
+  const event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!);
+  switch (event.type) {
+    case 'checkout.session.completed':
+      // Create/update subscription in DB
+      break;
+    case 'customer.subscription.deleted':
+      // Mark subscription canceled
+      break;
+  }
+  return NextResponse.json({ received: true });
+}
+```
+
+## Deployment (Vercel)
+
+```bash
+vercel --prod  # or git push to main with Vercel GitHub integration
+```
+
+Set env vars in Vercel dashboard. Use preview deployments for PRs.
+
+## Monitoring (Sentry)
+
+```bash
+npx @sentry/wizard@latest -i nextjs
+```
+
+Adds error boundaries, source maps upload, and performance monitoring automatically.
+
+## .env.example
+
+```bash
+# Database
+DATABASE_URL="postgresql://user:pass@host:5432/dbname?sslmode=require"
+# Auth (Clerk)
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+# Stripe
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_PRO_PRICE_ID=price_...
+# App
+NEXT_PUBLIC_URL=http://localhost:3000
+# Sentry
+SENTRY_DSN=https://...@sentry.io/...
+# UploadThing
+UPLOADTHING_TOKEN=...
+```
 
 
