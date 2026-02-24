@@ -1013,7 +1013,7 @@
         "Design a discount strategy that protects margins",
         "Implement price localization by country"
       ],
-      "version": "1.0.0",
+      "version": "1.0.1",
       "color": "888888",
       "platforms": [
         "openclaw",
@@ -1289,7 +1289,7 @@
     },
     {
       "name": "testing-strategy",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "description": "Testing pyramid, framework selection, mocking patterns, CI integration, and flaky test management for production codebases.",
       "color": "10B981",
       "category": "dev",
