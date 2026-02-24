@@ -1,36 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# skills.ws
 
-## Getting Started
+60 agent skills for AI coding assistants.
 
-First, run the development server:
+**Website:** [skills.ws](https://skills.ws)
+**npm:** [npmjs.com/package/skills-ws](https://www.npmjs.com/package/skills-ws)
+
+## Install skills
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npx skills-ws install          # interactive picker
+npx skills-ws install seo-geo  # install a specific skill
+npx skills-ws install all      # install everything
+npx skills-ws list             # list available skills
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## What are skills?
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Skills are `SKILL.md` files that give AI coding assistants specialized knowledge — workflows, checklists, code patterns, and domain expertise. Compatible with OpenClaw, Claude Code, Cursor, Codex, and any agent that supports the SKILL.md format.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Categories
 
-## Learn More
+- **Marketing** — SEO/GEO, content strategy, copywriting, paid ads, email sequences, PR/media, influencer, brand strategy, webinars, blog engine
+- **Dev** — Git workflow, CI/CD, API design, database design, testing, web performance, security hardening, prompt engineering, AI agent design, MVP launcher, Next.js stack
+- **Growth** — Social media, community building, customer feedback, business development, cold outreach, competitor intelligence, affiliate marketing
+- **Conversion** — Landing pages, signup flows, popups, A/B testing, pricing optimization, lead scoring, CRO, sales funnels
+- **Analytics** — Google Analytics, Search Console, Bing/Yandex Webmaster, data analytics, retention analytics
+- **Operations** — EU legal compliance (GDPR, AI Act, DSA), hiring/team building, project management, CRM, accounting, revenue ops
+- **Design** — UI/UX Pro Max, landing page builder, ASCII banner
 
-To learn more about Next.js, take a look at the following resources:
+## Development
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm install
+npm run dev       # http://localhost:3000
+npm run build     # static export to out/
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Security
 
-## Deploy on Vercel
+See [SECURITY.md](SECURITY.md) for vulnerability reporting and security model.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## License
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT — [Commit Media SARL](https://openletz.com)

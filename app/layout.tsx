@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     template: "%s | skills.ws",
   },
   description:
-    "58 agent skills for AI coding assistants. Marketing, SEO, growth, analytics, CRO, and operations. Install with npx skills-ws. Built for OpenClaw, Claude Code, Cursor, and Codex.",
+    "60 agent skills for AI coding assistants. Marketing, SEO, growth, analytics, CRO, and operations. Install with npx skills-ws. Built for OpenClaw, Claude Code, Cursor, and Codex.",
   keywords: [
     "AI skills",
     "agent skills",
@@ -58,7 +58,7 @@ export const metadata: Metadata = {
     siteName: "skills.ws",
     title: "skills.ws — Agent Skills for AI Coding Assistants",
     description:
-      "58 agent skills for AI coding assistants. Marketing, SEO, growth, analytics, and CRO. Install with a single command.",
+      "60 agent skills for AI coding assistants. Marketing, SEO, growth, analytics, and CRO. Install with a single command.",
     images: [
       {
         url: `${BASE_URL}/og.png`,
@@ -72,7 +72,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "skills.ws — Agent Skills for AI",
     description:
-      "58 agent skills for marketing, SEO, growth, and CRO. Install with npx skills-ws.",
+      "60 agent skills for marketing, SEO, growth, and CRO. Install with npx skills-ws.",
     creator: "@3615crypto",
     images: [`${BASE_URL}/og.png`],
   },
@@ -191,7 +191,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               downloadUrl: "https://www.npmjs.com/package/skills-ws",
               softwareVersion: "1.0.4",
               description:
-                "CLI tool to install agent skills for AI coding assistants. 58 skills for marketing, SEO, growth, analytics, and CRO.",
+                "CLI tool to install agent skills for AI coding assistants. 60 skills for marketing, SEO, growth, analytics, and CRO.",
               offers: {
                 "@type": "Offer",
                 price: "0",

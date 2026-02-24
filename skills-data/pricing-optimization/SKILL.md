@@ -150,3 +150,167 @@ What you can do:
 ```
 
 **Expected impact:** Well-communicated 10-20% increase typically sees < 2% incremental churn. Poorly communicated or >30% increase can see 5-10%+ churn.
+
+## 8. Stripe Integration Quickstart
+
+### Checkout Session Creation
+
+```typescript
+import Stripe from 'stripe';
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+async function createCheckout(priceId: string, userId: string) {
+  return stripe.checkout.sessions.create({
+    mode: 'subscription',
+    payment_method_types: ['card'],
+    line_items: [{ price: priceId, quantity: 1 }],
+    success_url: `${process.env.APP_URL}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${process.env.APP_URL}/pricing`,
+    metadata: { userId },
+    subscription_data: { metadata: { userId } },
+  });
+}
+```
+
+### Webhook Handler
+
+```typescript
+// app/api/stripe/webhook/route.ts
+import { headers } from 'next/headers';
+import Stripe from 'stripe';
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+export async function POST(req: Request) {
+  const body = await req.text();
+  const sig = (await headers()).get('stripe-signature')!;
+  let event: Stripe.Event;
+  try {
+    event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!);
+  } catch {
+    return new Response('Invalid signature', { status: 400 });
+  }
+
+  switch (event.type) {
+    case 'checkout.session.completed': {
+      const session = event.data.object as Stripe.Checkout.Session;
+      // Create subscription record, link to userId from metadata
+      break;
+    }
+    case 'invoice.paid': {
+      // Extend subscription period, send receipt
+      break;
+    }
+    case 'customer.subscription.updated': {
+      // Handle plan changes, status transitions
+      break;
+    }
+    case 'customer.subscription.deleted': {
+      // Mark subscription canceled, revoke access
+      break;
+    }
+  }
+  return new Response('OK', { status: 200 });
+}
+```
+
+**Critical:** Never parse the body as JSON before passing to `constructEvent` — it needs the raw string for signature verification.
+
+## 9. Subscription Patterns
+
+| Pattern | Implementation | Best for |
+|---------|---------------|----------|
+| Free trial → paid | `subscription_data: { trial_period_days: 14 }` | Products needing time to show value |
+| Freemium | No Stripe until upgrade; gate features in code | Wide-funnel products |
+| Metered/usage-based | `mode: 'subscription'` + `usage_type: 'metered'` on price | API products, infrastructure |
+
+### Freemium Feature Gates
+
+```typescript
+// lib/subscription.ts
+type Plan = 'free' | 'pro' | 'enterprise';
+const FEATURE_ACCESS: Record<string, Plan[]> = {
+  'export-csv': ['pro', 'enterprise'],
+  'api-access': ['pro', 'enterprise'],
+  'custom-domain': ['enterprise'],
+  'team-members': ['pro', 'enterprise'],
+};
+
+export function hasAccess(feature: string, plan: Plan): boolean {
+  return FEATURE_ACCESS[feature]?.includes(plan) ?? true; // unlisted = free
+}
+```
+
+### Usage-Based Billing
+
+```typescript
+// Report usage at end of billing period or in real-time
+await stripe.subscriptionItems.createUsageRecord(subscriptionItemId, {
+  quantity: apiCallCount,
+  timestamp: Math.floor(Date.now() / 1000),
+  action: 'increment',
+});
+```
+
+## 10. Pricing Page Implementation
+
+### Plan Comparison Component Pattern
+
+```typescript
+const PLANS = [
+  { name: 'Free', price: '$0', priceId: null, features: ['5 projects', 'Community support'] },
+  { name: 'Pro', price: '$29/mo', priceId: 'price_pro_monthly', features: ['Unlimited projects', 'Priority support', 'API access'], popular: true },
+  { name: 'Enterprise', price: 'Custom', priceId: null, cta: 'Contact Sales', features: ['Everything in Pro', 'SSO', 'SLA', 'Dedicated CSM'] },
+] as const;
+```
+
+### Upgrade/Downgrade Flows
+
+```typescript
+// Upgrade: prorate immediately
+await stripe.subscriptions.update(subscriptionId, {
+  items: [{ id: subscriptionItemId, price: newPriceId }],
+  proration_behavior: 'always_invoice', // charge difference now
+});
+
+// Downgrade: apply at period end
+await stripe.subscriptions.update(subscriptionId, {
+  items: [{ id: subscriptionItemId, price: newPriceId }],
+  proration_behavior: 'none',
+  billing_cycle_anchor: 'unchanged', // change takes effect at renewal
+});
+```
+
+### Customer Portal (self-serve management)
+
+```typescript
+const portalSession = await stripe.billingPortal.sessions.create({
+  customer: stripeCustomerId,
+  return_url: `${process.env.APP_URL}/dashboard/billing`,
+});
+// Redirect user to portalSession.url
+```
+
+## 11. Testing Payments
+
+| Item | Details |
+|------|---------|
+| Test card (success) | `4242 4242 4242 4242` any future exp, any CVC |
+| Test card (decline) | `4000 0000 0000 0002` |
+| Test card (3D Secure) | `4000 0025 0000 3155` |
+| Webhook CLI | `stripe listen --forward-to localhost:3000/api/stripe/webhook` |
+
+**Idempotency:** Use `Idempotency-Key` header on Stripe API calls to prevent duplicate charges:
+
+```typescript
+await stripe.charges.create({ amount: 2000, currency: 'usd' }, {
+  idempotencyKey: `charge_${orderId}`,
+});
+```
+
+**Testing checklist:**
+- [ ] Successful checkout → subscription created in DB
+- [ ] Card decline → user sees error, no DB record created
+- [ ] Webhook replay (`stripe trigger checkout.session.completed`) → idempotent
+- [ ] Subscription cancel → access revoked, status updated
+- [ ] Plan upgrade → prorated charge correct
+- [ ] Plan downgrade → takes effect at period end

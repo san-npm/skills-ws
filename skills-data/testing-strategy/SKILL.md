@@ -204,3 +204,141 @@ npx stryker run
 ## References
 
 See `references/` for CI templates, factory patterns, and load testing scenarios.
+
+## Error Monitoring (Production)
+
+### Sentry Setup (Next.js)
+
+```bash
+npx @sentry/wizard@latest -i nextjs
+# Automatically configures: sentry.client.config.ts, sentry.server.config.ts,
+# sentry.edge.config.ts, instrumentation.ts, next.config.js wrapper
+```
+
+**Source maps:** The wizard configures `@sentry/nextjs` to upload source maps during build. Verify with:
+```bash
+npx sentry-cli sourcemaps list --org=YOUR_ORG --project=YOUR_PROJECT
+```
+
+**Error grouping:** Sentry groups by stack trace by default. Customize with fingerprints:
+```typescript
+Sentry.captureException(error, { fingerprint: ['checkout-flow', error.code] });
+```
+
+**Alert rules (configure in Sentry dashboard):**
+
+| Rule | Condition | Action |
+|------|-----------|--------|
+| New issue spike | >10 events in 5 min | Slack + PagerDuty |
+| Regression | Resolved issue recurs | Slack + email |
+| Error rate | >1% of transactions | PagerDuty |
+| Performance | p95 > 2s | Slack |
+
+**Performance monitoring:** Enabled by default with `tracesSampleRate`. Start at `0.1` (10%) in production, increase if needed:
+```typescript
+Sentry.init({ dsn: '...', tracesSampleRate: 0.1, profilesSampleRate: 0.1 });
+```
+
+## Logging
+
+### Structured Logging (pino)
+
+```typescript
+// src/lib/logger.ts
+import pino from 'pino';
+
+export const logger = pino({
+  level: process.env.LOG_LEVEL ?? 'info',
+  formatters: {
+    level: (label) => ({ level: label }), // "info" not 30
+  },
+  ...(process.env.NODE_ENV === 'development' && {
+    transport: { target: 'pino-pretty' },
+  }),
+});
+
+// Usage with context
+export function createRequestLogger(requestId: string) {
+  return logger.child({ requestId });
+}
+```
+
+### Log Levels
+
+| Level | Use for | Example |
+|-------|---------|---------|
+| `error` | Failures needing attention | Payment failed, DB connection lost |
+| `warn` | Degraded but functional | Rate limit approaching, slow query |
+| `info` | Business events | User signed up, subscription created |
+| `debug` | Development diagnostics | Query params, cache hit/miss |
+
+### Request ID Tracing
+
+```typescript
+// middleware.ts — inject request ID
+import { NextResponse } from 'next/server';
+import { randomUUID } from 'crypto';
+
+export function middleware(request: Request) {
+  const requestId = randomUUID();
+  const headers = new Headers(request.headers);
+  headers.set('x-request-id', requestId);
+  const response = NextResponse.next({ request: { headers } });
+  response.headers.set('x-request-id', requestId);
+  return response;
+}
+```
+
+### Centralized Log Aggregation
+
+| Service | Pino transport | Free tier |
+|---------|---------------|-----------|
+| **Axiom** | `@axiomhq/pino` | 500GB/mo ingest |
+| **Datadog** | `pino-datadog-transport` | 14-day trial |
+| **BetterStack** | `@logtail/pino` | 1GB/mo |
+
+```typescript
+// Production transport example (Axiom)
+import pino from 'pino';
+const transport = pino.transport({
+  target: '@axiomhq/pino',
+  options: { dataset: 'my-app', token: process.env.AXIOM_TOKEN },
+});
+export const logger = pino(transport);
+```
+
+## Observability Checklist
+
+### Must-Have (Day 1)
+- [ ] Error tracking (Sentry) with source maps and alerting
+- [ ] Structured logging with request ID tracing
+- [ ] Uptime monitoring (BetterStack, UptimeRobot) — check `/api/health` every 60s
+- [ ] Basic performance monitoring (Sentry or Vercel Analytics)
+
+### Should-Have (Week 2)
+- [ ] Centralized log aggregation (Axiom/Datadog)
+- [ ] Performance budgets: LCP < 2.5s, FID < 100ms, CLS < 0.1
+- [ ] Database query monitoring (slow query log, connection pool alerts)
+- [ ] Custom business metric dashboards (signup rate, activation, errors by endpoint)
+
+### Nice-to-Have (Month 2+)
+- [ ] Distributed tracing across services
+- [ ] Alerting thresholds with escalation (warn → page)
+- [ ] On-call rotation (PagerDuty/Opsgenie): primary + secondary, 1-week rotations
+- [ ] Runbooks for common incidents (DB down, spike in errors, payment webhook failures)
+- [ ] SLO tracking (99.9% uptime = 8.7h downtime/year budget)
+
+### Health Endpoint
+
+```typescript
+// app/api/health/route.ts
+import { db } from '@/lib/db';
+export async function GET() {
+  try {
+    await db.$queryRaw`SELECT 1`;
+    return Response.json({ status: 'ok', db: 'connected' });
+  } catch {
+    return Response.json({ status: 'degraded', db: 'disconnected' }, { status: 503 });
+  }
+}
+```
