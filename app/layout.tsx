@@ -86,10 +86,6 @@ export const metadata: Metadata = {
       { url: "/favicon.svg", type: "image/svg+xml" },
     ],
   },
-  other: {
-    "google-site-verification": "",
-    "msvalidate.01": "",
-  },
 };
 
 const navLinks = [
@@ -189,7 +185,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               operatingSystem: "Any",
               url: BASE_URL,
               downloadUrl: "https://www.npmjs.com/package/skills-ws",
-              softwareVersion: "1.0.4",
+              softwareVersion: "0.1.0",
               description:
                 "CLI tool to install agent skills for AI coding assistants. 60 skills for marketing, SEO, growth, analytics, and CRO.",
               offers: {

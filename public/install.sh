@@ -71,6 +71,11 @@ process.stdin.on('end', () => {
 ")
 
 if [ -n "$SPECIFIC_SKILL" ]; then
+  # Validate skill name to prevent path traversal
+  if ! echo "$SPECIFIC_SKILL" | grep -qE '^[a-z0-9-]+$'; then
+    echo "Error: Invalid skill name. Only lowercase letters, numbers, and hyphens are allowed."
+    exit 1
+  fi
   SKILLS="$SPECIFIC_SKILL"
 fi
 

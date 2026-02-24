@@ -1,7 +1,6 @@
 # skills.ws
 User-agent: *
 Allow: /
-Disallow: /api/
 
 # AI Crawlers — welcome
 User-agent: GPTBot

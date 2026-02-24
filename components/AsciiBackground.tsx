@@ -173,11 +173,11 @@ export default function AsciiBackground() {
         }
       }
 
-      if (!ready) setReady(true);
       animId = requestAnimationFrame(animate);
     };
 
     animate();
+    setReady(true);
 
     return () => {
       cancelAnimationFrame(animId);
@@ -191,7 +191,8 @@ export default function AsciiBackground() {
       pMat.dispose();
       if (asciiCanvas.parentNode) asciiCanvas.parentNode.removeChild(asciiCanvas);
     };
-  }, [ready]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div
