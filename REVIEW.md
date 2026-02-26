@@ -51,11 +51,11 @@ public/
 
 | Severity | Count |
 |----------|-------|
-| CRITICAL | 1 |
-| HIGH | 6 |
-| MEDIUM | 14 |
-| LOW | 12 |
-| **Total** | **33** |
+| CRITICAL | 2 |
+| HIGH | 9 |
+| MEDIUM | 16 |
+| LOW | 14 |
+| **Total** | **41** |
 
 ---
 
@@ -69,6 +69,22 @@ public/
 The string `"60 agent skills"` is hardcoded in 5 places across meta description, OpenGraph, Twitter card, and SoftwareApplication JSON-LD. The homepage body correctly uses `{skills.length}` and the CLI page body uses `{skillCount}`, but all `<meta>` descriptions are static strings. Every skill addition requires a multi-file find-and-replace — a maintenance trap that guarantees stale SEO data.
 
 **Fix:** Derive the count from `getSkills().length` in metadata generation, or remove specific numbers from static meta strings.
+
+### 2. `install.sh` `--dir` flag has no input validation — path traversal
+
+**File:** `public/install.sh:44-46`
+**Category:** Security
+
+The `--skill` flag correctly validates against `^[a-z0-9-]+$`, but the `--dir` flag accepts any arbitrary string with zero validation. An attacker could pass `--dir /etc/cron.d` or `--dir ../../etc` to write files to arbitrary directories.
+
+```bash
+--dir)
+  TARGET_DIR="$2"   # no sanitization
+  shift 2
+  ;;
+```
+
+**Fix:** Validate that the directory is a relative path, reject paths containing `..`, and ensure it resolves within the working directory.
 
 ---
 
@@ -119,7 +135,44 @@ The SoftwareApplication schema says `softwareVersion: "0.1.0"` (matching `packag
 
 **Fix:** Import version from `package.json` dynamically for the CLI version.
 
-### 7. 18 skills have content drift between SKILL.md and skills.json
+### 7. `.gitignore` is dangerously minimal — missing `.env*` patterns
+
+**File:** `.gitignore`
+**Category:** Security
+
+The entire `.gitignore` is only 3 lines (`node_modules/`, `.next/`, `out/`). Critical missing entries:
+
+| Missing pattern | Risk |
+|----------------|------|
+| `.env` / `.env.*` / `.env.local` | **Secrets could be committed accidentally** |
+| `*.pem` / `*.key` | SSL/signing keys leaked |
+| `.vercel` | Deployment cache with tokens |
+| `.DS_Store` / `Thumbs.db` | OS artifacts |
+| `coverage/` / `*.log` | Build artifacts |
+
+While no `.env` files currently exist in the repo, any developer who creates one could accidentally commit secrets.
+
+**Fix:** Add at minimum: `.env*`, `*.pem`, `*.key`, `.vercel`, `.DS_Store`.
+
+### 8. `install.sh` unknown arguments silently ignored — typos cause full install
+
+**File:** `public/install.sh:48-50`
+**Category:** UX / Safety
+
+The wildcard case `*)` silently discards any unknown flag. If a user typos `--skiil seo-geo`, the flag is consumed and the script installs ALL 60 skills instead of the intended one.
+
+**Fix:** Print an error and exit on unrecognized arguments.
+
+### 9. `install.sh` missing argument guard on `--skill`/`--dir`
+
+**File:** `public/install.sh:40-47`
+**Category:** Robustness
+
+If a user runs `bash install.sh --skill` (without a value), `$2` is unset. Under `set -u`, this produces a cryptic "unbound variable" error instead of a helpful message.
+
+**Fix:** Check `$# -ge 2` before accessing `$2`.
+
+### 10. 18 skills have content drift between SKILL.md and skills.json
 
 **Files:** 18 skill directories in `skills-data/`
 **Category:** Data Integrity
@@ -134,7 +187,7 @@ The SoftwareApplication schema says `softwareVersion: "0.1.0"` (matching `packag
 
 ## MEDIUM
 
-### 8. No `<main>` landmark wrapping page content
+### 11. No `<main>` landmark wrapping page content
 
 **File:** `app/layout.tsx:132`
 **Category:** Accessibility
@@ -143,7 +196,7 @@ The SoftwareApplication schema says `softwareVersion: "0.1.0"` (matching `packag
 
 **Fix:** Change `<div>` to `<main>`.
 
-### 9. Search input has no label
+### 12. Search input has no label
 
 **File:** `components/SkillsGrid.tsx:68-76`
 **Category:** Accessibility
@@ -152,7 +205,7 @@ The search `<input>` has a placeholder but no `<label>`, `aria-label`, or `aria-
 
 **Fix:** Add `aria-label="Search skills"`.
 
-### 10. Category filter buttons lack `aria-pressed` state
+### 13. Category filter buttons lack `aria-pressed` state
 
 **File:** `components/SkillsGrid.tsx:80-102`
 **Category:** Accessibility
@@ -161,7 +214,7 @@ Filter buttons change visual style when selected but have no `aria-pressed` or `
 
 **Fix:** Add `aria-pressed={filter === cat}` to each button.
 
-### 11. Collapsed accordion content is in the accessibility tree
+### 14. Collapsed accordion content is in the accessibility tree
 
 **File:** `components/FaqAccordion.tsx:26-28`
 **Category:** Accessibility
@@ -170,7 +223,7 @@ Hidden content uses `maxHeight: "0px"` with `overflow: hidden`, but remains in t
 
 **Fix:** Add `aria-hidden={open !== i}` to collapsed panels.
 
-### 12. Markdown `h1` creates duplicate `<h1>` on skill pages
+### 15. Markdown `h1` creates duplicate `<h1>` on skill pages
 
 **File:** `components/SkillContent.tsx:13`
 **Category:** SEO
@@ -179,7 +232,7 @@ The markdown renderer maps `h1` to `<h1>`. Skill pages already have an `<h1>` fo
 
 **Fix:** Map markdown `h1` → `<h2>`, `h2` → `<h3>`, etc. in the SkillContent component.
 
-### 13. GA4 uses `dangerouslySetInnerHTML` instead of Next.js `<Script>`
+### 16. GA4 uses `dangerouslySetInnerHTML` instead of Next.js `<Script>`
 
 **File:** `app/layout.tsx:103-108`
 **Category:** Performance
@@ -188,7 +241,7 @@ The GA4 snippet is a render-blocking `<script>` in `<head>`. Next.js provides `<
 
 **Fix:** Replace with `import Script from 'next/script'` and use `<Script strategy="afterInteractive">`.
 
-### 14. `NpmDownloads` returns `null` during loading — CLS issue
+### 17. `NpmDownloads` returns `null` during loading — CLS issue
 
 **File:** `components/NpmDownloads.tsx:27`
 **Category:** UX / Performance
@@ -197,7 +250,7 @@ When `downloads` is `null` (before fetch completes), the component returns `null
 
 **Fix:** Return a placeholder (e.g., `"—"` or a skeleton) instead of `null`.
 
-### 15. `setTimeout` not cancelled on unmount in InstallBox
+### 18. `setTimeout` not cancelled on unmount in InstallBox
 
 **File:** `components/InstallBox.tsx:11-12`
 **Category:** React Anti-pattern
@@ -206,7 +259,7 @@ When `downloads` is `null` (before fetch completes), the component returns `null
 
 **Fix:** Store timeout in a `useRef`, clear on unmount and on subsequent clicks.
 
-### 16. Fetch calls don't check `response.ok` before `.json()`
+### 19. Fetch calls don't check `response.ok` before `.json()`
 
 **Files:** `components/NpmDownloads.tsx:16` · `components/SkillsGrid.tsx:18`
 **Category:** Error Handling
@@ -215,7 +268,7 @@ Both fetch calls chain `.then(r => r.json())` without checking `r.ok`. Errors ar
 
 **Fix:** Add `if (!r.ok) throw new Error(r.statusText)` before `.json()`. Add at least `console.warn` in catch.
 
-### 17. Non-null assertions on canvas contexts
+### 20. Non-null assertions on canvas contexts
 
 **File:** `components/AsciiBackground.tsx:36,42`
 **Category:** Robustness
@@ -224,7 +277,7 @@ Both fetch calls chain `.then(r => r.json())` without checking `r.ok`. Errors ar
 
 **Fix:** Add null checks with early return, similar to the WebGL try/catch on line 24.
 
-### 18. Accordion max-height of 500px clips long answers on mobile
+### 21. Accordion max-height of 500px clips long answers on mobile
 
 **File:** `components/FaqAccordion.tsx:28`
 **Category:** UX
@@ -233,7 +286,7 @@ Both fetch calls chain `.then(r => r.json())` without checking `r.ok`. Errors ar
 
 **Fix:** Use CSS `grid-template-rows: 0fr/1fr` transitions, or measure content height with a ref.
 
-### 19. `react-markdown` v10 `li` component API may not pass `ordered`/`index` props
+### 22. `react-markdown` v10 `li` component API may not pass `ordered`/`index` props
 
 **File:** `components/SkillContent.tsx:27`
 **Category:** Compatibility
@@ -242,7 +295,7 @@ The `li` component destructures `{ ordered, index }` props. In `react-markdown@^
 
 **Fix:** Verify against `react-markdown@10` docs and test ordered list rendering.
 
-### 20. AsciiBackground decorative canvas not hidden from screen readers
+### 23. AsciiBackground decorative canvas not hidden from screen readers
 
 **File:** `components/AsciiBackground.tsx:197-203`
 **Category:** Accessibility
@@ -251,7 +304,7 @@ The ASCII canvas is purely decorative but lacks `aria-hidden="true"` or `role="p
 
 **Fix:** Add `aria-hidden="true"` and `role="presentation"` to the outer `<div>`.
 
-### 21. Entire `skills.json` (357KB) bundled into homepage HTML
+### 24. Entire `skills.json` (357KB) bundled into homepage HTML
 
 **File:** `lib/skills.ts` → `app/page.tsx`
 **Category:** Performance
@@ -264,7 +317,29 @@ The ASCII canvas is purely decorative but lacks `aria-hidden="true"` or `role="p
 
 ## LOW
 
-### 22. No `<h1>` on homepage
+### 25. `install.sh` silent failure when no JSON parser available
+
+**File:** `public/install.sh:59-71`
+**Category:** UX
+
+If neither `python3` nor `node` is installed, `$SKILLS` is empty and the `for skill in $SKILLS` loop silently does nothing. The script prints "Done. Installed 0 skills" with no explanation.
+
+**Fix:** Check that `$SKILLS` is non-empty after parsing; print an error if both parsers are missing.
+
+### 26. `SECURITY.md` references wrong directory
+
+**File:** `SECURITY.md:41`
+**Category:** Documentation
+
+States "Skill content in `skills/` directory" but the actual path is `skills-data/`.
+
+**Fix:** Change `skills/` to `skills-data/`.
+
+---
+
+## LOW
+
+### 27. No `<h1>` on homepage
 
 **File:** `app/page.tsx`
 **Category:** SEO
@@ -273,7 +348,7 @@ The homepage has no `<h1>`. The ASCII `<pre>` is the visual title, but the first
 
 **Fix:** Add a visually-hidden `<h1>` or make the subtitle an `<h1>`.
 
-### 23. ASCII art `<pre>` is read character-by-character by screen readers
+### 28. ASCII art `<pre>` is read character-by-character by screen readers
 
 **File:** `app/page.tsx:27-29`
 **Category:** Accessibility
@@ -282,7 +357,7 @@ The ASCII banner has no `aria-hidden="true"`. Screen readers announce hundreds o
 
 **Fix:** Add `aria-hidden="true"` to the `<pre>`.
 
-### 24. Sitemap `lastModified` is always current build time
+### 29. Sitemap `lastModified` is always current build time
 
 **File:** `app/sitemap.ts:8`
 **Category:** SEO
@@ -291,7 +366,7 @@ Every sitemap entry uses `new Date().toISOString()`. This defeats the purpose of
 
 **Fix:** Use git commit dates or static dates for pages that haven't changed.
 
-### 25. Hardcoded hex colors in FAQ `<Code>` component bypass theme
+### 30. Hardcoded hex colors in FAQ `<Code>` component bypass theme
 
 **File:** `app/faq/page.tsx:12`
 **Category:** Code Quality
@@ -300,7 +375,7 @@ The `Code` component uses `bg-[#0a0a0a]`, `border-[#222]`, `text-[#00ff88]` inst
 
 **Fix:** Use Tailwind theme classes for consistency.
 
-### 26. `"/"` keyboard shortcut doesn't guard all editable contexts
+### 31. `"/"` keyboard shortcut doesn't guard all editable contexts
 
 **File:** `components/SkillsGrid.tsx:42-53`
 **Category:** UX
@@ -309,7 +384,7 @@ The global `"/"` shortcut only excludes `HTMLInputElement`. It doesn't check for
 
 **Fix:** Expand guard to include `HTMLTextAreaElement`, `HTMLSelectElement`, and `[contenteditable]`.
 
-### 27. FAQ items keyed by array index
+### 32. FAQ items keyed by array index
 
 **File:** `components/FaqAccordion.tsx:16`
 **Category:** React
@@ -318,7 +393,7 @@ The global `"/"` shortcut only excludes `HTMLInputElement`. It doesn't check for
 
 **Fix:** Use `key={faq.q}` for a stable key.
 
-### 28. `prefersReducedMotion` is checked once and not reactive
+### 33. `prefersReducedMotion` is checked once and not reactive
 
 **File:** `components/AsciiBackground.tsx:17`
 **Category:** UX
@@ -327,7 +402,7 @@ The global `"/"` shortcut only excludes `HTMLInputElement`. It doesn't check for
 
 **Fix:** Listen to `MediaQueryList.addEventListener("change", ...)`.
 
-### 29. Decorative dots throughout UI lack `aria-hidden`
+### 34. Decorative dots throughout UI lack `aria-hidden`
 
 **Files:** `app/page.tsx:41,60-73` · `components/SkillsGrid.tsx:132` · `app/docs/page.tsx:55-110`
 **Category:** Accessibility
@@ -336,21 +411,21 @@ Colored dot `<span>` elements are decorative but not excluded from the accessibi
 
 **Fix:** Add `aria-hidden="true"` to dot spans.
 
-### 30. Category buttons lack per-category counts
+### 35. Category buttons lack per-category counts
 
 **File:** `components/SkillsGrid.tsx:90-102`
 **Category:** UX
 
 The "All" button shows `All ({skills.length})` but individual category buttons show only the name with no count.
 
-### 31. ESLint suppression without explanation
+### 36. ESLint suppression without explanation
 
 **File:** `components/AsciiBackground.tsx:194`
 **Category:** Code Quality
 
 `// eslint-disable-next-line react-hooks/exhaustive-deps` suppresses the rule. The empty dependency array is intentional but the suppression should explain why.
 
-### 32. Checkbox `<input>` rendered as `<span>` in SkillContent
+### 37. Checkbox `<input>` rendered as `<span>` in SkillContent
 
 **File:** `components/SkillContent.tsx:89-93`
 **Category:** Accessibility
@@ -359,12 +434,35 @@ Custom `input` renderer replaces actual checkboxes with a decorative `<span>`. N
 
 **Fix:** Use `role="checkbox"` and `aria-checked` on the span.
 
-### 33. `llms-full.txt` sourced from `skills.json` — misses SKILL.md link updates
+### 38. `llms-full.txt` sourced from `skills.json` — misses SKILL.md link updates
 
 **File:** `public/llms-full.txt`
 **Category:** Data Integrity
 
 `llms-full.txt` matches `skills.json` content fields exactly, which means the 18 skills with updated markdown links in their SKILL.md files have those links absent from `llms-full.txt`. Low priority since the content is equivalent — just without hyperlinks.
+
+### 39. `install.sh` `rmdir` fails silently on partially-written directories
+
+**File:** `public/install.sh:95`
+**Category:** Cleanup
+
+If `curl` partially writes `SKILL.md` before failing, `rmdir "$SKILL_DIR"` fails because the directory is not empty. The `|| true` suppresses this, leaving orphan directories with incomplete files.
+
+**Fix:** Use `rm -rf "$SKILL_DIR"` for cleanup on failure.
+
+### 40. No `test` or `format` script in package.json
+
+**File:** `package.json`
+**Category:** Code Quality
+
+No `"test"` script is defined — `npm test` fails. No Prettier or formatting tooling for consistent code style.
+
+### 41. Next.js 14.2.35 is on a maintenance branch
+
+**File:** `package.json`
+**Category:** Dependencies
+
+Next.js 14.2.x is a maintenance branch. Next.js 15 has been stable since late 2024 with Turbopack, React 19, and improved caching. The 14.2.x line has had multiple security advisories (SSRF, header injection). Not urgent for a static export site, but worth tracking.
 
 ---
 
@@ -382,7 +480,8 @@ Custom `input` renderer replaces actual checkboxes with a decorative `<span>`. N
 | robots.txt domain | skills.ws (correct) |
 | Sitemap domain | skills.ws (correct) |
 | install.sh domain | skills.ws (correct) |
-| install.sh input validation | Present (regex `^[a-z0-9-]+$`) |
+| install.sh `--skill` validation | Present (regex `^[a-z0-9-]+$`) |
+| install.sh `--dir` validation | **Missing** — path traversal possible |
 
 ### Category Distribution
 
