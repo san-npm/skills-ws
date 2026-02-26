@@ -29,7 +29,7 @@ export default function Home() {
         </pre>
         <p className="relative z-10 font-sans text-lg text-text-dim mb-3">
           Agent skills built for{" "}
-          <strong className="text-text-main font-semibold">marketing, growth, analytics & conversion</strong>
+          <strong className="text-text-main font-semibold">marketing, growth, web3, dev, design & operations</strong>
         </p>
         <div className="relative z-10">
           <InstallBox command="npx skills-ws" />
