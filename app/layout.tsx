@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     template: "%s | skills.ws",
   },
   description:
-    "69 agent skills for AI coding assistants. Marketing, growth, web3, dev, design & operations. Install with npx skills-ws. Built for OpenClaw, Claude Code, Cursor, and Codex.",
+    "70 agent skills for AI coding assistants. Marketing, growth, web3, dev, design & operations. Install with npx skills-ws. Built for OpenClaw, Claude Code, Cursor, and Codex.",
   keywords: [
     "AI skills",
     "agent skills",
@@ -58,7 +58,7 @@ export const metadata: Metadata = {
     siteName: "skills.ws",
     title: "skills.ws — Agent Skills for AI Coding Assistants",
     description:
-      "69 agent skills for AI coding assistants. Marketing, growth, web3, dev, design & operations. Install with a single command.",
+      "70 agent skills for AI coding assistants. Marketing, growth, web3, dev, design & operations. Install with a single command.",
     images: [
       {
         url: `${BASE_URL}/og.png`,
@@ -72,7 +72,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "skills.ws — Agent Skills for AI",
     description:
-      "69 agent skills for marketing, growth, web3, dev, design & operations. Install with npx skills-ws.",
+      "70 agent skills for marketing, growth, web3, dev, design & operations. Install with npx skills-ws.",
     creator: "@3615crypto",
     images: [`${BASE_URL}/og.png`],
   },
@@ -187,7 +187,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               downloadUrl: "https://www.npmjs.com/package/skills-ws",
               softwareVersion: "0.1.0",
               description:
-                "CLI tool to install agent skills for AI coding assistants. 69 skills for marketing, growth, web3, dev, design & operations.",
+                "CLI tool to install agent skills for AI coding assistants. 70 skills for marketing, growth, web3, dev, design & operations.",
               offers: {
                 "@type": "Offer",
                 price: "0",

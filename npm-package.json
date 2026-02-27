@@ -1,0 +1,56 @@
+{
+  "name": "skills-ws",
+  "version": "1.3.2",
+  "description": "70 agent skills for AI coding assistants \u2014 marketing, growth, web3, dev, design & operations. Built for OpenClaw, Claude Code, Cursor, and Codex.",
+  "bin": {
+    "skills-ws": "./bin/cli.mjs"
+  },
+  "keywords": [
+    "ai",
+    "skills",
+    "agents",
+    "SKILL.md",
+    "claude-code",
+    "openclaw",
+    "cursor",
+    "codex",
+    "seo",
+    "marketing",
+    "growth",
+    "analytics",
+    "cro",
+    "prompt-engineering",
+    "ai-agents",
+    "security",
+    "api-design",
+    "cicd",
+    "eu-compliance",
+    "gdpr",
+    "web3",
+    "solidity",
+    "defi",
+    "smart-contracts",
+    "design-system",
+    "auth"
+  ],
+  "author": "Commit Media <bob@openletz.com> (https://openletz.com)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/san-npm/skills-ws"
+  },
+  "homepage": "https://skills.ws",
+  "bugs": {
+    "url": "https://github.com/san-npm/skills-ws/issues"
+  },
+  "files": [
+    "bin/",
+    "skills/",
+    "README.md",
+    "LICENSE",
+    "SECURITY.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}
