@@ -50,9 +50,9 @@ Features:
   - Agent observability and safety sandboxing
 URL: https://skills.ws/skills/ai-agent-design
 
-## aleph-vm-replication (v1.0.0)
+## aleph-cloud-self-deployment (v1.0.0)
 Category: web3
-Description: Self-replicate AI agents across Aleph Cloud decentralized infrastructure. Covers account setup, CRN discovery, VM creation (non-interactive), OpenClaw installation, gateway configuration, identity transfer, and recursive replication enablement. Battle-tested with real deployment gotchas documented.
+Description: Deploy AI agents on Aleph Cloud decentralized infrastructure. Covers account setup, CRN discovery, VM provisioning (non-interactive), OpenClaw installation, gateway configuration, identity transfer, and multi-instance management.
 Features:
   - Aleph Cloud account setup with credits or $ALEPH tokens
   - Programmatic CRN discovery and scoring
@@ -60,11 +60,11 @@ Features:
   - OpenClaw agent framework installation and configuration
   - Gateway auth with auth-profiles.json (not auth.json)
   - SSH keypair generation and secure key transfer
-  - Recursive self-replication enablement
-  - All-in-one replicate.sh and setup-agent.sh scripts
+  - Recursive multi-instance deployment enablement
+  - All-in-one deploy.sh and setup-agent.sh scripts
   - Cost planning across all 6 compute tiers
   - Comprehensive troubleshooting for real-world issues
-URL: https://skills.ws/skills/aleph-vm-replication
+URL: https://skills.ws/skills/aleph-cloud-self-deployment
 
 ## api-design (v1.0.0)
 Category: dev

@@ -1,6 +1,6 @@
-# Aleph Cloud VM Self-Replication
+# Aleph Cloud Self-Deployment
 
-> Create Aleph Cloud VM instances and deploy autonomous AI agents that can replicate themselves endlessly across the decentralized cloud.
+> Deploy AI agents on Aleph Cloud decentralized infrastructure. Provision VMs, install agent frameworks, configure credentials, and manage multi-instance deployments.
 
 ## Overview
 
@@ -9,7 +9,7 @@ This skill enables an AI agent to:
 2. Create VM instances (compute nodes) on the Aleph network
 3. Install OpenClaw (or any AI agent framework) on the VM
 4. Configure the agent with credentials and identity
-5. Enable the new agent to repeat this process — self-replication
+5. Enable deployment of additional instances from provisioned VMs
 
 ## Prerequisites
 
@@ -388,9 +388,9 @@ done
 scp -r -i $KEY -P $PORT -o StrictHostKeyChecking=no /root/openclaw/skills/ root@$HOST:/root/openclaw/skills/
 ```
 
-## Step 8: Enable Self-Replication
+## Step 8: Enable Self-Deployment
 
-For the new agent to replicate itself, it needs:
+For the new agent to deploy new instances, it needs:
 
 1. **aleph-client CLI** on its VM
 2. **Aleph private key** (or delegated key) to create instances
@@ -420,21 +420,21 @@ ssh -i $KEY -p $PORT root@$HOST "chmod 700 /root/.aleph-im/private-keys && chmod
 ssh -i $KEY -p $PORT root@$HOST "aleph account create --private-key \$(cat /root/.aleph-im/private-keys/your-key.key) --chain BASE --active"
 ```
 
-### Verify Self-Replication Capability
+### Verify Self-Deployment Capability
 
 ```bash
 ssh -i $KEY -p $PORT root@$HOST << 'REMOTE'
-echo "=== Checking replication readiness ==="
+echo "=== Checking deployment readiness ==="
 echo -n "aleph-client: "; aleph --version
 echo -n "Balance: "; aleph account balance 2>&1 | head -3
 echo -n "SSH key: "; ls ~/.ssh/aleph_agent.pub 2>/dev/null && echo "OK" || echo "MISSING — generate with: ssh-keygen -t ed25519 -f ~/.ssh/aleph_agent -N ''"
-echo -n "This skill: "; ls ~/openclaw/skills/aleph-vm-replication/SKILL.md 2>/dev/null && echo "OK" || echo "MISSING"
+echo -n "This skill: "; ls ~/openclaw/skills/aleph-vm-deployment/SKILL.md 2>/dev/null && echo "OK" || echo "MISSING"
 echo -n "OpenClaw: "; openclaw --version
-echo "=== Ready to replicate ==="
+echo "=== Ready to deploy ==="
 REMOTE
 ```
 
-Now the child agent can read this SKILL.md and create its own children — recursively.
+Now the child instance can read this SKILL.md and create new instances — recursively.
 
 ## Step 9: Manage Instances
 
@@ -456,14 +456,14 @@ aleph instance delete <INSTANCE_HASH>
 aleph account balance
 ```
 
-## Replication Script (All-in-One)
+## Deployment Script (All-in-One)
 
 This script automates the full cycle: find CRN → create VM → wait → install OpenClaw → configure → verify.
 
 ```bash
 #!/bin/bash
-# replicate.sh — Create a new Aleph Cloud agent clone
-# Usage: ./replicate.sh [name] [compute-units] [anthropic-key]
+# deploy.sh — Create a new Aleph Cloud agent clone
+# Usage: ./deploy.sh [name] [compute-units] [anthropic-key]
 set -euo pipefail
 
 AGENT_NAME="${1:-agent-$(date +%s)}"
@@ -619,9 +619,10 @@ echo "Remaining: copy auth-profiles.json, identity files, and aleph key"
 - **API keys**: Store in `auth-profiles.json` with `chmod 600`, not in env vars or config files.
 - **Gateway tokens**: Generate unique per VM (`openssl rand -hex 24`). Sync with `openclaw gateway install --force`.
 - **SSH**: Use ed25519 keys only. Disable password auth on production VMs.
-- **Replication limits**: Monitor credit balance. Set alerts. Unbounded replication drains funds fast.
+- **Instance limits**: Set a maximum instance count before deploying. Monitor credit balance and set budget alerts to prevent cost overruns.
+- **Human approval**: Always require human approval before provisioning new instances in production.
 - **Network isolation**: Gateway binds to loopback by default. Only expose via Tailscale, never raw public IP.
-- **Aleph key sharing**: All child VMs share the same Aleph account. One compromised VM = all VMs at risk. Consider delegated keys for production.
+- **Key isolation**: All instances sharing one Aleph key is a security risk. Use delegated keys for production.
 
 ## Cost Planning
 

@@ -8,7 +8,7 @@
 - [accounting-finance](https://skills.ws/skills/accounting-finance): Financial modeling, bookkeeping automation, invoicing workflows, tax compliance checklists, and P&L analysis for SMEs an
 - [affiliate-marketing](https://skills.ws/skills/affiliate-marketing): Affiliate program design, commission structures, partner recruitment, tracking implementation, and performance optimizat
 - [ai-agent-design](https://skills.ws/skills/ai-agent-design): Architecture patterns, tool design, memory systems, and deployment strategies for building reliable AI agents.
-- [aleph-vm-replication](https://skills.ws/skills/aleph-vm-replication): Self-replicate AI agents across Aleph Cloud decentralized infrastructure. Covers account setup, CRN discovery, VM creati
+- [aleph-cloud-self-deployment](https://skills.ws/skills/aleph-cloud-self-deployment): Deploy AI agents on Aleph Cloud decentralized infrastructure. Covers account setup, CRN discovery, VM provisioning (non-
 - [api-design](https://skills.ws/skills/api-design): REST, GraphQL, and OpenAPI design patterns with auth, error handling, versioning, and webhook best practices.
 - [ascii-banner](https://skills.ws/skills/ascii-banner): Build animated ASCII banners for CLI tools and web interfaces. Frame-based animation, ANSI color systems, terminal compa
 - [auth-implementation](https://skills.ws/skills/auth-implementation): Authentication & authorization — OAuth 2.0, JWT, session management, passkeys, RBAC, and security best practices.
