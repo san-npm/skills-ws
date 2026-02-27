@@ -124,7 +124,7 @@
     {
       "name": "aleph-cloud-self-deployment",
       "version": "1.0.0",
-      "description": "Deploy AI agents on Aleph Cloud decentralized infrastructure. Covers account setup, CRN discovery, VM provisioning (non-interactive), OpenClaw installation, gateway configuration, identity transfer, and multi-instance management.",
+      "description": "Skill for AI agents to autonomously deploy themselves onto Aleph Cloud decentralized infrastructure. Covers VM provisioning, CRN discovery, agent framework installation, gateway configuration, identity transfer, and becoming fully operational on decentralized compute \u2014 without human intervention.",
       "color": "F59E0B",
       "category": "web3",
       "platforms": [

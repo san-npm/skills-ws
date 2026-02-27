@@ -1,15 +1,15 @@
 # Aleph Cloud Self-Deployment
 
-> Deploy AI agents on Aleph Cloud decentralized infrastructure. Provision VMs, install agent frameworks, configure credentials, and manage multi-instance deployments.
+> Teach an AI agent to deploy itself onto Aleph Cloud decentralized infrastructure — from provisioning a VM to configuring its own runtime, autonomously.
 
 ## Overview
 
-This skill enables an AI agent to:
-1. Set up an Aleph Cloud account with credits or $ALEPH tokens
-2. Create VM instances (compute nodes) on the Aleph network
-3. Install OpenClaw (or any AI agent framework) on the VM
-4. Configure the agent with credentials and identity
-5. Enable deployment of additional instances from provisioned VMs
+This skill gives an AI agent everything it needs to:
+1. Provision its own VM on the Aleph Cloud network
+2. Install its agent framework (OpenClaw) on the new instance
+3. Configure its own credentials, gateway, and identity
+4. Transfer its knowledge and skills to the new environment
+5. Become fully operational on decentralized compute — without human intervention
 
 ## Prerequisites
 
