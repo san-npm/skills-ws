@@ -1,15 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 export default function InstallBox({ command }: { command: string }) {
   const [copied, setCopied] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => () => clearTimeout(timerRef.current), []);
 
   const copy = async () => {
+    clearTimeout(timerRef.current);
     try {
       await navigator.clipboard.writeText(command);
       setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      timerRef.current = setTimeout(() => setCopied(false), 1500);
     } catch {
       // Clipboard API unavailable (non-secure context or permission denied)
     }

@@ -5,29 +5,6 @@ import Link from "next/link";
 import type { Skill } from "@/lib/skills";
 import { categoryColors } from "@/lib/skills";
 
-function useNpmDownloads() {
-  const [downloads, setDownloads] = useState<number | null>(null);
-  useEffect(() => {
-    const cached = sessionStorage.getItem("npm-dl");
-    const cachedAt = sessionStorage.getItem("npm-dl-at");
-    if (cached && cachedAt && Date.now() - Number(cachedAt) < 86400000) {
-      setDownloads(Number(cached));
-      return;
-    }
-    fetch("https://api.npmjs.org/downloads/point/last-month/skills-ws")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.downloads != null) {
-          setDownloads(data.downloads);
-          sessionStorage.setItem("npm-dl", String(data.downloads));
-          sessionStorage.setItem("npm-dl-at", String(Date.now()));
-        }
-      })
-      .catch(() => {});
-  }, []);
-  return downloads;
-}
-
 export default function SkillsGrid({
   skills,
   categories,
@@ -68,6 +45,7 @@ export default function SkillsGrid({
         <input
           id="search-input"
           type="text"
+          aria-label="Search skills"
           placeholder="Search skills...  /"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -78,6 +56,7 @@ export default function SkillsGrid({
 
       <div className="flex gap-2 mb-8 flex-wrap overflow-x-auto">
         <button
+          aria-pressed={filter === "all"}
           onClick={() => setFilter("all")}
           className={`px-4 py-2 rounded-md font-mono text-sm border transition-all cursor-pointer ${
             filter === "all"
@@ -90,6 +69,7 @@ export default function SkillsGrid({
         {categories.map((cat) => (
           <button
             key={cat}
+            aria-pressed={filter === cat}
             onClick={() => setFilter(cat)}
             className={`px-4 py-2 rounded-md font-mono text-sm border transition-all cursor-pointer capitalize ${
               filter === cat

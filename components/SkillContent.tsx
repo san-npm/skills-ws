@@ -10,16 +10,16 @@ export default function SkillContent({ content }: { content: string }) {
         remarkPlugins={[remarkGfm]}
         components={{
           h1: ({ children }) => (
-            <h1 className="text-xl font-bold text-text-main mt-10 mb-4 font-sans">{children}</h1>
+            <h2 className="text-xl font-bold text-text-main mt-10 mb-4 font-sans">{children}</h2>
           ),
           h2: ({ children }) => (
-            <h2 className="text-lg font-semibold text-text-main mt-10 mb-3 pb-2 border-b border-border/50 font-sans">{children}</h2>
+            <h3 className="text-lg font-semibold text-text-main mt-10 mb-3 pb-2 border-b border-border/50 font-sans">{children}</h3>
           ),
           h3: ({ children }) => (
-            <h3 className="text-[15px] font-semibold text-text-main mt-6 mb-2 font-sans">{children}</h3>
+            <h4 className="text-[15px] font-semibold text-text-main mt-6 mb-2 font-sans">{children}</h4>
           ),
           h4: ({ children }) => (
-            <h4 className="text-sm font-semibold text-text-main mt-4 mb-2 font-sans">{children}</h4>
+            <h5 className="text-sm font-semibold text-text-main mt-4 mb-2 font-sans">{children}</h5>
           ),
           p: ({ children }) => <p className="mb-3 leading-relaxed">{children}</p>,
           ul: ({ children }) => <ul className="mb-4 space-y-1.5 list-none">{children}</ul>,

@@ -38,15 +38,22 @@ SPECIFIC_SKILL=""
 while [[ $# -gt 0 ]]; do
   case $1 in
     --skill)
+      if [[ $# -lt 2 ]]; then echo "Error: --skill requires a value"; exit 1; fi
       SPECIFIC_SKILL="$2"
       shift 2
       ;;
     --dir)
+      if [[ $# -lt 2 ]]; then echo "Error: --dir requires a value"; exit 1; fi
+      if [[ "$2" == /* ]] || [[ "$2" == *..* ]]; then
+        echo "Error: --dir must be a relative path without '..' components."
+        exit 1
+      fi
       TARGET_DIR="$2"
       shift 2
       ;;
     *)
-      shift
+      echo "Error: Unknown argument '$1'. Valid options: --skill <name>, --dir <path>"
+      exit 1
       ;;
   esac
 done
