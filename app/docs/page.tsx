@@ -12,37 +12,6 @@ export default function DocsPage() {
     <div className="max-w-[700px] mx-auto px-6 py-16">
       <h1 className="text-2xl font-bold font-sans text-text-main mb-8">Documentation</h1>
 
-      {/* Quick Start */}
-      <section className="mb-12 bg-bg-card border border-accent/30 rounded-xl px-6 py-6">
-        <h2 className="text-lg font-semibold text-accent font-sans mb-4">Getting Started in 60 Seconds</h2>
-        <div className="space-y-4">
-          <div className="flex items-start gap-4">
-            <span className="shrink-0 w-7 h-7 rounded-full bg-accent/10 border border-accent/30 text-accent text-[13px] font-bold font-sans flex items-center justify-center">1</span>
-            <div>
-              <p className="text-[14px] text-text-main font-sans font-medium">Run the installer</p>
-              <div className="bg-bg border border-border rounded-lg px-4 py-2 font-mono text-[13px] mt-1.5">
-                <span className="text-accent select-none">$ </span>
-                <span className="text-text-main">npx skills-ws</span>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-start gap-4">
-            <span className="shrink-0 w-7 h-7 rounded-full bg-accent/10 border border-accent/30 text-accent text-[13px] font-bold font-sans flex items-center justify-center">2</span>
-            <div>
-              <p className="text-[14px] text-text-main font-sans font-medium">Open your AI agent</p>
-              <p className="text-[13px] text-text-dim font-sans mt-1">Claude Code, Cursor, Codex, OpenClaw, or any SKILL.md-compatible agent.</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-4">
-            <span className="shrink-0 w-7 h-7 rounded-full bg-accent/10 border border-accent/30 text-accent text-[13px] font-bold font-sans flex items-center justify-center">3</span>
-            <div>
-              <p className="text-[14px] text-text-main font-sans font-medium">Ask it to do something</p>
-              <p className="text-[13px] text-text-dim font-sans mt-1">Try &quot;audit my SEO&quot;, &quot;write a growth strategy&quot;, or &quot;optimize my conversion funnel&quot;. The agent automatically activates the right skill.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <section className="mb-10">
         <h2 className="text-lg font-semibold text-text-main font-sans mb-3">What are agent skills?</h2>
         <p className="text-[14px] text-text-dim font-sans leading-relaxed mb-3">
