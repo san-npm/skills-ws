@@ -99,7 +99,7 @@ jobs:
         run: npm run test:unit -- --coverage --reporter=junit --outputFile=junit.xml
 
       - name: Upload coverage
-        if: inputs.working-directory == '.' && secrets.CODECOV_TOKEN != ''
+        if: inputs.working-directory == '.'
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

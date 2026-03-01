@@ -828,7 +828,7 @@ Already shown above in alertmanager config. Key decisions:
 ```promql
 # Golden signals
 rate(http_requests_total[5m])                          # Traffic
-rate(http_requests_total{status=~"5.."}[5m])           # Errors
+rate(http_requests_total{status_code=~"5.."}[5m])       # Errors
 histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m]))  # Latency
 sum(active_connections)                                 # Saturation
 ```

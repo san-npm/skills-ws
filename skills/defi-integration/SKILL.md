@@ -47,6 +47,7 @@ contract SwapHelper {
 ### Uniswap V3 — Multi-Hop Swap
 ```solidity
 function swapMultiHop(
+    address tokenIn,       // first token in the path
     bytes memory path,     // abi.encodePacked(tokenA, fee1, tokenB, fee2, tokenC)
     uint256 amountIn,
     uint256 amountOutMin
@@ -184,12 +185,12 @@ function borrow(address asset, uint256 amount, uint256 interestRateMode) externa
 import {IFlashLoanSimpleReceiver} from "@aave/v3-core/contracts/flashloan/base/FlashLoanSimpleReceiver.sol";
 import {IPoolAddressesProvider} from "@aave/v3-core/contracts/interfaces/IPoolAddressesProvider.sol";
 
-contract FlashLoanReceiver is IFlashLoanSimpleReceiver {
-    IPoolAddressesProvider public constant ADDRESSES_PROVIDER =
+contract AaveFlashLoanReceiver is IFlashLoanSimpleReceiver {
+    IPoolAddressesProvider public constant _ADDRESSES_PROVIDER =
         IPoolAddressesProvider(0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e);
 
     function executeFlashLoan(address asset, uint256 amount) external {
-        IPool(ADDRESSES_PROVIDER.getPool()).flashLoanSimple(
+        IPool(_ADDRESSES_PROVIDER.getPool()).flashLoanSimple(
             address(this),
             asset,
             amount,
@@ -215,13 +216,15 @@ contract FlashLoanReceiver is IFlashLoanSimpleReceiver {
     }
 
     function POOL() public view override returns (IPool) {
-        return IPool(ADDRESSES_PROVIDER.getPool());
+        return IPool(_ADDRESSES_PROVIDER.getPool());
     }
 
     function ADDRESSES_PROVIDER() public view override returns (IPoolAddressesProvider) {
-        return ADDRESSES_PROVIDER;
+        return _ADDRESSES_PROVIDER;
     }
 }
+// Note: The constant is named `_ADDRESSES_PROVIDER` to avoid collision with
+// the `ADDRESSES_PROVIDER()` function required by IFlashLoanSimpleReceiver.
 ```
 
 ### Aave V3 Key Addresses (Mainnet)

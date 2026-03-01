@@ -42,14 +42,15 @@ COPY --from=deps /prod_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/package.json ./
 
+# Use tini for proper signal handling (must run before USER directive)
+RUN apk add --no-cache tini
+
 # Don't run as root
 USER appuser
 
 EXPOSE 3000
 ENV NODE_ENV=production
 
-# Use tini for proper signal handling
-RUN apk add --no-cache tini
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", "dist/server.js"]
 

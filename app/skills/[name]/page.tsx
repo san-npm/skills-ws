@@ -13,7 +13,7 @@ export function generateStaticParams() {
 
 export function generateMetadata({ params }: { params: { name: string } }): Metadata {
   const skill = getSkill(params.name);
-  if (!skill) return {};
+  if (!skill) return notFound();
 
   const title = `${skill.name} — AI Agent Skill`;
   const description = `${skill.description} Install with npx skills-ws install ${skill.name}. Works with OpenClaw, Claude Code, Cursor, and Codex.`;

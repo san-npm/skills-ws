@@ -31,6 +31,7 @@ export default function FaqAccordion({ faqs }: { faqs: Faq[] }) {
             role="region"
             aria-labelledby={`faq-btn-${i}`}
             aria-hidden={open !== i}
+            inert={open !== i ? true : undefined}
             className="overflow-hidden transition-all duration-200"
             style={{ maxHeight: open === i ? "500px" : "0px" }}
           >

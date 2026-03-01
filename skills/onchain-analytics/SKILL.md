@@ -10,14 +10,19 @@ description: "On-chain data analysis — Dune Analytics, Etherscan APIs, The Gra
 ### Token Holder Analysis
 ```sql
 -- Top 100 holders of a token
-SELECT
-    "to" AS holder,
-    SUM(CASE WHEN "to" = holder THEN value ELSE 0 END) -
-    SUM(CASE WHEN "from" = holder THEN value ELSE 0 END) AS balance
-FROM erc20_ethereum.evt_Transfer
-WHERE contract_address = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48 -- USDC
+WITH transfers AS (
+    SELECT "to" AS addr, value AS amount
+    FROM erc20_ethereum.evt_Transfer
+    WHERE contract_address = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
+    UNION ALL
+    SELECT "from" AS addr, -value AS amount
+    FROM erc20_ethereum.evt_Transfer
+    WHERE contract_address = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
+)
+SELECT addr AS holder, SUM(amount) AS balance
+FROM transfers
 GROUP BY 1
-HAVING balance > 0
+HAVING SUM(amount) > 0
 ORDER BY balance DESC
 LIMIT 100;
 ```
@@ -306,9 +311,9 @@ const metadata = await fetch(alchemyUrl, {
   }),
 }).then(r => r.json());
 
-// Get NFTs owned by address
+// Get NFTs owned by address (Alchemy NFT API v3)
 const nfts = await fetch(
-  `${alchemyUrl}/getNFTs?owner=0xAddress&withMetadata=true`
+  `https://eth-mainnet.g.alchemy.com/nft/v3/${ALCHEMY_KEY}/getNFTsForOwner?owner=0xAddress&withMetadata=true`
 ).then(r => r.json());
 
 // Get asset transfers (token movements)

@@ -226,10 +226,10 @@ CREATE EXTENSION pg_partman;
 SELECT partman.create_parent(
     p_parent_table := 'public.events',
     p_control := 'created_at',
-    p_type := 'native',
     p_interval := '1 month',
     p_premake := 3  -- Create 3 months ahead
 );
+-- Note: p_type parameter was removed in pg_partman v5 (native is now the only option).
 
 -- Run maintenance (schedule via pg_cron):
 SELECT partman.run_maintenance();
@@ -475,8 +475,7 @@ CREATE OR REPLACE FUNCTION sync_display_name() RETURNS trigger AS $$
 BEGIN
   IF NEW.name IS DISTINCT FROM OLD.name THEN
     NEW.display_name := NEW.name;
-  END IF;
-  IF NEW.display_name IS DISTINCT FROM OLD.display_name THEN
+  ELSIF NEW.display_name IS DISTINCT FROM OLD.display_name THEN
     NEW.name := NEW.display_name;
   END IF;
   RETURN NEW;

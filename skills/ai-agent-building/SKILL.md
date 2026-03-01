@@ -24,7 +24,7 @@ LangGraph is the production-grade choice for complex agents. It gives you explic
 ### Basic Agent with Tool Calling
 
 ```python
-# pip install langgraph langchain-openai
+# pip install langgraph langchain-openai langgraph-checkpoint-sqlite
 from typing import Annotated, TypedDict
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
@@ -306,8 +306,8 @@ def with_retry(max_retries: int = 3):
     return decorator
 
 @tool
-@with_timeout(30)
 @with_retry(3)
+@with_timeout(30)
 async def query_database(sql: str) -> str:
     """Execute a read-only SQL query against the analytics database.
 
@@ -659,23 +659,25 @@ def sanitize_user_input(text: str) -> str:
 ### Output Validation
 
 ```python
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 
 class AgentResponse(BaseModel):
     answer: str
     sources: list[str]
     confidence: float
 
-    @validator("answer")
-    def no_system_leaks(cls, v):
+    @field_validator("answer")
+    @classmethod
+    def no_system_leaks(cls, v: str) -> str:
         forbidden = ["system prompt", "you are an AI", "as an AI language model"]
         for phrase in forbidden:
             if phrase.lower() in v.lower():
                 raise ValueError("Response contained forbidden content")
         return v
 
-    @validator("confidence")
-    def valid_range(cls, v):
+    @field_validator("confidence")
+    @classmethod
+    def valid_range(cls, v: float) -> float:
         if not 0 <= v <= 1:
             raise ValueError("Confidence must be between 0 and 1")
         return v
@@ -783,7 +785,7 @@ MCP is the standard for connecting agents to external tools. Instead of hardcodi
 ```typescript
 // mcp-server.ts — expose tools for any MCP-compatible agent
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import express from 'express';
 
 const server = new McpServer({ name: 'my-tools', version: '1.0.0' });
@@ -814,20 +816,16 @@ server.tool('create_ticket', 'Create a support ticket in Jira', {
   };
 });
 
-// SSE transport for remote connections
+// Streamable HTTP transport (replaces deprecated SSE transport)
 const app = express();
-const transports: Record<string, SSEServerTransport> = {};
+app.use(express.json());
 
-app.get('/mcp/sse', async (req, res) => {
-  const transport = new SSEServerTransport('/mcp/messages', res);
-  transports[transport.sessionId] = transport;
-  res.on('close', () => delete transports[transport.sessionId]);
+app.post('/mcp', async (req, res) => {
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: undefined, // stateless
+  });
   await server.connect(transport);
-});
-
-app.post('/mcp/messages', async (req, res) => {
-  const sessionId = req.query.sessionId as string;
-  await transports[sessionId]?.handlePostMessage(req, res);
+  await transport.handleRequest(req, res);
 });
 
 app.listen(3100, () => console.log('MCP server on :3100'));

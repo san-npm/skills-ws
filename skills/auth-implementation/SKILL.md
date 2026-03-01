@@ -33,7 +33,7 @@ For public clients that can't store a client secret securely.
 
 ```javascript
 // 1. Generate PKCE verifier and challenge
-function generatePKCE() {
+async function generatePKCE() {
   const verifier = crypto.randomUUID() + crypto.randomUUID();
   const encoder = new TextEncoder();
   const data = encoder.encode(verifier);
@@ -390,10 +390,11 @@ app.post('/auth/passkey/register/verify', async (req, res) => {
     expectedRPID: rpID,
   });
   if (verification.verified) {
+    const { credential } = verification.registrationInfo;
     await db.saveCredential(user.id, {
-      credentialId: verification.registrationInfo.credentialID,
-      publicKey: verification.registrationInfo.credentialPublicKey,
-      counter: verification.registrationInfo.counter,
+      credentialId: credential.id,
+      publicKey: credential.publicKey,
+      counter: credential.counter,
     });
   }
   res.json({ verified: verification.verified });

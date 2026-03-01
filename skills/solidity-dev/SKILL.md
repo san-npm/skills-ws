@@ -572,6 +572,9 @@ contract MyToken is ERC20, Ownable {
     error ExceedsMaxSupply();
     error AlreadyClaimed();
 
+    // State
+    Status public status;
+
     // Modifiers
     modifier whenActive() {
         require(status == Status.Active, "Not active");

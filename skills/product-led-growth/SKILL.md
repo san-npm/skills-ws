@@ -85,14 +85,15 @@ WITH user_actions AS (
     MAX(CASE WHEN event = 'created_project' THEN 1 ELSE 0 END) AS created_project,
     MAX(CASE WHEN event = 'connected_integration' THEN 1 ELSE 0 END) AS connected
   FROM events
-  WHERE created_at BETWEEN signup_date AND signup_date + INTERVAL '7 days'
-  GROUP BY user_id
+  WHERE e.created_at BETWEEN u.signup_date AND u.signup_date + INTERVAL '7 days'
+  GROUP BY e.user_id
 ),
 retention AS (
-  SELECT user_id, 1 AS retained_d30
-  FROM events
-  WHERE created_at BETWEEN signup_date + INTERVAL '28 days' AND signup_date + INTERVAL '35 days'
-  GROUP BY user_id
+  SELECT e.user_id, 1 AS retained_d30
+  FROM events e
+  JOIN users u ON u.id = e.user_id
+  WHERE e.created_at BETWEEN u.signup_date + INTERVAL '28 days' AND u.signup_date + INTERVAL '35 days'
+  GROUP BY e.user_id
 )
 SELECT
   'invited_teammate' AS action,

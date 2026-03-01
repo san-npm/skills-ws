@@ -135,8 +135,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No active subscription' }, { status: 400 });
   }
 
-  const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
-  const currentPrice = await stripe.prices.retrieve(subscription.items.data[0].price.id);
+  const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId, {
+    expand: ['items.data.price'],
+  });
+  const currentPrice = subscription.items.data[0].price as Stripe.Price;
   const newPrice = await stripe.prices.retrieve(newPriceId);
   const isUpgrade = (newPrice.unit_amount ?? 0) > (currentPrice.unit_amount ?? 0);
 
@@ -237,36 +239,34 @@ const redis = new Redis(process.env.REDIS_URL!);
 export class UsageMeter {
   constructor(private readonly flushIntervalMs = 60_000) {}
 
-  async recordUsage(subscriptionItemId: string, quantity: number): Promise<void> {
+  async recordUsage(meterId: string, customerId: string, quantity: number): Promise<void> {
     const window = String(Math.floor(Date.now() / 60000) * 60);
-    const key = `usage:${subscriptionItemId}:${window}`;
+    const key = `usage:${meterId}:${customerId}:${window}`;
     await redis.hincrby(key, 'quantity', quantity);
     await redis.expire(key, 3600);
   }
 
   async flush(): Promise<void> {
-    const keys = await redis.keys('usage:si_*');
+    const keys = await redis.keys('usage:*:cus_*:*');
 
     for (const key of keys) {
-      const [, subscriptionItemId, window] = key.split(':');
+      const [, meterId, customerId, window] = key.split(':');
       const quantity = await redis.hget(key, 'quantity');
       if (!quantity || parseInt(quantity) === 0) continue;
 
       try {
-        await stripe.subscriptionItems.createUsageRecord(subscriptionItemId, {
-          quantity: parseInt(quantity),
+        // Use Billing Meters API (replaces deprecated createUsageRecord)
+        await stripe.billing.meterEvents.create({
+          event_name: meterId,
+          payload: {
+            stripe_customer_id: customerId,
+            value: String(parseInt(quantity)),
+          },
           timestamp: parseInt(window),
-          action: 'increment',
-        }, {
-          idempotencyKey: `usage_${subscriptionItemId}_${window}`,
         });
         await redis.del(key);
       } catch (err: any) {
-        if (err.code === 'idempotency_key_in_use') {
-          await redis.del(key); // Already reported
-          continue;
-        }
-        console.error(`Usage flush failed for ${subscriptionItemId}:`, err);
+        console.error(`Usage flush failed for ${meterId}/${customerId}:`, err);
       }
     }
   }
