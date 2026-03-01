@@ -174,13 +174,13 @@ export function useTelegramUser() {
 
 ```tsx
 // src/lib/api.ts
-import { initDataRaw } from "@telegram-apps/sdk-react";
+// Use retrieveLaunchParams() for non-React contexts — it reads cached launch
+// data without requiring a reactive signal context (no useSignal needed).
+// initDataRaw() from sdk-react requires a React component/hook context.
+import { retrieveLaunchParams } from "@telegram-apps/sdk";
 
-// Note: initDataRaw() returns a signal in SDK v2. In non-React contexts
-// (outside components/hooks), call initDataRaw() directly to get the signal value.
-// Inside React components, use useSignal(initDataRaw) instead.
 export async function apiCall(path: string, options: RequestInit = {}) {
-  const raw = initDataRaw();
+  const { initDataRaw: raw } = retrieveLaunchParams();
 
   const res = await fetch(path, {
     ...options,
@@ -318,6 +318,12 @@ export function validateInitData(
 
   if (!hash) {
     return { valid: false, error: "Missing hash in initData" };
+  }
+
+  // Validate hash is a 64-character hex string before passing to Buffer.from.
+  // Invalid hex silently produces a shorter buffer, causing timingSafeEqual to throw.
+  if (!/^[0-9a-f]{64}$/i.test(hash)) {
+    return { valid: false, error: "Invalid hash format in initData" };
   }
 
   // Build the data-check-string:
@@ -689,12 +695,14 @@ export async function sendStarsInvoice(
     return;
   }
 
+  // grammY v1.30+ removed provider_token from the positional signature.
+  // Pass title, description, payload, currency, and prices as positional args,
+  // then provider_token and other options in the `other` object parameter.
   await bot.api.sendInvoice(
     chatId,
     product.title,           // title
     product.description,     // description
     `${product.id}`,         // payload — you'll receive this in pre_checkout_query
-    "",                      // provider_token — empty string for Stars
     "XTR",                   // currency — always "XTR" for Stars
     [
       {
@@ -703,6 +711,7 @@ export async function sendStarsInvoice(
       },
     ],
     {
+      provider_token: "",    // empty string for Stars — moved to `other` in grammY v1.30+
       photo_url: product.photoUrl,
       // For digital goods, no shipping needed:
       need_shipping_address: false,
@@ -956,11 +965,11 @@ bot.command("start", async (ctx) => {
 ### Reading startapp in Mini App
 
 ```tsx
-// The start_param is available in initData
-import { initData } from "@telegram-apps/sdk-react";
+// The start_param is available in initData — use useSignal() in React components
+import { initData, useSignal } from "@telegram-apps/sdk-react";
 
 function App() {
-  const data = initData();
+  const data = useSignal(initData); // SDK v2 signals require useSignal()
   const startParam = data?.startParam; // e.g., "item_123"
 
   useEffect(() => {
@@ -1769,7 +1778,7 @@ Response should show:
 ### Test Stars Payment in Dev
 
 Stars payments work in Telegram's test environment:
-1. Create a test bot via @BotFather with `/newbot` (use test server)
+1. Create a test bot via the **test-server** @BotFather (not the production one). You must log into the test server Telegram app first — the token from the production @BotFather will NOT work on test servers and vice versa.
 2. Use Telegram test apps (available on Android/iOS test builds)
 3. Test bots use the `https://api.telegram.org/bot<token>/test/METHOD` format (append `/test/` before the method name)
 
@@ -1823,7 +1832,7 @@ Client sends: Authorization: tma <initDataRaw>
   secretKey = HMAC-SHA256("WebAppData", BOT_TOKEN)
                     │
                     ▼
-  computed = HMAC-SHA256(dataCheckString, secretKey)
+  computed = HMAC-SHA256(secretKey, dataCheckString)
                     │
                     ▼
      Timing-safe compare with hash

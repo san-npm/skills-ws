@@ -479,10 +479,16 @@ app.use(requireAuth);
 
 // Fleet status endpoint
 app.get('/fleet/status', (req, res) => {
-    exec('cat /opt/fleet-manager/nodes.json', (error, stdout) => {
-        if (error) return res.status(500).json({ error: error.message });
-        res.json(JSON.parse(stdout || '{"nodes": []}'));
-    });
+    try {
+        const data = fs.readFileSync('/opt/fleet-manager/nodes.json', 'utf8');
+        res.json(JSON.parse(data));
+    } catch (err) {
+        if (err.code === 'ENOENT') {
+            res.json({ nodes: [] });
+        } else {
+            res.status(500).json({ error: err.message });
+        }
+    }
 });
 
 // Health check endpoint
@@ -493,8 +499,13 @@ app.get('/health', (req, res) => {
 // Node registration endpoint
 app.post('/fleet/register', (req, res) => {
     const { node_id, ip_address, capabilities } = req.body;
-    
-    let fleet = JSON.parse(fs.readFileSync('/opt/fleet-manager/nodes.json', 'utf8') || '{"nodes": []}');
+
+    let fleet;
+    try {
+        fleet = JSON.parse(fs.readFileSync('/opt/fleet-manager/nodes.json', 'utf8'));
+    } catch {
+        fleet = { nodes: [] };
+    }
     
     // Update or add node
     const existingIndex = fleet.nodes.findIndex(n => n.node_id === node_id);
@@ -519,7 +530,12 @@ app.post('/fleet/register', (req, res) => {
 // Load distribution endpoint
 app.get('/fleet/distribute/:task', (req, res) => {
     const task = req.params.task;
-    const nodes = JSON.parse(fs.readFileSync('/opt/fleet-manager/nodes.json', 'utf8') || '{"nodes": []}');
+    let nodes;
+    try {
+        nodes = JSON.parse(fs.readFileSync('/opt/fleet-manager/nodes.json', 'utf8'));
+    } catch {
+        nodes = { nodes: [] };
+    }
     
     // Simple round-robin distribution
     const activeNodes = nodes.nodes.filter(n => n.status === 'active');
@@ -556,7 +572,7 @@ After=network.target
 
 [Service]
 Type=simple
-User=root
+User=fleetmgr
 WorkingDirectory=/opt/fleet-manager
 ExecStart=/usr/bin/node fleet-manager.js
 Restart=always
@@ -567,11 +583,17 @@ Environment=PORT=8080
 WantedBy=multi-user.target
 SERVICE
 
+# Set ownership so fleetmgr user can read/write
+chown -R fleetmgr:fleetmgr /opt/fleet-manager
+
+# Initialize nodes registry BEFORE starting fleet-manager.
+# fleet-manager.js reads this file on startup — if it doesn't exist,
+# the readFileSync call will throw ENOENT and crash the service.
+echo '{"nodes": []}' > /opt/fleet-manager/nodes.json
+chown fleetmgr:fleetmgr /opt/fleet-manager/nodes.json
+
 systemctl enable fleet-manager
 systemctl start fleet-manager
-
-# Initialize nodes registry
-echo '{"nodes": []}' > /opt/fleet-manager/nodes.json
 
 # Install OpenClaw
 curl -fsSL https://raw.githubusercontent.com/openclaw/openclaw/main/install.sh | bash
@@ -656,6 +678,7 @@ LOCAL_IP=\$(curl -s http://checkip.amazonaws.com || hostname -I | awk '{print \$
 
 curl -X POST http://\$PRIMARY_IP:8080/fleet/register \
   -H "Content-Type: application/json" \
+  -H "x-api-key: \$FLEET_API_KEY" \
   -d "{
     \"node_id\": \"\$NODE_ID\",
     \"ip_address\": \"\$LOCAL_IP\",
@@ -763,6 +786,9 @@ cat ~/.aleph-deploy/configs/fleet.json | jq .
 # fleet-control.sh
 
 FLEET_CONFIG="$HOME/.aleph-deploy/configs/fleet.json"
+# All fleet manager endpoints require x-api-key authentication.
+# Set FLEET_API_KEY in your environment or .env file.
+FLEET_API_KEY="${FLEET_API_KEY:?FLEET_API_KEY env var is required}"
 
 get_primary_ip() {
     jq -r '.primary_node.ip' "$FLEET_CONFIG"
@@ -771,8 +797,8 @@ get_primary_ip() {
 fleet_status() {
     local primary_ip=$(get_primary_ip)
     echo "🔍 Fleet Status Check..."
-    
-    curl -s "http://$primary_ip:8080/fleet/status" | jq '.' || {
+
+    curl -s -H "x-api-key: $FLEET_API_KEY" "http://$primary_ip:8080/fleet/status" | jq '.' || {
         echo "❌ Unable to reach fleet manager"
         return 1
     }
@@ -782,11 +808,11 @@ fleet_health() {
     echo "🏥 Fleet Health Check..."
     
     local primary_ip=$(get_primary_ip)
-    local nodes=$(curl -s "http://$primary_ip:8080/fleet/status" | jq -r '.nodes[].ip_address')
-    
+    local nodes=$(curl -s -H "x-api-key: $FLEET_API_KEY" "http://$primary_ip:8080/fleet/status" | jq -r '.nodes[].ip_address')
+
     for node_ip in $nodes; do
         echo "Checking node: $node_ip"
-        
+
         if ssh -i ~/.aleph-deploy/keys/aleph_rsa -o ConnectTimeout=5 ubuntu@"$node_ip" "systemctl is-active openclaw" &>/dev/null; then
             echo "  ✅ $node_ip - OpenClaw running"
         else
@@ -807,7 +833,7 @@ fleet_restart() {
     echo "🔄 Restarting $service_name on all nodes..."
 
     local primary_ip=$(get_primary_ip)
-    local nodes=$(curl -s "http://$primary_ip:8080/fleet/status" | jq -r '.nodes[].ip_address')
+    local nodes=$(curl -s -H "x-api-key: $FLEET_API_KEY" "http://$primary_ip:8080/fleet/status" | jq -r '.nodes[].ip_address')
 
     for node_ip in $nodes; do
         echo "Restarting $service_name on $node_ip..."
@@ -825,8 +851,8 @@ fleet_deploy() {
     fi
     
     local primary_ip=$(get_primary_ip)
-    local nodes=$(curl -s "http://$primary_ip:8080/fleet/status" | jq -r '.nodes[].ip_address')
-    
+    local nodes=$(curl -s -H "x-api-key: $FLEET_API_KEY" "http://$primary_ip:8080/fleet/status" | jq -r '.nodes[].ip_address')
+
     for node_ip in $nodes; do
         echo "Deploying to $node_ip..."
         scp -i ~/.aleph-deploy/keys/aleph_rsa "$script_path" ubuntu@"$node_ip":/tmp/deploy-script.sh
@@ -868,7 +894,7 @@ fleet_logs() {
     echo "📋 Collecting logs from all nodes..."
 
     local primary_ip=$(get_primary_ip)
-    local nodes=$(curl -s "http://$primary_ip:8080/fleet/status" | jq -r '.nodes[].ip_address')
+    local nodes=$(curl -s -H "x-api-key: $FLEET_API_KEY" "http://$primary_ip:8080/fleet/status" | jq -r '.nodes[].ip_address')
 
     for node_ip in $nodes; do
         echo "=== Logs from $node_ip ==="
@@ -1101,18 +1127,20 @@ sudo mkdir -p /opt/openclaw/workspace/{memory,skills}
 sudo chown -R ubuntu:ubuntu /opt/openclaw/workspace
 
 # Install replicated components
-if [[ -f SOUL.md ]]; then
-    cp SOUL.md /opt/openclaw/workspace/
+# Files are extracted into subdirectories matching the replication structure:
+# soul/SOUL.md, agents/AGENTS.md, memory/MEMORY.md, etc.
+if [[ -f soul/SOUL.md ]]; then
+    cp soul/SOUL.md /opt/openclaw/workspace/
     echo "✅ SOUL.md installed"
 fi
 
-if [[ -f AGENTS.md ]]; then
-    cp AGENTS.md /opt/openclaw/workspace/
+if [[ -f agents/AGENTS.md ]]; then
+    cp agents/AGENTS.md /opt/openclaw/workspace/
     echo "✅ AGENTS.md installed"
 fi
 
-if [[ -f MEMORY.md ]]; then
-    cp MEMORY.md /opt/openclaw/workspace/
+if [[ -f memory/MEMORY.md ]]; then
+    cp memory/MEMORY.md /opt/openclaw/workspace/
     echo "✅ MEMORY.md installed"
 fi
 
@@ -1164,7 +1192,7 @@ replicate_to_fleet() {
     
     # Get fleet node list
     local primary_ip=$(get_primary_ip)
-    local nodes=$(curl -s "http://$primary_ip:8080/fleet/status" | jq -r '.nodes[] | select(.node_id != env.HOSTNAME) | .ip_address')
+    local nodes=$(curl -s -H "x-api-key: $FLEET_API_KEY" "http://$primary_ip:8080/fleet/status" | jq -r '.nodes[] | select(.node_id != env.HOSTNAME) | .ip_address')
     
     # Replicate to each node in parallel
     for node_ip in $nodes; do
@@ -1614,7 +1642,7 @@ remove_backend_server() {
     echo "disable server openclaw_nodes/$server_name" | sudo socat stdio "$HAPROXY_STATS_SOCKET"
     
     # Remove server from backend
-    echo "del-server openclaw_nodes/$server_name" | sudo socat stdio "$HAPROXY_STATS_SOCKET"
+    echo "del server openclaw_nodes/$server_name" | sudo socat stdio "$HAPROXY_STATS_SOCKET"
     
     echo "✅ Server $server_name removed from load balancer"
 }
@@ -1636,7 +1664,7 @@ sync_with_fleet() {
     echo "🔄 Syncing backends with fleet registry..."
     
     # Get current fleet status
-    local fleet_nodes=$(curl -s http://localhost:8080/fleet/status | jq -r '.nodes[] | .node_id + "," + .ip_address + "," + .status')
+    local fleet_nodes=$(curl -s -H "x-api-key: $FLEET_API_KEY" http://localhost:8080/fleet/status | jq -r '.nodes[] | .node_id + "," + .ip_address + "," + .status')
     
     # Get current HAProxy backends
     local current_backends=$(echo "show servers state openclaw_nodes" | sudo socat stdio "$HAPROXY_STATS_SOCKET" | awk '{print $4}' | grep -v "#" | sort)
@@ -2695,19 +2723,21 @@ log_message() {
 get_average_cpu_usage() {
     local total_cpu=0
     local node_count=0
-    
-    # Get CPU usage from all active worker nodes
-    jq -r '.nodes[] | select(.status == "active" and .node_id != "primary") | .ip_address' "$FLEET_CONFIG" | while read -r ip; do
+
+    # Use process substitution (< <(...)) instead of pipe (|).
+    # A pipe runs `while` in a subshell, so variable updates to
+    # total_cpu and node_count are lost when the subshell exits.
+    while read -r ip; do
         local cpu_usage=$(ssh -i /home/ubuntu/.aleph-deploy/keys/aleph_rsa \
                              -o ConnectTimeout=5 ubuntu@"$ip" \
                              "top -bn1 | grep 'Cpu(s)' | awk '{print \$2}' | cut -d'%' -f1" 2>/dev/null || echo "0")
-        
+
         if [[ "$cpu_usage" =~ ^[0-9.]+$ ]]; then
             total_cpu=$(echo "$total_cpu + $cpu_usage" | bc -l)
             node_count=$((node_count + 1))
         fi
-    done
-    
+    done < <(jq -r '.nodes[] | select(.status == "active" and .node_id != "primary") | .ip_address' "$FLEET_CONFIG")
+
     if (( node_count > 0 )); then
         echo "scale=2; $total_cpu / $node_count" | bc -l
     else
@@ -2913,7 +2943,7 @@ generate_cost_report() {
     local primary_ip=$(jq -r '.primary_node.ip' "$FLEET_CONFIG")
     
     # Get current fleet status
-    local fleet_status=$(curl -s "http://$primary_ip:8080/fleet/status" 2>/dev/null || echo '{"nodes":[]}')
+    local fleet_status=$(curl -s -H "x-api-key: $FLEET_API_KEY" "http://$primary_ip:8080/fleet/status" 2>/dev/null || echo '{"nodes":[]}')
     local active_workers=$(echo "$fleet_status" | jq '.nodes | map(select(.status == "active" and .node_id != "primary")) | length')
     
     # Calculate costs
@@ -3046,10 +3076,13 @@ sudo ufw limit ssh  # Rate limiting for SSH
 # Node-specific rules
 if [[ "$node_type" == "primary" ]]; then
     # Primary node services
-    sudo ufw allow 80    # HTTP
-    sudo ufw allow 443   # HTTPS  
-    sudo ufw allow 8080  # Fleet Manager
-    sudo ufw allow 8081  # Load Distributor
+    sudo ufw allow 80    # HTTP (load balancer)
+    sudo ufw allow 443   # HTTPS (load balancer)
+    # Fleet Manager (8080) and Load Distributor (8081) bind to 127.0.0.1
+    # and are accessed via Tailscale — do NOT expose them to the internet.
+    # If you need remote access, allow only from Tailscale subnet:
+    # sudo ufw allow from 100.64.0.0/10 to any port 8080
+    # sudo ufw allow from 100.64.0.0/10 to any port 8081
     
     # Tailscale
     sudo ufw allow 41641/udp
@@ -3127,14 +3160,12 @@ MaxSessions 2
 MaxStartups 2:30:10
 LoginGraceTime 30
 
-# Disable dangerous features
+# Disable dangerous features by default
 X11Forwarding no
 AllowTcpForwarding no
 GatewayPorts no
 PermitTunnel no
 AllowAgentForwarding no
-# Note: If you need SSH tunnels (e.g. for Tailscale), selectively enable
-# AllowTcpForwarding for specific users via Match blocks instead.
 
 # User restrictions
 AllowUsers ubuntu
@@ -3159,6 +3190,11 @@ UseDNS no
 
 # Subsystem
 Subsystem sftp /usr/lib/openssh/sftp-server -l INFO
+
+# Re-enable TCP forwarding for the ubuntu user only.
+# This is needed for SSH tunnels (Section 5) and Tailscale.
+Match User ubuntu
+    AllowTcpForwarding yes
 SSHD_CONFIG
 
 # Test configuration
@@ -3737,4 +3773,113 @@ check_node_security() {
     echo ""
 }
 
-# Check
+# Check all fleet nodes
+check_fleet_security() {
+    local primary_ip=$(jq -r '.primary_node.ip' "$FLEET_CONFIG")
+
+    echo "🔒 FLEET SECURITY STATUS"
+    echo "========================"
+    echo ""
+
+    check_node_security "$primary_ip" "primary"
+
+    local worker_ips=($(jq -r '.worker_nodes[] | .ip // empty' "$FLEET_CONFIG"))
+    for worker_ip in "${worker_ips[@]}"; do
+        [[ -z "$worker_ip" || "$worker_ip" == "null" ]] && continue
+        check_node_security "$worker_ip" "worker"
+    done
+}
+
+check_fleet_security
+SEC_STATUS
+
+chmod +x ~/.aleph-deploy/scripts/security-status.sh
+
+echo "✅ Security status checker created"
+}
+
+# Execute all security hardening
+harden_all_nodes
+setup_key_rotation
+setup_intrusion_detection
+setup_log_monitoring
+create_security_checker
+
+echo "🔒 Security hardening complete!"
+echo ""
+echo "Security components:"
+echo "- UFW firewall configured on all nodes"
+echo "- SSH hardened (key-only, no root)"
+echo "- Monthly SSH key rotation"
+echo "- Fail2ban intrusion detection"
+echo "- Centralized logging"
+echo ""
+echo "Check security status: ~/.aleph-deploy/scripts/security-status.sh"
+```
+
+---
+
+## Monitoring & Maintenance
+
+### Routine Maintenance Checklist
+
+**Daily:**
+- Check fleet status: `./fleet-control.sh status`
+- Review backup logs: `tail /var/log/backup.log`
+- Check security events: `tail /var/log/security-events.log`
+
+**Weekly:**
+- Review cost reports: `ls ~/.aleph-deploy/reports/`
+- Check node health: `./fleet-control.sh health`
+- Verify backup integrity: run a test restore on staging
+
+**Monthly:**
+- SSH key rotation (automated via cron)
+- Update system packages: `./fleet-control.sh deploy update-packages.sh`
+- Review and rotate FLEET_API_KEY
+- Check CRN pricing and availability
+
+### Quick Reference Commands
+
+```bash
+# Fleet operations
+./fleet-control.sh status        # View fleet status
+./fleet-control.sh health        # Health check all nodes
+./fleet-control.sh restart openclaw  # Restart service on all nodes
+./fleet-control.sh logs openclaw 100 # Collect last 100 log lines
+
+# Backup & Recovery
+ssh ubuntu@PRIMARY_IP '/opt/openclaw/backup-system.sh full'
+ssh ubuntu@PRIMARY_IP '/opt/openclaw/backup-system.sh snapshot'
+
+# Security
+~/.aleph-deploy/scripts/security-status.sh
+~/.aleph-deploy/scripts/rotate-ssh-keys.sh rotate
+
+# Cost monitoring
+~/.aleph-deploy/scripts/cost-monitor.sh
+
+# Auto-scaling (enable/disable)
+ssh ubuntu@PRIMARY_IP 'sudo systemctl enable auto-scaler && sudo systemctl start auto-scaler'
+ssh ubuntu@PRIMARY_IP 'sudo systemctl stop auto-scaler && sudo systemctl disable auto-scaler'
+
+# Replication
+ssh ubuntu@PRIMARY_IP '/opt/openclaw/replication/self-replication-protocol.sh replicate'
+ssh ubuntu@PRIMARY_IP '/opt/openclaw/replication/self-replication-protocol.sh emergency manual'
+
+# Tailscale mesh
+ssh ubuntu@PRIMARY_IP 'tailscale status'
+```
+
+### Troubleshooting
+
+| Problem | Cause | Fix |
+|---------|-------|-----|
+| Fleet manager 401 | Missing x-api-key header | Add `-H "x-api-key: $FLEET_API_KEY"` to curl calls |
+| Worker can't register | Fleet manager not reachable | Check Tailscale connectivity and UFW rules |
+| nodes.json ENOENT | File not created before service start | Create `echo '{"nodes":[]}' > /opt/fleet-manager/nodes.json` and restart |
+| HAProxy backend stale | Fleet sync not running | Check `systemctl status haproxy-fleet-sync` |
+| SSH key rotation fails | New key not propagated | Manually deploy key: `ssh-copy-id -i KEY ubuntu@NODE` |
+| Auto-scaler variables lost | Pipe subshell scoping | Use `while read ... done < <(cmd)` process substitution |
+| Replication files missing | Wrong extract paths | Files are under `soul/`, `agents/`, `memory/` subdirectories |
+| High CPU but no scale-up | Cooldown period active | Wait 5 minutes or reset `/tmp/last-scale-action` |

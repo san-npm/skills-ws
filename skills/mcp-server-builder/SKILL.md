@@ -675,12 +675,14 @@ function checkRateLimit(
   return { allowed: true };
 }
 
-// --- Constant-time API key comparison ---
+// --- Constant-time comparison (HMAC-based to avoid length leaks) ---
 function secureCompare(a: string, b: string): boolean {
-  const bufA = Buffer.from(a);
-  const bufB = Buffer.from(b);
-  if (bufA.length !== bufB.length) return false;
-  return crypto.timingSafeEqual(bufA, bufB);
+  // HMAC both inputs with a random key — normalizes to fixed-length hashes,
+  // so timingSafeEqual works without an early-return length check.
+  const key = crypto.randomBytes(32);
+  const hmacA = crypto.createHmac("sha256", key).update(a).digest();
+  const hmacB = crypto.createHmac("sha256", key).update(b).digest();
+  return crypto.timingSafeEqual(hmacA, hmacB);
 }
 
 // --- API key store (use DB in production) ---
@@ -729,7 +731,8 @@ export async function authenticate(req: express.Request): Promise<{ auth: AuthRe
     const valid = await verifyX402Payment(paymentHeader, "0.005");
     if (valid) return { auth: { tier: "x402" } };
     return { error: "Invalid payment", status: 402, headers: {
-      "X-Payment-Required": JSON.stringify({
+      // x402 spec header is PAYMENT-REQUIRED (not X-Payment-Required)
+      "PAYMENT-REQUIRED": JSON.stringify({
         amount: "0.005",
         token: process.env.X402_TOKEN || "USDC",
         chain: process.env.X402_CHAIN || "base",
@@ -1057,7 +1060,10 @@ const urlSchema = z.string().url().refine(
     // Block internal/private IPs (SSRF prevention)
     const hostname = parsed.hostname;
     if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "0.0.0.0") return false;
-    if (hostname.startsWith("10.") || hostname.startsWith("192.168.") || hostname.startsWith("172.")) return false;
+    if (hostname.startsWith("10.") || hostname.startsWith("192.168.")) return false;
+    // 172.16.0.0/12 = 172.16.x.x–172.31.x.x (not all of 172.x.x.x)
+    const m172 = hostname.match(/^172\.(\d+)\./);
+    if (m172 && +m172[1] >= 16 && +m172[1] <= 31) return false;
     if (hostname.endsWith(".internal") || hostname.endsWith(".local")) return false;
     if (parsed.protocol !== "https:") return false;
     return true;
@@ -1108,10 +1114,14 @@ function verifyWebhookSignature(
 function verifyStripeSignature(payload: Buffer, sigHeader: string, secret: string): boolean {
   const parts: Record<string, string> = {};
   sigHeader.split(",").forEach(p => { const [k, v] = p.split("="); parts[k] = v; });
-  // Reject events older than 5 minutes (replay protection)
+  if (!parts.t || !parts.v1) return false;
   const timestamp = parseInt(parts.t, 10);
-  if (Math.abs(Date.now() / 1000 - timestamp) > 300) return false;
-  const expected = crypto.createHmac("sha256", secret).update(`${parts.t}.${payload}`).digest("hex");
+  if (isNaN(timestamp) || Math.abs(Date.now() / 1000 - timestamp) > 300) return false;
+  // Feed payload as Buffer directly — template literal would coerce Buffer to string
+  const expected = crypto.createHmac("sha256", secret)
+    .update(`${parts.t}.`)
+    .update(payload)
+    .digest("hex");
   return secureCompare(parts.v1, expected);
 }
 
@@ -1695,11 +1705,11 @@ async function checkRateLimitRedis(
   if (minuteTtl < 0) await redis.expire(minuteKey, 60);
   if (dayTtl < 0) await redis.expire(dayKey, 86400);
 
-  if (minuteCount > perMinute) {
+  if (minuteCount >= perMinute) {
     const ttl = await redis.ttl(minuteKey);
     return { allowed: false, retryAfter: ttl };
   }
-  if (dayCount > perDay) {
+  if (dayCount >= perDay) {
     const ttl = await redis.ttl(dayKey);
     return { allowed: false, retryAfter: ttl };
   }

@@ -296,7 +296,7 @@ app.get('/billing/success', async (req, res) => {
   // The success page is just a "thank you" screen.
 
   res.render('billing-success', {
-    customerEmail: session.customer_details.email,
+    customerEmail: session.customer_details?.email || session.customer_email,
     planName: session.subscription?.metadata?.plan || 'Pro',
   });
 });
@@ -398,13 +398,16 @@ async function downgradeAtPeriodEnd(subscriptionId, newPriceId) {
     from_subscription: subscriptionId,
   });
 
-  // Update the schedule: keep current phase, add new phase at period end
+  // Update the schedule: keep current phase, add new phase at period end.
+  // IMPORTANT: Use 'now' for start_date of the first phase, not
+  // subscription.current_period_start — that timestamp is in the past,
+  // and Stripe rejects past start_date values.
   await stripe.subscriptionSchedules.update(schedule.id, {
     end_behavior: 'release',
     phases: [
       {
         items: [{ price: subscription.items.data[0].price.id, quantity: 1 }],
-        start_date: subscription.current_period_start,
+        start_date: 'now',
         end_date: subscription.current_period_end,
       },
       {
@@ -473,10 +476,10 @@ async function pauseSubscription(subscriptionId) {
   });
 }
 
-// Resume
+// Resume — set pause_collection to null (not empty string) to clear the pause
 async function resumeSubscription(subscriptionId) {
   return stripe.subscriptions.update(subscriptionId, {
-    pause_collection: '',   // empty string clears pause
+    pause_collection: null,
   });
 }
 ```
@@ -495,7 +498,10 @@ Stripe webhook signature verification requires the **raw request body**. If `exp
 
 ```js
 const express = require('express');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+// Always pin your API version — see "Stripe Client Initialization" above.
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: '2024-12-18.acacia',
+});
 
 const app = express();
 
@@ -612,7 +618,9 @@ async function handleEvent(event) {
     }
 
     case 'customer.subscription.updated': {
-      await handleSubscriptionUpdated(data);
+      // previous_attributes lives on event.data, NOT on event.data.object.
+      // Pass it as a second argument so the handler can detect what changed.
+      await handleSubscriptionUpdated(data, event.data.previous_attributes || {});
       break;
     }
 
@@ -723,14 +731,12 @@ async function handleSubscriptionCreated(subscription) {
 
 // ─── customer.subscription.updated ─────────────────────────
 // Fires on: plan change, status change, trial end, pause, resume, etc.
-async function handleSubscriptionUpdated(subscription) {
+// NOTE: This handler receives both the subscription object AND previousAttributes
+// because previous_attributes lives on event.data, not on the object itself.
+// The caller (handleEvent) must pass it separately — see below.
+async function handleSubscriptionUpdated(subscription, previousAttributes = {}) {
   const userId = await getUserByCustomerId(subscription.customer);
   if (!userId) return;
-
-  // previous_attributes lives on event.data, not the object itself.
-  // In a webhook handler, pass the full event or access event.data.previous_attributes.
-  // Here we guard for both patterns (direct handler vs. event.data.object).
-  const previousAttributes = subscription.previous_attributes || {};
 
   // Detect plan change
   if (previousAttributes.items) {
@@ -796,8 +802,10 @@ async function handleSubscriptionDeleted(subscription) {
 // ─── invoice.payment_succeeded ─────────────────────────────
 // Fires on every successful payment (initial + renewals).
 async function handleInvoicePaymentSucceeded(invoice) {
-  if (invoice.billing_reason === 'subscription_create') {
-    // First payment — usually handled by checkout.session.completed
+  // Only process renewal invoices. Skip initial creation (handled by
+  // checkout.session.completed) and other non-cycle reasons like
+  // subscription_update, subscription_threshold, manual, etc.
+  if (invoice.billing_reason !== 'subscription_cycle') {
     return;
   }
 
@@ -1668,12 +1676,16 @@ app.post(
       if (processedEvents.has(event.id)) {
         return res.status(200).json({ received: true });
       }
-      processedEvents.add(event.id);
 
       await routeEvent(event);
+
+      // Mark as processed AFTER success. If we add it before and
+      // processing fails, Stripe retries will be silently ignored.
+      processedEvents.add(event.id);
       res.status(200).json({ received: true });
     } catch (err) {
       console.error(`Error processing ${event.type} (${event.id}):`, err);
+      // Don't add to processedEvents — let Stripe retry
       res.status(500).json({ error: 'Processing failed' });
     }
   }
@@ -1691,9 +1703,13 @@ const processedEvents = new Set();
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // CHECKOUT — Create session
+// ⚠️  In production, protect this route with authentication middleware.
+//     Never trust userId from the request body alone — derive it from
+//     the authenticated session (e.g., req.user.id from JWT/session).
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-app.post('/billing/checkout', async (req, res) => {
-  const { userId, priceId, email } = req.body;
+app.post('/billing/checkout', requireAuth, async (req, res) => {
+  const { priceId, email } = req.body;
+  const userId = req.user.id; // from auth middleware — never from body
 
   // Get or create Stripe customer
   let user = users.get(userId);
@@ -1725,12 +1741,17 @@ app.post('/billing/checkout', async (req, res) => {
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // BILLING PORTAL
+// ⚠️  Always authenticate — customerId from the body is attacker-controlled.
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-app.post('/billing/portal', async (req, res) => {
-  const { customerId } = req.body;
+app.post('/billing/portal', requireAuth, async (req, res) => {
+  // Look up the customer from the authenticated user, not from body
+  const user = users.get(req.user.id);
+  if (!user?.stripe_customer_id) {
+    return res.status(400).json({ error: 'No billing account found' });
+  }
 
   const session = await stripe.billingPortal.sessions.create({
-    customer: customerId,
+    customer: user.stripe_customer_id,
     return_url: `${BASE_URL}/dashboard`,
   });
 
@@ -1747,17 +1768,17 @@ async function routeEvent(event) {
     case 'checkout.session.completed': {
       if (obj.mode !== 'subscription') break;
 
-      const userId = obj.metadata?.user_id
-        || (await stripe.subscriptions.retrieve(obj.subscription)).metadata?.user_id;
+      // Retrieve the subscription once (with expansion) instead of twice
+      const sub = await stripe.subscriptions.retrieve(obj.subscription, {
+        expand: ['items.data.price.product'],
+      });
+
+      const userId = obj.metadata?.user_id || sub.metadata?.user_id;
 
       if (!userId) {
         console.error('checkout.session.completed: no user_id in metadata');
         break;
       }
-
-      const sub = await stripe.subscriptions.retrieve(obj.subscription, {
-        expand: ['items.data.price.product'],
-      });
 
       const plan = sub.items.data[0].price.product.metadata?.tier || 'pro';
 
@@ -1791,9 +1812,16 @@ async function routeEvent(event) {
         cancel_at_period_end: obj.cancel_at_period_end,
       });
 
-      // Handle pause
+      // Handle pause / resume
       if (obj.pause_collection) {
         revokeKeysForUser(userId);
+        console.log(`Subscription paused for ${userId}`);
+      } else if (event.data.previous_attributes?.pause_collection) {
+        // Was paused, now resumed — restore API keys
+        const apiKey = generateApiKey();
+        const keyHash = hashKey(apiKey);
+        apiKeys.set(keyHash, { userId, plan: user?.plan || 'pro', active: true });
+        console.log(`Subscription resumed for ${userId}, new API key provisioned`);
       }
 
       console.log(`Subscription updated for ${userId}: ${obj.status}`);

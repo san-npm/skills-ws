@@ -74,8 +74,9 @@ A production MCP service providing web intelligence and blockchain tools.
 ### Screenshot — Capture Any Webpage
 
 ```bash
+# Response is JSON with base64 image — extract and decode to get the PNG
 curl -s "https://mcp.skills.ws/api/screenshot?url=https://example.com" \
-  -o screenshot.png
+  | jq -r '.image' | sed 's|data:image/png;base64,||' | base64 -d > screenshot.png
 ```
 
 Parameters:
@@ -501,13 +502,13 @@ async function auditWebsite(domain, apiKey) {
     domain,
     dns: dns.records,
     ssl: {
-      issuer: ssl.issuer,
-      validUntil: ssl.notAfter,
-      daysRemaining: ssl.daysRemaining,
+      issuer: ssl.certificate.issuer,
+      validUntil: ssl.certificate.validUntil,
+      daysRemaining: ssl.certificate.daysUntilExpiry,
     },
     whois: {
-      registrar: whois.registrar,
-      expires: whois.expiryDate,
+      registrar: whois.whois?.registrar,
+      expires: whois.whois?.expiryDate,  // field names vary by registrar/TLD
     },
     screenshot: await screenshot.arrayBuffer(),
   };
@@ -551,17 +552,17 @@ async function monitorDomains(domains, apiKey) {
     ]);
     
     // Alert if SSL expires within 30 days
-    if (ssl.daysRemaining < 30) {
+    if (ssl.certificate.daysUntilExpiry < 30) {
       alerts.push({
         domain,
         type: 'ssl_expiry',
-        message: `SSL expires in ${ssl.daysRemaining} days`,
+        message: `SSL expires in ${ssl.certificate.daysUntilExpiry} days`,
       });
     }
-    
-    // Alert if domain expires within 60 days
+
+    // Alert if domain expires within 60 days (field names vary by registrar)
     const domainDays = Math.floor(
-      (new Date(whois.expiryDate) - Date.now()) / 86400000
+      (new Date(whois.whois?.expiryDate) - Date.now()) / 86400000
     );
     if (domainDays < 60) {
       alerts.push({
@@ -650,7 +651,7 @@ async function cachedMcpCall(tool, params, headers) {
 ### Security
 
 1. **Never expose API keys in client-side code** — Use server-side proxies
-2. **Rotate keys periodically** — Generate new keys via admin endpoint
+2. **Rotate keys periodically** — Use `POST /admin/keys` (requires admin secret) to generate a new key, then `POST /admin/revoke` to revoke the old one
 3. **Monitor usage** — Track calls per key to detect abuse
 4. **Validate responses** — Don't trust MCP responses blindly in security-critical flows
 
@@ -701,11 +702,11 @@ const { tools } = await client.listTools();
 console.log('Available tools:', tools.map(t => t.name));
 
 // Call a tool
-const result = await client.callTool('dns', {
-  domain: 'example.com',
-  type: 'MX'
+const result = await client.callTool({
+  name: 'dns',
+  arguments: { domain: 'example.com', type: 'MX' }
 });
-console.log('DNS result:', result);
+console.log('DNS result:', result.content[0].text);
 
 // Cleanup
 await client.close();
