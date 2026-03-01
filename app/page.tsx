@@ -1,8 +1,10 @@
+import dynamic from "next/dynamic";
 import { getSkills, getCategories } from "@/lib/skills";
 import InstallBox from "@/components/InstallBox";
 import SkillsGrid from "@/components/SkillsGrid";
-import AsciiBackground from "@/components/AsciiBackground";
 import NpmDownloads from "@/components/NpmDownloads";
+
+const AsciiBackground = dynamic(() => import("@/components/AsciiBackground"), { ssr: false });
 
 const ASCII = `███████╗██╗  ██╗██╗██╗     ██╗     ███████╗   ██╗    ██╗███████╗
 ██╔════╝██║ ██╔╝██║██║     ██║     ██╔════╝   ██║    ██║██╔════╝
@@ -24,13 +26,13 @@ export default function Home() {
           <AsciiBackground />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0a0a0a]" />
         </div>
-        <pre className="relative z-10 text-[11px] leading-tight text-accent opacity-80 mb-6 overflow-x-auto max-sm:text-[7px]">
+        <pre aria-hidden="true" className="relative z-10 text-[11px] leading-tight text-accent opacity-80 mb-6 overflow-x-auto max-sm:text-[7px]">
           {ASCII}
         </pre>
-        <p className="relative z-10 font-sans text-lg text-text-dim mb-3">
+        <h1 className="relative z-10 font-sans text-lg text-text-dim mb-3">
           Agent skills built for{" "}
           <strong className="text-text-main font-semibold">marketing, growth, web3, dev, design & operations</strong>
-        </p>
+        </h1>
         <div className="relative z-10">
           <InstallBox command="npx skills-ws" />
         </div>
@@ -38,7 +40,7 @@ export default function Home() {
         <div className="relative z-10 flex justify-center gap-5 mt-8 mb-12 flex-wrap">
           {platforms.map((p) => (
             <span key={p} className="text-[13px] text-text-dim flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent opacity-60" />
+              <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-accent opacity-60" />
               {p}
             </span>
           ))}

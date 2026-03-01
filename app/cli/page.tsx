@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { getSkills } from "@/lib/skills";
 
+const skillCount = getSkills().length;
+
 export const metadata: Metadata = {
   title: "CLI Reference — npx skills-ws",
-  description:
-    "Install agent skills from the command line with npx skills-ws. List, install, and manage 60 skills for AI coding assistants.",
+  description: `Install agent skills from the command line with npx skills-ws. List, install, and manage ${skillCount} skills for AI coding assistants.`,
   alternates: { canonical: "https://skills.ws/cli" },
 };
 

@@ -13,7 +13,10 @@ export default function NpmDownloads() {
       return;
     }
     fetch("https://api.npmjs.org/downloads/point/last-month/skills-ws")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`npm API ${r.status}`);
+        return r.json();
+      })
       .then((data) => {
         if (data.downloads != null) {
           setDownloads(data.downloads);
@@ -24,7 +27,7 @@ export default function NpmDownloads() {
       .catch(() => {});
   }, []);
 
-  if (downloads === null) return null;
+  if (downloads === null) return <span className="text-text-muted">&mdash;</span>;
 
   return (
     <a

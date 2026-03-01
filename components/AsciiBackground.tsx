@@ -33,13 +33,15 @@ export default function AsciiBackground() {
 
     // ASCII overlay
     const asciiCanvas = document.createElement("canvas");
-    const asciiCtx = asciiCanvas.getContext("2d")!;
+    const asciiCtx = asciiCanvas.getContext("2d");
+    if (!asciiCtx) return;
     asciiCanvas.style.cssText = "position:absolute;inset:0;width:100%;height:100%;";
     container.appendChild(asciiCanvas);
 
     // Offscreen for reading pixels
     const offscreen = document.createElement("canvas");
-    const offCtx = offscreen.getContext("2d", { willReadFrequently: true })!;
+    const offCtx = offscreen.getContext("2d", { willReadFrequently: true });
+    if (!offCtx) return;
 
     // Scene objects
     // Main: rotating torus knot
@@ -197,6 +199,7 @@ export default function AsciiBackground() {
   return (
     <div
       ref={containerRef}
+      aria-hidden="true"
       className="absolute inset-0 w-full h-full overflow-hidden transition-opacity duration-1000"
       style={{ opacity: ready ? 0.45 : 0 }}
     />

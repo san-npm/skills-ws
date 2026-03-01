@@ -38,7 +38,7 @@ We will acknowledge receipt within 48 hours and provide a timeline for a fix.
 This policy covers:
 - The `skills-ws` npm package
 - The CLI tool (`npx skills-ws`)
-- Skill content in `skills/` directory
+- Skill content in `skills-data/` directory
 
 This policy does NOT cover:
 - Third-party tools referenced in skill documentation (e.g., Google Analytics, VirusTotal)
