@@ -1,6 +1,6 @@
 # skills.ws — Full Skill Index
 
-> 70 agent skills for AI coding assistants.
+> 77 agent skills for AI coding assistants.
 
 ## ab-testing (v1.0.0)
 Category: conversion
@@ -38,21 +38,9 @@ Features:
   - Performance reporting and payout automation
 URL: https://skills.ws/skills/affiliate-marketing
 
-## ai-agent-design (v1.0.0)
-Category: dev
-Description: Architecture patterns, tool design, memory systems, and deployment strategies for building reliable AI agents.
-Features:
-  - Agent architecture patterns (ReAct, plan-and-execute, reflexion)
-  - Tool use design with error handling
-  - Memory systems (short-term, long-term, episodic, semantic)
-  - Multi-agent orchestration patterns
-  - Human-in-the-loop approval gates
-  - Agent observability and safety sandboxing
-URL: https://skills.ws/skills/ai-agent-design
-
 ## aleph-cloud-self-deployment (v1.0.0)
 Category: web3
-Description: Deploy AI agents on Aleph Cloud decentralized infrastructure. Covers account setup, CRN discovery, VM provisioning (non-interactive), OpenClaw installation, gateway configuration, identity transfer, and multi-instance management.
+Description: Skill for AI agents to autonomously deploy themselves onto Aleph Cloud decentralized infrastructure. Covers VM provisioning, CRN discovery, agent framework installation, gateway configuration, identity transfer, and becoming fully operational on decentralized compute — without human intervention.
 Features:
   - Aleph Cloud account setup with credits or $ALEPH tokens
   - Programmatic CRN discovery and scoring
@@ -913,4 +901,100 @@ Features:
   - Content quality assessment (ICS rating)
   - Russian market keyword research
 URL: https://skills.ws/skills/yandex-webmaster
+
+## aws-production-deploy (v1.0.0)
+Category: operations
+Description: Complete AWS production deployment — ECS, RDS, CloudFront, Route53, SSL, monitoring, and IaC with CDK/Terraform.
+Features:
+  - ECS Fargate service deployment with auto-scaling
+  - RDS PostgreSQL with read replicas and automated backups
+  - CloudFront CDN with custom domain and SSL
+  - Route53 DNS with health checks and failover
+  - CloudWatch alarms, dashboards, and log aggregation
+  - Infrastructure as Code with CDK and Terraform examples
+URL: https://skills.ws/skills/aws-production-deploy
+
+## stripe-billing (v1.0.0)
+Category: dev
+Description: Production Stripe integration — subscriptions, usage-based billing, webhooks, customer portal, metering, and tax compliance.
+Features:
+  - Subscription lifecycle management
+  - Usage-based billing with metering API
+  - Webhook signature verification and idempotency
+  - Customer portal and billing management
+  - Stripe Tax and invoice generation
+  - SCA/3D Secure payment flows
+URL: https://skills.ws/skills/stripe-billing
+
+## ai-agent-building (v1.0.0)
+Category: dev
+Description: Multi-agent orchestration — CrewAI, LangGraph, AutoGen patterns, tool use, memory systems, and production deployment.
+Features:
+  - CrewAI agent and task configuration
+  - LangGraph stateful workflow patterns
+  - Tool use and function calling patterns
+  - Memory systems: short-term, long-term, episodic
+  - Multi-agent orchestration and delegation
+  - Production deployment with observability
+URL: https://skills.ws/skills/ai-agent-building
+
+## nextjs-performance (v1.0.0)
+Category: dev
+Description: Next.js performance mastery — Core Web Vitals, ISR/SSG strategies, edge functions, image optimization, and bundle analysis.
+Features:
+  - Core Web Vitals optimization (LCP, FID, CLS)
+  - ISR, SSG, and streaming SSR strategies
+  - Edge functions and middleware patterns
+  - Image and font optimization
+  - Bundle analysis and code splitting
+  - Caching strategies and CDN configuration
+URL: https://skills.ws/skills/nextjs-performance
+
+## postgres-mastery (v1.0.0)
+Category: dev
+Description: Advanced PostgreSQL — index strategies, query optimization, partitioning, pgvector, migrations, backups, and replication.
+Features:
+  - Index types and strategies (B-tree, GIN, GiST, BRIN)
+  - Query optimization with EXPLAIN ANALYZE
+  - Table partitioning for large datasets
+  - pgvector for AI embeddings and similarity search
+  - Zero-downtime migrations
+  - Backup strategies and point-in-time recovery
+URL: https://skills.ws/skills/postgres-mastery
+
+## docker-production (v1.0.0)
+Category: operations
+Description: Production Docker — multi-stage builds, compose orchestration, secrets management, health checks, logging, and security.
+Features:
+  - Multi-stage builds for minimal images
+  - Docker Compose for local and production
+  - Secrets management without env vars in images
+  - Health checks and graceful shutdown
+  - Logging drivers and log aggregation
+  - Security scanning and non-root containers
+URL: https://skills.ws/skills/docker-production
+
+## monitoring-observability (v1.0.0)
+Category: operations
+Description: Production observability — Grafana, Prometheus, Datadog, alerting strategies, SLOs, distributed tracing, and incident response.
+Features:
+  - Prometheus metrics and PromQL queries
+  - Grafana dashboard design patterns
+  - Datadog APM and custom metrics
+  - Alerting strategies that reduce noise
+  - SLO/SLI definition and error budgets
+  - Distributed tracing with OpenTelemetry
+URL: https://skills.ws/skills/monitoring-observability
+
+## ci-cd-pipeline (v1.0.0)
+Category: operations
+Description: Production CI/CD — GitHub Actions, testing strategies, deployment gates, rollbacks, feature flags, and release management.
+Features:
+  - GitHub Actions workflow patterns
+  - Testing pyramid: unit, integration, e2e
+  - Deployment gates and approval workflows
+  - Blue-green and canary deployments
+  - Feature flags with gradual rollout
+  - Rollback strategies and incident response
+URL: https://skills.ws/skills/ci-cd-pipeline
 

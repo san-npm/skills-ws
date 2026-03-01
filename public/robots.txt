@@ -30,4 +30,22 @@ Allow: /
 User-agent: Applebot
 Allow: /
 
+User-agent: Bytespider
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+User-agent: meta-externalagent
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+User-agent: YouBot
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
 Sitemap: https://skills.ws/sitemap.xml

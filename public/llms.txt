@@ -1,14 +1,13 @@
 # skills.ws
 
-> 70 agent skills for AI coding assistants. Marketing, growth, web3, dev, design & operations.
+> 77 agent skills for AI coding assistants. Marketing, growth, web3, dev, design & operations.
 
 ## Skills
 
 - [ab-testing](https://skills.ws/skills/ab-testing): A/B test design, statistical analysis, sample size calculation, experiment prioritization, and results interpretation.
 - [accounting-finance](https://skills.ws/skills/accounting-finance): Financial modeling, bookkeeping automation, invoicing workflows, tax compliance checklists, and P&L analysis for SMEs an
 - [affiliate-marketing](https://skills.ws/skills/affiliate-marketing): Affiliate program design, commission structures, partner recruitment, tracking implementation, and performance optimizat
-- [ai-agent-design](https://skills.ws/skills/ai-agent-design): Architecture patterns, tool design, memory systems, and deployment strategies for building reliable AI agents.
-- [aleph-cloud-self-deployment](https://skills.ws/skills/aleph-cloud-self-deployment): Deploy AI agents on Aleph Cloud decentralized infrastructure. Covers account setup, CRN discovery, VM provisioning (non-
+- [aleph-cloud-self-deployment](https://skills.ws/skills/aleph-cloud-self-deployment): Skill for AI agents to autonomously deploy themselves onto Aleph Cloud decentralized infrastructure. Covers VM provision
 - [api-design](https://skills.ws/skills/api-design): REST, GraphQL, and OpenAPI design patterns with auth, error handling, versioning, and webhook best practices.
 - [ascii-banner](https://skills.ws/skills/ascii-banner): Build animated ASCII banners for CLI tools and web interfaces. Frame-based animation, ANSI color systems, terminal compa
 - [auth-implementation](https://skills.ws/skills/auth-implementation): Authentication & authorization — OAuth 2.0, JWT, session management, passkeys, RBAC, and security best practices.
@@ -74,3 +73,11 @@
 - [web-performance](https://skills.ws/skills/web-performance): Core Web Vitals optimization, bundle analysis, caching strategies, and server-side performance for modern web applicatio
 - [webinar-events](https://skills.ws/skills/webinar-events): End-to-end webinar funnel design from registration through conversion, including virtual event strategy, email sequences
 - [yandex-webmaster](https://skills.ws/skills/yandex-webmaster): Yandex Webmaster setup, Yandex-specific SEO, regional targeting, Turbo pages, and Russian market search optimization.
+- [aws-production-deploy](https://skills.ws/skills/aws-production-deploy): Complete AWS production deployment — ECS, RDS, CloudFront, Route53, SSL, monitoring, and IaC with CDK/Terraform.
+- [stripe-billing](https://skills.ws/skills/stripe-billing): Production Stripe integration — subscriptions, usage-based billing, webhooks, customer portal, metering, and tax complia
+- [ai-agent-building](https://skills.ws/skills/ai-agent-building): Multi-agent orchestration — CrewAI, LangGraph, AutoGen patterns, tool use, memory systems, and production deployment.
+- [nextjs-performance](https://skills.ws/skills/nextjs-performance): Next.js performance mastery — Core Web Vitals, ISR/SSG strategies, edge functions, image optimization, and bundle analys
+- [postgres-mastery](https://skills.ws/skills/postgres-mastery): Advanced PostgreSQL — index strategies, query optimization, partitioning, pgvector, migrations, backups, and replication
+- [docker-production](https://skills.ws/skills/docker-production): Production Docker — multi-stage builds, compose orchestration, secrets management, health checks, logging, and security.
+- [monitoring-observability](https://skills.ws/skills/monitoring-observability): Production observability — Grafana, Prometheus, Datadog, alerting strategies, SLOs, distributed tracing, and incident re
+- [ci-cd-pipeline](https://skills.ws/skills/ci-cd-pipeline): Production CI/CD — GitHub Actions, testing strategies, deployment gates, rollbacks, feature flags, and release managemen
