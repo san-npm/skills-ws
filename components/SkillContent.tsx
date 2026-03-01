@@ -53,11 +53,14 @@ export default function SkillContent({ content }: { content: string }) {
               {children}
             </pre>
           ),
-          a: ({ href, children }) => (
-            <a href={href} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
-              {children}
-            </a>
-          ),
+          a: ({ href, children }) => {
+            const safeHref = href && /^https?:\/\//i.test(href) ? href : "#";
+            return (
+              <a href={safeHref} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
+                {children}
+              </a>
+            );
+          },
           strong: ({ children }) => <strong className="text-text-main font-semibold">{children}</strong>,
           blockquote: ({ children }) => (
             <blockquote className="border-l-2 border-accent/30 pl-4 my-4 text-text-muted italic">

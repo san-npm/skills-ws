@@ -1,9 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
+import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
+import { getSkills } from "@/lib/skills";
 import "./globals.css";
 
 const BASE_URL = "https://skills.ws";
+const skillCount = getSkills().length;
 
 export const viewport: Viewport = {
   themeColor: "#0a0a0a",
@@ -18,7 +21,7 @@ export const metadata: Metadata = {
     template: "%s | skills.ws",
   },
   description:
-    "70 agent skills for AI coding assistants. Marketing, growth, web3, dev, design & operations. Install with npx skills-ws. Built for OpenClaw, Claude Code, Cursor, and Codex.",
+    `${skillCount} agent skills for AI coding assistants. Marketing, growth, web3, dev, design & operations. Install with npx skills-ws. Built for OpenClaw, Claude Code, Cursor, and Codex.`,
   keywords: [
     "AI skills",
     "agent skills",
@@ -58,7 +61,7 @@ export const metadata: Metadata = {
     siteName: "skills.ws",
     title: "skills.ws — Agent Skills for AI Coding Assistants",
     description:
-      "79 expert agent skills for AI coding assistants. Marketing, growth, web3, dev, design & operations. Install with a single command.",
+      `${skillCount} expert agent skills for AI coding assistants. Marketing, growth, web3, dev, design & operations. Install with a single command.`,
     images: [
       {
         url: `${BASE_URL}/og.png`,
@@ -72,7 +75,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "skills.ws — Agent Skills for AI",
     description:
-      "79 expert agent skills for marketing, growth, web3, dev, design & operations. Install with npx skills-ws.",
+      `${skillCount} expert agent skills for marketing, growth, web3, dev, design & operations. Install with npx skills-ws.`,
     creator: "@3615crypto",
     images: [`${BASE_URL}/og.png`],
   },
@@ -98,15 +101,7 @@ const navLinks = [
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <head>
-        {/* Google tag (gtag.js) */}
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-SJXHDFFKMD" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-SJXHDFFKMD');`,
-          }}
-        />
-      </head>
+      <head />
       <body className="font-mono min-h-screen overflow-x-hidden relative">
         <nav className="sticky top-0 z-50 bg-bg/80 backdrop-blur-md border-b border-border">
           <div className="max-w-[900px] mx-auto px-6 flex items-center justify-between h-12">
@@ -141,7 +136,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               name: "Commit Media",
               url: "https://openletz.com",
               sameAs: ["https://github.com/san-npm"],
-            }),
+            }).replace(/</g, "\\u003c"),
           }}
         />
 
@@ -169,7 +164,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 },
                 "query-input": "required name=search_term_string",
               },
-            }),
+            }).replace(/</g, "\\u003c"),
           }}
         />
 
@@ -187,7 +182,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               downloadUrl: "https://www.npmjs.com/package/skills-ws",
               softwareVersion: "0.1.0",
               description:
-                "CLI tool to install agent skills for AI coding assistants. 70 skills for marketing, growth, web3, dev, design & operations.",
+                `CLI tool to install agent skills for AI coding assistants. ${skillCount} skills for marketing, growth, web3, dev, design & operations.`,
               offers: {
                 "@type": "Offer",
                 price: "0",
@@ -198,7 +193,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 name: "Commit Media",
                 url: "https://openletz.com",
               },
-            }),
+            }).replace(/</g, "\\u003c"),
           }}
         />
 
@@ -235,10 +230,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   item: `${BASE_URL}/cli`,
                 },
               ],
-            }),
+            }).replace(/</g, "\\u003c"),
           }}
         />
 
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-SJXHDFFKMD"
+          strategy="afterInteractive"
+        />
+        <Script id="gtag-init" strategy="afterInteractive">{`
+          window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-SJXHDFFKMD');
+        `}</Script>
         <Analytics />
       </body>
     </html>
