@@ -1,3 +1,9 @@
+---
+name: mcp-server-builder
+description: Build and monetize production MCP servers — tool schemas, transports, auth, Stripe subscriptions, x402 payments, deployment
+version: 1.0.0
+---
+
 # MCP Server Builder — Production Skill
 
 > Build production-grade Model Context Protocol servers that wrap any REST API into AI-callable tools, with three-tier auth, monetization, and battle-tested deployment.
@@ -27,7 +33,10 @@ MCP (Model Context Protocol) defines three primitives that a server exposes to A
 **stdio** — Server runs as a child process. Client spawns it, communicates over stdin/stdout.
 Best for: local tools, Claude Desktop, CLI integrations.
 
-**SSE (Server-Sent Events)** — Server runs as an HTTP service. Client connects via SSE for server→client messages, POST for client→server.
+**SSE (Server-Sent Events)** — Legacy HTTP transport. Client connects via SSE for server→client messages, POST for client→server.
+**Note:** SSE transport was deprecated in MCP spec 2025-03-26. New servers should use `StreamableHTTPServerTransport` from `@modelcontextprotocol/sdk/server/streamableHttp.js`. SSE examples below still work but are considered legacy.
+
+**Streamable HTTP** — Modern HTTP transport (MCP spec 2025-03-26+). Replaces SSE with a simpler request/response model.
 Best for: remote servers, shared services, monetized APIs.
 
 ### Message Flow (SSE)
@@ -100,21 +109,15 @@ npm install -D typescript @types/node @types/express tsx
 ### Minimal stdio Server
 
 ```typescript
-// src/index.ts
 #!/usr/bin/env node
+// src/index.ts
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 
-const server = new McpServer({
-  name: "my-mcp-server",
-  version: "1.0.0",
-  capabilities: {
-    tools: {},
-    resources: {},
-    prompts: {},
-  },
-});
+const server = new McpServer(
+  { name: "my-mcp-server", version: "1.0.0" },
+);
 
 // --- TOOLS ---
 
@@ -227,11 +230,9 @@ app.get("/health", (_req, res) => {
 
 // MCP server factory — one per connection
 function createMcpServer(): McpServer {
-  const server = new McpServer({
-    name: "my-mcp-server",
-    version: "1.0.0",
-    capabilities: { tools: {} },
-  });
+  const server = new McpServer(
+    { name: "my-mcp-server", version: "1.0.0" },
+  );
 
   server.tool(
     "screenshot",
@@ -348,12 +349,14 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent | ImageConte
         if name == "dns_lookup":
             domain = arguments["domain"]
             record_type = arguments.get("type", "A")
-            resp = await client.get(f"https://dns.google/resolve?name={domain}&type={record_type}")
+            from urllib.parse import quote
+            resp = await client.get(f"https://dns.google/resolve?name={quote(domain)}&type={record_type}")
             return [TextContent(type="text", text=json.dumps(resp.json(), indent=2))]
 
         elif name == "whois_lookup":
             domain = arguments["domain"]
-            resp = await client.get(f"https://whois.freeaitools.casa/api/{domain}")
+            from urllib.parse import quote
+            resp = await client.get(f"https://whois.freeaitools.casa/api/{quote(domain)}")
             return [TextContent(type="text", text=json.dumps(resp.json(), indent=2))]
 
         elif name == "ssl_check":
@@ -563,8 +566,9 @@ server.tool(
     });
     const data = await res.json();
     const wei = BigInt(data.result);
-    const ether = Number(wei) / 1e18;
-    return { content: [{ type: "text", text: `${address} on ${chain}: ${ether.toFixed(6)} native tokens (${wei} wei)` }] };
+    // Safe conversion: divide in BigInt domain first to avoid Number precision loss
+    const ether = (Number(wei / 10n ** 12n) / 1_000_000).toFixed(6);
+    return { content: [{ type: "text", text: `${address} on ${chain}: ${ether} native tokens (${wei} wei)` }] };
   }
 );
 
@@ -673,11 +677,9 @@ function checkRateLimit(
 
 // --- Constant-time API key comparison ---
 function secureCompare(a: string, b: string): boolean {
-  const maxLen = Math.max(a.length, b.length);
-  const bufA = Buffer.alloc(maxLen, 0);
-  const bufB = Buffer.alloc(maxLen, 0);
-  bufA.write(a);
-  bufB.write(b);
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
   return crypto.timingSafeEqual(bufA, bufB);
 }
 
@@ -807,30 +809,19 @@ app.get("/admin/stats", (req, res) => {
 });
 
 // --- Stripe Webhook for subscription management ---
+// Use stripe.webhooks.constructEvent instead of manual HMAC verification.
+// It handles timestamp tolerance (rejects events older than 5 minutes) and
+// proper signature comparison.
 app.post("/webhooks/stripe", async (req, res) => {
   const sig = req.headers["stripe-signature"] as string;
   if (!sig || !process.env.STRIPE_WEBHOOK_SECRET) return res.status(400).send("Missing signature");
 
-  const crypto = await import("crypto");
-  const payload = req.body; // raw buffer thanks to express.raw()
-  const parts: Record<string, string> = {};
-  sig.split(",").forEach(part => {
-    const [key, val] = part.split("=");
-    parts[key] = val;
-  });
-
-  const expectedSig = crypto
-    .createHmac("sha256", process.env.STRIPE_WEBHOOK_SECRET)
-    .update(`${parts.t}.${payload}`)
-    .digest("hex");
-
-  const bufExpected = Buffer.from(expectedSig);
-  const bufActual = Buffer.from(parts.v1 || "");
-  if (bufExpected.length !== bufActual.length || !crypto.timingSafeEqual(bufExpected, bufActual)) {
-    return res.status(400).send("Invalid signature");
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+  } catch (err: any) {
+    return res.status(400).send(`Webhook error: ${err.message}`);
   }
-
-  const event = JSON.parse(payload.toString());
   switch (event.type) {
     case "checkout.session.completed":
       console.log("New subscription:", event.data.object.customer_email);
@@ -886,7 +877,7 @@ app.post("/messages", async (req, res) => {
 });
 
 function createMcpServer(_auth: AuthResult): McpServer {
-  const server = new McpServer({ name: "my-mcp-server", version: "1.0.0", capabilities: { tools: {} } });
+  const server = new McpServer({ name: "my-mcp-server", version: "1.0.0" });
   // Register tools here — all tiers get all tools, rate limiting handles access
   return server;
 }
@@ -946,7 +937,9 @@ X402_FACILITATOR_URL=https://x402.org/verify
 // scripts/create-stripe-product.ts — run once to set up billing
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2024-12-18.acacia",
+});
 
 async function createProduct() {
   const product = await stripe.products.create({
@@ -1086,11 +1079,9 @@ import crypto from "crypto";
 
 // ALWAYS use this for secret comparison — never use === for API keys/tokens
 function secureCompare(a: string, b: string): boolean {
-  const maxLen = Math.max(a.length, b.length);
-  const bufA = Buffer.alloc(maxLen, 0);
-  const bufB = Buffer.alloc(maxLen, 0);
-  bufA.write(a);
-  bufB.write(b);
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
   return crypto.timingSafeEqual(bufA, bufB);
 }
 ```
@@ -1111,9 +1102,15 @@ function verifyWebhookSignature(
 }
 
 // Stripe: compound timestamp signature
+// For Stripe: use stripe.webhooks.constructEvent() instead of manual HMAC.
+// It handles timestamp tolerance and proper signature verification.
+// Manual example kept for non-Stripe webhooks only:
 function verifyStripeSignature(payload: Buffer, sigHeader: string, secret: string): boolean {
   const parts: Record<string, string> = {};
   sigHeader.split(",").forEach(p => { const [k, v] = p.split("="); parts[k] = v; });
+  // Reject events older than 5 minutes (replay protection)
+  const timestamp = parseInt(parts.t, 10);
+  if (Math.abs(Date.now() / 1000 - timestamp) > 300) return false;
   const expected = crypto.createHmac("sha256", secret).update(`${parts.t}.${payload}`).digest("hex");
   return secureCompare(parts.v1, expected);
 }
@@ -1529,7 +1526,7 @@ X402_CHAIN=base
 X402_FACILITATOR_URL=https://x402.org/verify
 
 # Stripe
-STRIPE_SECRET_KEY=sk_live_...
+STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 STRIPE_CHECKOUT_LINK=https://buy.stripe.com/...
 
@@ -1686,13 +1683,17 @@ async function checkRateLimitRedis(
   const minuteKey = `rate:min:${key}`;
   const dayKey = `rate:day:${key}`;
 
-  const [minuteCount, dayCount] = await Promise.all([
-    redis.incr(minuteKey),
-    redis.incr(dayKey),
+  // Use multi/exec to atomically INCR + set TTL on first creation
+  const minutePipeline = redis.multi().incr(minuteKey).ttl(minuteKey);
+  const dayPipeline = redis.multi().incr(dayKey).ttl(dayKey);
+  const [[minuteCount, minuteTtl], [dayCount, dayTtl]] = await Promise.all([
+    minutePipeline.exec().then(r => [r![0][1] as number, r![1][1] as number]),
+    dayPipeline.exec().then(r => [r![0][1] as number, r![1][1] as number]),
   ]);
 
-  if (minuteCount === 1) await redis.expire(minuteKey, 60);
-  if (dayCount === 1) await redis.expire(dayKey, 86400);
+  // Set TTL only if missing (-1 means no expiry, -2 means key gone — guard both)
+  if (minuteTtl < 0) await redis.expire(minuteKey, 60);
+  if (dayTtl < 0) await redis.expire(dayKey, 86400);
 
   if (minuteCount > perMinute) {
     const ttl = await redis.ttl(minuteKey);

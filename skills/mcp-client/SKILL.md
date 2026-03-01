@@ -1,3 +1,9 @@
+---
+name: mcp-client
+description: Consume MCP services — connect AI agents to external tools for screenshots, DNS, WHOIS, SSL, OCR, and blockchain queries with three-tier authentication
+version: 1.0.0
+---
+
 # MCP Client — Consuming Model Context Protocol Services
 
 > Connect AI agents to external MCP services for web intelligence, blockchain data, document processing, and more. Production patterns for authentication, payments, and multi-tool workflows.
@@ -75,7 +81,7 @@ curl -s "https://mcp.skills.ws/api/screenshot?url=https://example.com" \
 Parameters:
 - `url` (required) — URL to capture
 - `width` — Viewport width (default: 1280)
-- `height` — Viewport height (default: 720)
+- `height` — Viewport height (default: 800)
 - `fullPage` — Capture full scrollable page (default: false)
 - `format` — `png` or `jpeg` (default: png)
 
@@ -108,22 +114,23 @@ Returns: issuer, validity dates, SANs, certificate chain, protocol support.
 ### OCR — Extract Text from Images
 
 ```bash
-curl -s -X POST "https://mcp.skills.ws/api/ocr" \
-  -H "Content-Type: application/json" \
-  -d '{"image_url": "https://example.com/receipt.png"}'
+curl -s "https://mcp.skills.ws/api/ocr?url=https://example.com/receipt.png"
 ```
 
 ### Blockchain — On-Chain Queries
 
 ```bash
-# Token balance
-curl -s "https://mcp.skills.ws/api/blockchain?action=balance&address=0x...&chain=celo"
+# Native token balance
+curl -s "https://mcp.skills.ws/api/chain/balance?address=0x...&chain=celo"
 
-# Token price
-curl -s "https://mcp.skills.ws/api/blockchain?action=price&token=CELO"
+# ERC20 token balance
+curl -s "https://mcp.skills.ws/api/chain/erc20?address=0x...&token=0xTOKEN_ADDRESS&chain=base"
+
+# Transaction details
+curl -s "https://mcp.skills.ws/api/chain/tx?hash=0x...&chain=ethereum"
 ```
 
-Supported chains: Ethereum, Base, Celo, BSC, Polygon, Arbitrum, Optimism.
+Supported chains: Ethereum, Base, Arbitrum, Optimism, Polygon, Celo.
 
 ---
 
@@ -511,20 +518,16 @@ async function auditWebsite(domain, apiKey) {
 
 ```javascript
 async function processReceipt(imageUrl, apiKey) {
-  const headers = { 
-    'X-Api-Key': apiKey,
-    'Content-Type': 'application/json'
-  };
-  
+  const headers = { 'X-Api-Key': apiKey };
+
   // Extract text from receipt image
-  const ocr = await fetch('https://mcp.skills.ws/api/ocr', {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ image_url: imageUrl })
-  });
-  
+  const ocr = await fetch(
+    `https://mcp.skills.ws/api/ocr?url=${encodeURIComponent(imageUrl)}`,
+    { headers }
+  );
+
   const { text } = await ocr.json();
-  
+
   // Parse extracted text for amounts, dates, vendor
   return {
     rawText: text,
@@ -578,19 +581,18 @@ async function monitorDomains(domains, apiKey) {
 ```javascript
 async function walletDashboard(address, chains, apiKey) {
   const headers = { 'X-Api-Key': apiKey };
-  const base = 'https://mcp.skills.ws/api/blockchain';
-  
+  const base = 'https://mcp.skills.ws/api/chain';
+
   const balances = await Promise.all(
     chains.map(chain =>
-      mcpCall(`${base}?action=balance&address=${address}&chain=${chain}`, headers)
+      mcpCall(`${base}/balance?address=${address}&chain=${chain}`, headers)
         .then(data => ({ chain, ...data }))
     )
   );
-  
+
   return {
     address,
     balances,
-    totalValueUsd: balances.reduce((sum, b) => sum + (b.valueUsd || 0), 0),
   };
 }
 ```
@@ -699,7 +701,7 @@ const { tools } = await client.listTools();
 console.log('Available tools:', tools.map(t => t.name));
 
 // Call a tool
-const result = await client.callTool('dns_lookup', {
+const result = await client.callTool('dns', {
   domain: 'example.com',
   type: 'MX'
 });
@@ -728,7 +730,7 @@ async def main():
                 print(f"  {tool.name}: {tool.description}")
             
             # Call a tool
-            result = await session.call_tool("whois_lookup", {"domain": "example.com"})
+            result = await session.call_tool("whois", {"domain": "example.com"})
             print(result)
 
 import asyncio
@@ -795,11 +797,15 @@ Screenshots take 3-10s depending on page complexity. DNS/WHOIS/SSL are typically
 | `/health` | GET | None | Service status |
 | `/mcp/sse` | GET | Optional | MCP SSE transport |
 | `/api/screenshot` | GET | Any tier | Webpage capture |
+| `/api/pdf` | GET | Any tier | PDF generation |
+| `/api/html2md` | GET | Any tier | URL to Markdown |
 | `/api/whois` | GET | Any tier | Domain WHOIS |
 | `/api/dns` | GET | Any tier | DNS records |
 | `/api/ssl` | GET | Any tier | SSL certificate |
-| `/api/ocr` | POST | Any tier | Image text extraction |
-| `/api/blockchain` | GET | Any tier | On-chain queries |
+| `/api/ocr` | GET | Any tier | Image text extraction |
+| `/api/chain/balance` | GET | Any tier | Native token balance |
+| `/api/chain/erc20` | GET | Any tier | ERC20 token balance |
+| `/api/chain/tx` | GET | Any tier | Transaction details |
 | `/billing/checkout` | POST | None | Get API key ($9/mo) |
 | `/billing/success` | GET | None | Retrieve key after payment |
 

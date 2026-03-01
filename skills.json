@@ -94,7 +94,7 @@
     },
     {
       "name": "aleph-cloud-self-deployment",
-      "version": "1.0.0",
+      "version": "2.0.0",
       "description": "Skill for AI agents to autonomously deploy themselves onto Aleph Cloud decentralized infrastructure. Covers VM provisioning, CRN discovery, agent framework installation, gateway configuration, identity transfer, and becoming fully operational on decentralized compute \u2014 without human intervention.",
       "color": "F59E0B",
       "category": "web3",
@@ -2334,22 +2334,46 @@
     {
       "name": "mcp-client",
       "category": "development",
-      "description": "Consume MCP services \u2014 connect AI agents to external tools for screenshots, DNS, WHOIS, SSL, OCR, and blockchain queries with three-tier auth."
+      "description": "Consume MCP services \u2014 connect AI agents to external tools for screenshots, DNS, WHOIS, SSL, OCR, and blockchain queries with three-tier auth.",
+      "version": "1.0.0",
+      "color": "00C853",
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"],
+      "features": ["Screenshot & PDF capture", "DNS, WHOIS, SSL lookups", "OCR text extraction", "Blockchain balance queries", "Three-tier auth (free, API key, x402)"],
+      "useCases": ["Query blockchain balances from AI agents", "Capture screenshots for visual analysis", "Perform DNS/WHOIS reconnaissance"],
+      "installs": 0
     },
     {
       "name": "mcp-server-builder",
       "category": "development",
-      "description": "Build and monetize production MCP servers \u2014 tool schemas, transports, auth, Stripe subscriptions, x402 payments, deployment."
+      "description": "Build and monetize production MCP servers \u2014 tool schemas, transports, auth, Stripe subscriptions, x402 payments, deployment.",
+      "version": "1.0.0",
+      "color": "FF6D00",
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"],
+      "features": ["MCP tool schema design", "SSE and Streamable HTTP transports", "API key & Stripe billing integration", "x402 crypto micropayments", "Docker & Railway deployment"],
+      "useCases": ["Build a monetized MCP server with Stripe billing", "Deploy an MCP tool service with x402 payments", "Add authentication to MCP endpoints"],
+      "installs": 0
     },
     {
       "name": "saas-billing",
       "category": "development",
-      "description": "Implement SaaS billing with Stripe \u2014 subscriptions, usage-based billing, webhooks, API key provisioning, dunning."
+      "description": "Implement SaaS billing with Stripe \u2014 subscriptions, usage-based billing, webhooks, API key provisioning, dunning.",
+      "version": "1.0.0",
+      "color": "6772E5",
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"],
+      "features": ["Stripe subscriptions & checkout", "Usage-based metered billing", "Webhook signature verification", "API key provisioning", "Dunning & failed payment recovery"],
+      "useCases": ["Add subscription billing to a SaaS app", "Implement usage-based API billing", "Set up Stripe webhooks with idempotency"],
+      "installs": 0
     },
     {
       "name": "telegram-mini-apps",
       "category": "development",
-      "description": "Build Telegram Mini Apps with Stars payments \u2014 TWA SDK, HMAC validation, bot webhooks, deep linking, Next.js deployment."
+      "description": "Build Telegram Mini Apps with Stars payments \u2014 TWA SDK, HMAC validation, bot webhooks, deep linking, Next.js deployment.",
+      "version": "1.0.0",
+      "color": "26A5E4",
+      "platforms": ["openclaw", "claude-code", "cursor", "codex"],
+      "features": ["TWA SDK v2 setup", "initData HMAC-SHA256 validation", "Stars (XTR) payments & refunds", "Bot webhooks with grammy", "Deep linking & theme variables"],
+      "useCases": ["Build a Telegram Mini App with Stars payments", "Validate Telegram initData on the backend", "Deploy a bot-powered Mini App on Vercel"],
+      "installs": 0
     }
   ]
 }

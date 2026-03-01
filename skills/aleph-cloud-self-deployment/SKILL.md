@@ -229,7 +229,7 @@ echo "🚀 Deploying single VM: $VM_NAME"
 SSH_PUB_KEY=$(cat ~/.aleph-deploy/keys/aleph_rsa.pub)
 
 # Create VM deployment
-aleph compute create \
+aleph instance create \
     --name "$VM_NAME" \
     --image-ref "ubuntu:22.04" \
     --vcpus 2 \
@@ -254,6 +254,7 @@ apt-get update && apt-get upgrade -y
 apt-get install -y curl wget git htop unzip jq fail2ban ufw nodejs npm
 
 # Install Docker
+# Note: In production, verify checksums before running downloaded scripts
 curl -fsSL https://get.docker.com -o get-docker.sh
 sh get-docker.sh
 usermod -aG docker ubuntu
@@ -342,7 +343,26 @@ done
 MONITOR
 
 chmod +x /opt/monitor-node.sh
-nohup /opt/monitor-node.sh &
+
+# Use systemd instead of nohup — nohup processes are unsupervised
+# and won't restart if they crash
+cat > /etc/systemd/system/node-monitor.service << 'MONITOR_SVC'
+[Unit]
+Description=Node health monitor
+After=openclaw.service
+
+[Service]
+Type=simple
+ExecStart=/opt/monitor-node.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+MONITOR_SVC
+systemctl daemon-reload
+systemctl enable node-monitor
+systemctl start node-monitor
 
 echo "✅ VM setup complete!"
 SETUP_SCRIPT
@@ -352,10 +372,10 @@ echo "✅ VM deployment initiated!"
 echo "Monitoring deployment status..."
 
 # Wait for deployment to complete
-aleph compute status "$VM_NAME" --wait
+aleph instance status "$VM_NAME" --wait
 
 # Get VM connection details
-VM_INFO=$(aleph compute get "$VM_NAME")
+VM_INFO=$(aleph instance get "$VM_NAME")
 VM_IP=$(echo "$VM_INFO" | jq -r '.networking.ipv4')
 
 echo "🎉 VM deployed successfully!"
@@ -364,7 +384,8 @@ echo "OpenClaw URL: http://$VM_IP:3000"
 
 # Test connection
 echo "Testing SSH connection..."
-ssh -i ~/.aleph-deploy/keys/aleph_rsa -o StrictHostKeyChecking=no ubuntu@"$VM_IP" "echo 'SSH connection successful!'"
+# Use accept-new instead of no — it accepts first connection but rejects changed host keys (MITM protection)
+ssh -i ~/.aleph-deploy/keys/aleph_rsa -o StrictHostKeyChecking=accept-new ubuntu@"$VM_IP" "echo 'SSH connection successful!'"
 ```
 
 ---
@@ -421,6 +442,11 @@ set -e
 apt-get update && apt-get upgrade -y
 apt-get install -y curl wget git htop jq fail2ban ufw nodejs npm docker.io docker-compose
 
+# Create a dedicated non-root user for fleet services
+# Running all services as root is a security risk — a compromise in any
+# service gives full system access. Use a dedicated user for fleet-manager.
+useradd -r -s /usr/sbin/nologin -d /opt/fleet-manager fleetmgr || true
+
 # Install fleet management tools
 mkdir -p /opt/fleet-manager
 cd /opt/fleet-manager
@@ -430,9 +456,26 @@ cat > fleet-manager.js << 'FLEET_MANAGER'
 const express = require('express');
 const { exec } = require('child_process');
 const fs = require('fs');
+const crypto = require('crypto');
 const app = express();
 
 app.use(express.json());
+
+// API key auth middleware — fleet manager should NOT be open to the internet.
+// Bind to Tailscale IP or localhost, and require an API key for all requests.
+const FLEET_API_KEY = process.env.FLEET_API_KEY || crypto.randomBytes(32).toString('hex');
+if (!process.env.FLEET_API_KEY) {
+    console.log(`Generated FLEET_API_KEY: ${FLEET_API_KEY}`);
+    console.log('Set FLEET_API_KEY env var to persist across restarts.');
+}
+function requireAuth(req, res, next) {
+    const key = req.headers['x-api-key'] || req.query.api_key;
+    if (!key || key !== FLEET_API_KEY) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    next();
+}
+app.use(requireAuth);
 
 // Fleet status endpoint
 app.get('/fleet/status', (req, res) => {
@@ -493,8 +536,10 @@ app.get('/fleet/distribute/:task', (req, res) => {
 });
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Fleet Manager running on port ${PORT}`);
+// Bind to localhost or Tailscale IP — do NOT expose fleet manager to the public internet
+const BIND_HOST = process.env.BIND_HOST || '127.0.0.1';
+app.listen(PORT, BIND_HOST, () => {
+    console.log(`Fleet Manager running on ${BIND_HOST}:${PORT}`);
 });
 FLEET_MANAGER
 
@@ -546,7 +591,7 @@ echo "✅ Primary node setup complete!"
 PRIMARY_SETUP
     )
     
-    aleph compute create \
+    aleph instance create \
         --name "$node_name" \
         --image-ref "ubuntu:22.04" \
         --vcpus 4 \
@@ -557,12 +602,14 @@ PRIMARY_SETUP
         --setup-script "$setup_script"
     
     # Wait for deployment and get IP
-    aleph compute status "$node_name" --wait
-    local primary_ip=$(aleph compute get "$node_name" | jq -r '.networking.ipv4')
+    aleph instance status "$node_name" --wait
+    local primary_ip=$(aleph instance get "$node_name" | jq -r '.networking.ipv4')
     
     # Update fleet config
-    jq '.primary_node = {"name": "'$node_name'", "ip": "'$primary_ip'"}' ~/.aleph-deploy/configs/fleet.json > tmp.json
-    mv tmp.json ~/.aleph-deploy/configs/fleet.json
+    # Use mktemp to avoid race conditions with predictable tmp.json filenames
+    local tmpfile=$(mktemp)
+    jq '.primary_node = {"name": "'$node_name'", "ip": "'$primary_ip'"}' ~/.aleph-deploy/configs/fleet.json > "$tmpfile"
+    mv "$tmpfile" ~/.aleph-deploy/configs/fleet.json
     
     echo "✅ Primary node deployed: $primary_ip"
     return 0
@@ -632,13 +679,31 @@ done
 HEARTBEAT
 
 chmod +x /opt/heartbeat.sh
-nohup /opt/heartbeat.sh &
+
+# Use systemd instead of nohup for supervised process management
+cat > /etc/systemd/system/heartbeat.service << 'HB_SVC'
+[Unit]
+Description=Worker node heartbeat
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/opt/heartbeat.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+HB_SVC
+systemctl daemon-reload
+systemctl enable heartbeat
+systemctl start heartbeat
 
 echo "✅ Worker node $node_id setup complete!"
 WORKER_SETUP
     )
     
-    aleph compute create \
+    aleph instance create \
         --name "$node_name" \
         --image-ref "ubuntu:22.04" \
         --vcpus 2 \
@@ -650,8 +715,9 @@ WORKER_SETUP
     
     # Update fleet config
     local worker_info='{"name": "'$node_name'", "id": '$node_id', "crn": "'$crn_url'"}'
-    jq '.worker_nodes += ['$worker_info']' ~/.aleph-deploy/configs/fleet.json > tmp.json
-    mv tmp.json ~/.aleph-deploy/configs/fleet.json
+    local tmpfile=$(mktemp)
+    jq '.worker_nodes += ['$worker_info']' ~/.aleph-deploy/configs/fleet.json > "$tmpfile"
+    mv "$tmpfile" ~/.aleph-deploy/configs/fleet.json
     
     echo "✅ Worker node $node_id deployed on $crn_url"
 }
@@ -731,11 +797,18 @@ fleet_health() {
 
 fleet_restart() {
     local service_name=$1
+
+    # Validate service_name to prevent command injection via SSH
+    if [[ ! "$service_name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+        echo "❌ Invalid service name: $service_name"
+        return 1
+    fi
+
     echo "🔄 Restarting $service_name on all nodes..."
-    
+
     local primary_ip=$(get_primary_ip)
     local nodes=$(curl -s "http://$primary_ip:8080/fleet/status" | jq -r '.nodes[].ip_address')
-    
+
     for node_ip in $nodes; do
         echo "Restarting $service_name on $node_ip..."
         ssh -i ~/.aleph-deploy/keys/aleph_rsa ubuntu@"$node_ip" "sudo systemctl restart $service_name"
@@ -781,12 +854,22 @@ fleet_scale() {
 fleet_logs() {
     local service_name="${1:-openclaw}"
     local lines="${2:-50}"
-    
+
+    # Validate inputs to prevent command injection via SSH
+    if [[ ! "$service_name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+        echo "❌ Invalid service name: $service_name"
+        return 1
+    fi
+    if [[ ! "$lines" =~ ^[0-9]+$ ]]; then
+        echo "❌ Invalid line count: $lines"
+        return 1
+    fi
+
     echo "📋 Collecting logs from all nodes..."
-    
+
     local primary_ip=$(get_primary_ip)
     local nodes=$(curl -s "http://$primary_ip:8080/fleet/status" | jq -r '.nodes[].ip_address')
-    
+
     for node_ip in $nodes; do
         echo "=== Logs from $node_ip ==="
         ssh -i ~/.aleph-deploy/keys/aleph_rsa ubuntu@"$node_ip" "sudo journalctl -u $service_name -n $lines --no-pager"
@@ -901,8 +984,9 @@ initialize_srp() {
 }
 MANIFEST
     
-    jq '.initialized = now | .source_node = env.HOSTNAME' "$REPLICATION_DIR/manifest.json" > tmp.json
-    mv tmp.json "$REPLICATION_DIR/manifest.json"
+    local tmpfile=$(mktemp)
+    jq '.initialized = now | .source_node = env.HOSTNAME' "$REPLICATION_DIR/manifest.json" > "$tmpfile"
+    mv "$tmpfile" "$REPLICATION_DIR/manifest.json"
     
     echo "✅ SRP initialized"
 }
@@ -964,20 +1048,23 @@ update_integrity_hashes() {
     for component in soul agents memory skills; do
         local path="$REPLICATION_DIR/$component"
         if [[ -d "$path" ]]; then
-            local hash=$(find "$path" -type f -exec md5sum {} \; | sort | md5sum | cut -d' ' -f1)
-            jq --arg comp "$component" --arg hash "$hash" '.components[$comp].hash = $hash' "$manifest_file" > tmp.json
-            mv tmp.json "$manifest_file"
+            local hash=$(find "$path" -type f -exec sha256sum {} \; | sort | sha256sum | cut -d' ' -f1)
+            local tmpfile=$(mktemp)
+            jq --arg comp "$component" --arg hash "$hash" '.components[$comp].hash = $hash' "$manifest_file" > "$tmpfile"
+            mv "$tmpfile" "$manifest_file"
         fi
     done
-    
+
     # Calculate overall integrity hash
-    local overall_hash=$(find "$REPLICATION_DIR" -name "*.md" -o -name "*.json" | sort | xargs cat | md5sum | cut -d' ' -f1)
-    jq --arg hash "$overall_hash" '.integrity_hash = $hash' "$manifest_file" > tmp.json
-    mv tmp.json "$manifest_file"
-    
+    local overall_hash=$(find "$REPLICATION_DIR" -name "*.md" -o -name "*.json" | sort | xargs cat | sha256sum | cut -d' ' -f1)
+    local tmpfile=$(mktemp)
+    jq --arg hash "$overall_hash" '.integrity_hash = $hash' "$manifest_file" > "$tmpfile"
+    mv "$tmpfile" "$manifest_file"
+
     # Update timestamp
-    jq '.last_replication = now' "$manifest_file" > tmp.json
-    mv tmp.json "$manifest_file"
+    tmpfile=$(mktemp)
+    jq '.last_replication = now' "$manifest_file" > "$tmpfile"
+    mv "$tmpfile" "$manifest_file"
     
     echo "✅ Integrity hashes updated"
 }
@@ -1090,8 +1177,9 @@ replicate_to_fleet() {
     echo "🎉 Fleet replication complete!"
     
     # Update replication count
-    jq '.replication_count += 1' "$REPLICATION_DIR/manifest.json" > tmp.json
-    mv tmp.json "$REPLICATION_DIR/manifest.json"
+    local tmpfile=$(mktemp)
+    jq '.replication_count += 1' "$REPLICATION_DIR/manifest.json" > "$tmpfile"
+    mv "$tmpfile" "$REPLICATION_DIR/manifest.json"
 }
 
 setup_continuous_replication() {
@@ -1204,7 +1292,11 @@ sudo apt-get update
 sudo apt-get install -y tailscale
 
 # Connect to Tailscale network
-sudo tailscale up --auth-key="$TAILSCALE_AUTH_KEY" --hostname="$node_name"
+# WARNING: Passing --auth-key on the command line exposes it in the process list.
+# For production, write the key to a file and use --auth-key=file:/path/to/key
+echo "$TAILSCALE_AUTH_KEY" > /tmp/ts-authkey && chmod 600 /tmp/ts-authkey
+sudo tailscale up --auth-key="file:/tmp/ts-authkey" --hostname="$node_name"
+rm -f /tmp/ts-authkey
 
 # Enable IP forwarding for subnet routing
 echo 'net.ipv4.ip_forward = 1' | sudo tee -a /etc/sysctl.conf
@@ -1324,7 +1416,7 @@ start_tunnels() {
         # Start SSH tunnel
         ssh -i "$SSH_KEY" \
             -f -N -L "$unique_port:$remote_host:$remote_port" \
-            -o StrictHostKeyChecking=no \
+            -o StrictHostKeyChecking=accept-new \
             -o ServerAliveInterval=60 \
             ubuntu@"$target_ip"
         
@@ -1444,11 +1536,13 @@ defaults
     option redispatch
     retries 3
 
-# Statistics interface
-stats enable
-stats uri /haproxy-stats
-stats realm HAProxy\ Statistics
-stats auth admin:openclaw-fleet-stats
+# Statistics interface — must be inside a listen/frontend block, not at top level
+listen stats
+    bind *:9090
+    stats enable
+    stats uri /haproxy-stats
+    stats realm HAProxy\ Statistics
+    stats auth admin:openclaw-fleet-stats
 
 # Frontend - Main entry point
 frontend openclaw_frontend
@@ -1663,7 +1757,7 @@ setup_intelligent_distribution() {
 #!/bin/bash
 
 # Install Node.js for advanced distribution logic
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
 # Create intelligent distribution service
@@ -2028,13 +2122,13 @@ backup_node_data() {
     
     # Backup OpenClaw workspace
     rsync -av --compress --delete \
-        -e "ssh -i /home/ubuntu/.aleph-deploy/keys/aleph_rsa -o StrictHostKeyChecking=no" \
+        -e "ssh -i /home/ubuntu/.aleph-deploy/keys/aleph_rsa -o StrictHostKeyChecking=accept-new" \
         "ubuntu@$node_ip:/opt/openclaw/workspace/" \
         "$backup_dir/workspace/" 2>/dev/null || true
     
     # Backup configurations
     rsync -av --compress \
-        -e "ssh -i /home/ubuntu/.aleph-deploy/keys/aleph_rsa -o StrictHostKeyChecking=no" \
+        -e "ssh -i /home/ubuntu/.aleph-deploy/keys/aleph_rsa -o StrictHostKeyChecking=accept-new" \
         "ubuntu@$node_ip:/opt/openclaw/config/" \
         "$backup_dir/config/" 2>/dev/null || true
     
@@ -2172,7 +2266,7 @@ check_node_health() {
     
     # Check SSH connectivity
     if ! ssh -i /home/ubuntu/.aleph-deploy/keys/aleph_rsa \
-            -o ConnectTimeout=10 -o StrictHostKeyChecking=no \
+            -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new \
             ubuntu@"$node_ip" "echo 'alive'" &>/dev/null; then
         return 1
     fi
@@ -2198,10 +2292,11 @@ mark_node_unhealthy() {
     log_message "❌ Node $node_id marked as unhealthy: $failure_reason"
     
     # Update node status in fleet registry
+    local tmpfile=$(mktemp)
     jq --arg node "$node_id" --arg status "unhealthy" \
         '.nodes = (.nodes | map(if .node_id == $node then .status = $status else . end))' \
-        "$FLEET_CONFIG" > /tmp/fleet-update.json
-    mv /tmp/fleet-update.json "$FLEET_CONFIG"
+        "$FLEET_CONFIG" > "$tmpfile"
+    mv "$tmpfile" "$FLEET_CONFIG"
 }
 
 auto_recreate_node() {
@@ -2246,10 +2341,11 @@ monitor_fleet() {
             failure_count=$((failure_count + 1))
             
             # Update failure count
+            local tmpfile=$(mktemp)
             jq --arg node "$node_id" --argjson count "$failure_count" \
                 '.nodes = (.nodes | map(if .node_id == $node then .failure_count = $count else . end))' \
-                "$FLEET_CONFIG" > /tmp/fleet-update.json
-            mv /tmp/fleet-update.json "$FLEET_CONFIG"
+                "$FLEET_CONFIG" > "$tmpfile"
+            mv "$tmpfile" "$FLEET_CONFIG"
             
             if (( failure_count >= FAILURE_THRESHOLD )); then
                 mark_node_unhealthy "$node_id" "Health check failed $failure_count times"
@@ -2263,9 +2359,10 @@ monitor_fleet() {
             fi
         else
             # Reset failure count on successful check
+            local tmpfile=$(mktemp)
             jq --arg node "$node_id" '.nodes = (.nodes | map(if .node_id == $node then .failure_count = 0 else . end))' \
-                "$FLEET_CONFIG" > /tmp/fleet-update.json
-            mv /tmp/fleet-update.json "$FLEET_CONFIG"
+                "$FLEET_CONFIG" > "$tmpfile"
+            mv "$tmpfile" "$FLEET_CONFIG"
             
             log_message "✅ Node $node_id healthy"
         fi
@@ -2324,7 +2421,7 @@ create_disaster_recovery_runbook() {
 - Cannot access fleet status API
 
 **Recovery Steps:**
-1. Check node status: `aleph compute get openclaw-fleet-primary`
+1. Check node status: `aleph instance get openclaw-fleet-primary`
 2. If node is down, recreate from backup:
    ```bash
    cd ~/.aleph-deploy
@@ -2496,7 +2593,7 @@ analyze_costs() {
 }
 COST_ANALYSIS
 
-    echo "💲 Current estimated monthly cost: $total_cost ALEPH (~$15-25 USD)"
+    echo "💲 Current estimated monthly cost: $total_cost ALEPH"
     echo "📋 Cost breakdown saved to cost-analysis.json"
 }
 
@@ -2650,8 +2747,9 @@ scale_down() {
     
     if [[ -n "$least_utilized" && "$least_utilized" != "null" ]]; then
         # Mark node for removal
-        jq --arg node "$least_utilized" '.nodes = (.nodes | map(if .node_id == $node then .status = "draining" else . end))' "$FLEET_CONFIG" > /tmp/fleet-update.json
-        mv /tmp/fleet-update.json "$FLEET_CONFIG"
+        local tmpfile=$(mktemp)
+        jq --arg node "$least_utilized" '.nodes = (.nodes | map(if .node_id == $node then .status = "draining" else . end))' "$FLEET_CONFIG" > "$tmpfile"
+        mv "$tmpfile" "$FLEET_CONFIG"
         
         # This would trigger actual node termination
         # /opt/terminate-worker-node.sh "$least_utilized"
@@ -3031,10 +3129,12 @@ LoginGraceTime 30
 
 # Disable dangerous features
 X11Forwarding no
-AllowTcpForwarding yes
+AllowTcpForwarding no
 GatewayPorts no
 PermitTunnel no
-AllowAgentForwarding yes
+AllowAgentForwarding no
+# Note: If you need SSH tunnels (e.g. for Tailscale), selectively enable
+# AllowTcpForwarding for specific users via Match blocks instead.
 
 # User restrictions
 AllowUsers ubuntu

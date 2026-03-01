@@ -1,3 +1,9 @@
+---
+name: saas-billing
+description: Implement SaaS billing with Stripe — subscriptions, usage-based billing, webhooks, API key provisioning, dunning
+version: 1.0.0
+---
+
 # SaaS Billing with Stripe — Expert Skill
 
 > Production-grade billing integration for SaaS applications using Stripe.
@@ -184,7 +190,7 @@ const tieredPrice = await stripe.prices.create({
   tiers: [
     { up_to: 1000, unit_amount: 0 },          // first 1000 free
     { up_to: 10000, unit_amount: 1 },          // $0.01 each
-    { up_to: 'inf', unit_amount: 0.5 },        // $0.005 each after
+    { up_to: 'inf', unit_amount_decimal: '0.5' }, // $0.005 each — use unit_amount_decimal for sub-cent
   ],
   metadata: { plan: 'pro_tiered_api' },
 });
@@ -380,19 +386,33 @@ async function changePlan(subscriptionId, newPriceId, prorate = true) {
 // Upgrade immediately with proration
 await changePlan(subId, 'price_enterprise_monthly', true);
 
-// Downgrade at period end (no proration)
+// Downgrade at period end — use Subscription Schedules to defer the change.
+// Simply calling subscriptions.update() with proration_behavior: 'none'
+// still switches the price immediately (billing changes at next cycle, but
+// the price object on the subscription changes right away).
 async function downgradeAtPeriodEnd(subscriptionId, newPriceId) {
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
 
-  // Schedule the change for the end of the current period
-  await stripe.subscriptions.update(subscriptionId, {
-    items: [
+  // Create a schedule from the existing subscription
+  const schedule = await stripe.subscriptionSchedules.create({
+    from_subscription: subscriptionId,
+  });
+
+  // Update the schedule: keep current phase, add new phase at period end
+  await stripe.subscriptionSchedules.update(schedule.id, {
+    end_behavior: 'release',
+    phases: [
       {
-        id: subscription.items.data[0].id,
-        price: newPriceId,
+        items: [{ price: subscription.items.data[0].price.id, quantity: 1 }],
+        start_date: subscription.current_period_start,
+        end_date: subscription.current_period_end,
+      },
+      {
+        items: [{ price: newPriceId, quantity: 1 }],
+        start_date: subscription.current_period_end,
+        iterations: 1,
       },
     ],
-    proration_behavior: 'none',
   });
 }
 ```
@@ -424,9 +444,10 @@ async function cancelAtPeriodEnd(subscriptionId) {
 // Cancel immediately (rare — refund scenarios)
 async function cancelImmediately(subscriptionId) {
   return stripe.subscriptions.cancel(subscriptionId, {
-    prorate: true,       // issue prorated credit
+    proration_behavior: 'create_prorations',  // issue prorated credit
     // invoice_now: true, // generate final invoice immediately
   });
+  // Note: `prorate: true` is deprecated — use proration_behavior instead.
 }
 
 // Reactivate before period end
@@ -518,15 +539,15 @@ async function handleStripeWebhook(req, res) {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // Acknowledge receipt immediately — process async if needed
-  res.status(200).json({ received: true });
-
-  // Process the event
+  // Process the event BEFORE responding — if you respond 200 first and
+  // processing fails, Stripe won't retry and the event is silently lost.
   try {
     await processWebhookEvent(event);
+    res.status(200).json({ received: true });
   } catch (err) {
-    // Log but don't return error (we already sent 200)
     console.error(`Error processing webhook ${event.id}: ${err.message}`);
+    res.status(500).json({ error: 'Processing failed' });
+    // Stripe will retry on non-2xx responses
   }
 }
 ```
@@ -537,25 +558,23 @@ Stripe may send the same event **multiple times**. Your handler MUST be idempote
 
 ```js
 async function processWebhookEvent(event) {
-  // Check if we've already processed this event
-  const existing = await db.query(
-    'SELECT id FROM processed_events WHERE stripe_event_id = $1',
-    [event.id]
+  // Atomically insert-or-skip to avoid TOCTOU race between SELECT and INSERT.
+  // If two identical events arrive concurrently, only one will proceed.
+  const result = await db.query(
+    `INSERT INTO processed_events (stripe_event_id, event_type, processed_at)
+     VALUES ($1, $2, NOW())
+     ON CONFLICT (stripe_event_id) DO NOTHING
+     RETURNING id`,
+    [event.id, event.type]
   );
 
-  if (existing.rows.length > 0) {
+  if (result.rows.length === 0) {
     console.log(`Event ${event.id} already processed, skipping.`);
     return;
   }
 
   // Process the event
   await handleEvent(event);
-
-  // Mark as processed
-  await db.query(
-    'INSERT INTO processed_events (stripe_event_id, event_type, processed_at) VALUES ($1, $2, NOW())',
-    [event.id, event.type]
-  );
 }
 ```
 
@@ -708,6 +727,9 @@ async function handleSubscriptionUpdated(subscription) {
   const userId = await getUserByCustomerId(subscription.customer);
   if (!userId) return;
 
+  // previous_attributes lives on event.data, not the object itself.
+  // In a webhook handler, pass the full event or access event.data.previous_attributes.
+  // Here we guard for both patterns (direct handler vs. event.data.object).
   const previousAttributes = subscription.previous_attributes || {};
 
   // Detect plan change
@@ -1070,13 +1092,30 @@ app.post('/billing/portal', requireAuth, async (req, res) => {
 
 ### Reporting Usage
 
+> **Note:** `createUsageRecord` is deprecated for new integrations as of 2024.
+> Stripe now recommends the **Billing Meters API** (`stripe.billing.meterEvents.create`)
+> for usage-based billing. The example below uses the legacy API for existing integrations.
+> For new projects, see: https://docs.stripe.com/billing/subscriptions/usage-based/recording-usage#billing-meter
+
 ```js
-// Report usage for a metered subscription item
+// Legacy: Report usage for a metered subscription item
+// For new integrations, use stripe.billing.meterEvents.create() instead.
 async function reportUsage(subscriptionItemId, quantity, timestamp = null) {
   return stripe.subscriptionItems.createUsageRecord(subscriptionItemId, {
     quantity,
     timestamp: timestamp || Math.floor(Date.now() / 1000),
     action: 'increment',   // 'increment' adds to existing, 'set' replaces
+  });
+}
+
+// Modern: Report usage via Billing Meters (recommended for new integrations)
+async function reportMeterEvent(customerId, eventName, value = 1) {
+  return stripe.billing.meterEvents.create({
+    event_name: eventName,     // matches your Meter's event_name
+    payload: {
+      stripe_customer_id: customerId,
+      value: String(value),
+    },
   });
 }
 
@@ -1296,23 +1335,29 @@ const globalLimiter = rateLimit({
   message: { error: 'Too many requests' },
 });
 
-// Per-plan rate limit
+// Per-plan rate limit — pre-create one limiter per plan to avoid
+// creating a new rateLimit instance on every request (which resets
+// the window each time, making it nonfunctional).
+const planLimiters = Object.fromEntries(
+  Object.entries(PLAN_LIMITS).map(([plan, limits]) => [
+    plan,
+    rateLimit({
+      windowMs: 60 * 1000,
+      max: limits.rpm,
+      keyGenerator: (req) => req.userId,
+      standardHeaders: true,
+      message: {
+        error: 'rate_limit_exceeded',
+        limit: limits.rpm,
+        window: '1m',
+      },
+    }),
+  ])
+);
+
 function planRateLimiter(req, res, next) {
-  const limits = PLAN_LIMITS[req.plan];
-  if (!limits) return res.status(403).json({ error: 'No plan' });
-
-  const limiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: limits.rpm,
-    keyGenerator: (req) => req.userId,
-    standardHeaders: true,
-    message: {
-      error: 'rate_limit_exceeded',
-      limit: limits.rpm,
-      window: '1m',
-    },
-  });
-
+  const limiter = planLimiters[req.plan];
+  if (!limiter) return res.status(403).json({ error: 'No plan' });
   return limiter(req, res, next);
 }
 
@@ -1396,9 +1441,15 @@ describe('Billing Integration', () => {
 
   before(async () => {
     // Create test customer
+    // Create customer with a PaymentMethod (source/tok_visa is legacy)
+    const pm = await stripe.paymentMethods.create({
+      type: 'card',
+      card: { token: 'tok_visa' },
+    });
     const customer = await stripe.customers.create({
       email: 'test@example.com',
-      source: 'tok_visa',  // test token
+      payment_method: pm.id,
+      invoice_settings: { default_payment_method: pm.id },
     });
     testCustomerId = customer.id;
   });
@@ -1612,16 +1663,18 @@ app.post(
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
-    res.status(200).json({ received: true });
-
     try {
       // Idempotency check (use your DB in production)
-      if (processedEvents.has(event.id)) return;
+      if (processedEvents.has(event.id)) {
+        return res.status(200).json({ received: true });
+      }
       processedEvents.add(event.id);
 
       await routeEvent(event);
+      res.status(200).json({ received: true });
     } catch (err) {
       console.error(`Error processing ${event.type} (${event.id}):`, err);
+      res.status(500).json({ error: 'Processing failed' });
     }
   }
 );
@@ -1721,7 +1774,8 @@ async function routeEvent(event) {
       const apiKey = generateApiKey();
       const keyHash = hashKey(apiKey);
       apiKeys.set(keyHash, { userId, plan, active: true });
-      console.log(`Provisioned user ${userId} on ${plan}. API key: ${apiKey}`);
+      // Never log the full API key — log only the prefix
+      console.log(`Provisioned user ${userId} on ${plan}. API key: ${apiKey.substring(0, 10)}...`);
       break;
     }
 
@@ -1877,7 +1931,7 @@ app.get('/api/v1/data', authenticateKey, (req, res) => {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 app.listen(PORT, () => {
   console.log(`Billing server on port ${PORT}`);
-  console.log(`Test mode: ${process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_')}`);
+  console.log(`Test mode: ${process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_') ?? 'unknown'}`);
 });
 ```
 

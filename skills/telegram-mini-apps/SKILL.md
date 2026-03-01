@@ -1,3 +1,9 @@
+---
+name: telegram-mini-apps
+description: Build Telegram Mini Apps with Stars payments — TWA SDK, HMAC validation, bot webhooks, deep linking, Next.js deployment
+version: 1.0.0
+---
+
 # Telegram Mini Apps with Stars Payments — Expert Skill
 
 > The definitive guide to building Telegram Mini Apps (TWA) with Stars payments, bot webhooks, and production deployment.
@@ -142,11 +148,12 @@ export function TelegramProvider({ children }: PropsWithChildren) {
 // src/hooks/useTelegramUser.ts
 "use client";
 
-import { initDataRaw, initData } from "@telegram-apps/sdk-react";
+import { initDataRaw, initData, useSignal } from "@telegram-apps/sdk-react";
 
 export function useTelegramUser() {
-  const raw = initDataRaw(); // the raw query string for backend validation
-  const data = initData();   // parsed initData object
+  // In SDK v2, initDataRaw and initData return signals — use useSignal() to subscribe
+  const raw = useSignal(initDataRaw); // the raw query string for backend validation
+  const data = useSignal(initData);   // parsed initData object
 
   if (!data || !data.user) return null;
 
@@ -169,6 +176,9 @@ export function useTelegramUser() {
 // src/lib/api.ts
 import { initDataRaw } from "@telegram-apps/sdk-react";
 
+// Note: initDataRaw() returns a signal in SDK v2. In non-React contexts
+// (outside components/hooks), call initDataRaw() directly to get the signal value.
+// Inside React components, use useSignal(initDataRaw) instead.
 export async function apiCall(path: string, options: RequestInit = {}) {
   const raw = initDataRaw();
 
@@ -249,8 +259,8 @@ function mockDevEnvironment() {
 ### How It Works
 
 1. Telegram creates a data string from initData fields (sorted alphabetically, excluding `hash`)
-2. A secret key is derived: `HMAC-SHA256(bot_token, "WebAppData")`
-3. The signature is: `HMAC-SHA256(data_check_string, secret_key)`
+2. A secret key is derived: `HMAC-SHA256("WebAppData", bot_token)` — key is `"WebAppData"`, data is `bot_token`
+3. The signature is: `HMAC-SHA256(secret_key, data_check_string)` — key is `secret_key`, data is `data_check_string`
 4. You compare this against the `hash` field
 
 ### Complete Validation Implementation
@@ -332,15 +342,22 @@ export function validateInitData(
     .digest("hex");
 
   // Timing-safe comparison to prevent timing attacks
-  const computedBuf = Buffer.from(computedHash, "utf-8");
-  const hashBuf = Buffer.from(hash, "utf-8");
+  // Both are hex strings — use "hex" encoding so Buffer lengths match
+  // the byte count (32 bytes) rather than the string length (64 chars).
+  // Using "utf-8" works too since hex is ASCII-safe, but "hex" is semantically correct.
+  const computedBuf = Buffer.from(computedHash, "hex");
+  const hashBuf = Buffer.from(hash, "hex");
 
   if (computedBuf.length !== hashBuf.length || !cryptoTimingSafeEqual(computedBuf, hashBuf)) {
     return { valid: false, error: "Invalid hash — signature mismatch" };
   }
 
   // Check auth_date freshness
-  const authDate = parseInt(params.get("auth_date") || "0", 10);
+  const authDateStr = params.get("auth_date");
+  if (!authDateStr) {
+    return { valid: false, error: "Missing auth_date in initData" };
+  }
+  const authDate = parseInt(authDateStr, 10);
   const now = Math.floor(Date.now() / 1000);
 
   if (now - authDate > MAX_AGE_SECONDS) {
@@ -715,17 +732,14 @@ bot.on("pre_checkout_query", async (ctx) => {
     const product = PRODUCTS[productId];
 
     if (!product) {
-      await ctx.answerPreCheckoutQuery(false, {
-        error_message: "This product is no longer available.",
-      });
+      // Second argument is the error_message string directly, not an object
+      await ctx.answerPreCheckoutQuery(false, "This product is no longer available.");
       return;
     }
 
     // Validate price hasn't changed
     if (query.total_amount !== product.priceInStars) {
-      await ctx.answerPreCheckoutQuery(false, {
-        error_message: "Price has changed. Please try again.",
-      });
+      await ctx.answerPreCheckoutQuery(false, "Price has changed. Please try again.");
       return;
     }
 
@@ -734,9 +748,7 @@ bot.on("pre_checkout_query", async (ctx) => {
   } catch (err) {
     console.error("pre_checkout_query error:", err);
     // If anything goes wrong, reject — better than charging for nothing
-    await ctx.answerPreCheckoutQuery(false, {
-      error_message: "Something went wrong. Please try again.",
-    });
+    await ctx.answerPreCheckoutQuery(false, "Something went wrong. Please try again.");
   }
 });
 
@@ -826,10 +838,8 @@ export async function refundStarPayment(
   telegramPaymentChargeId: string
 ): Promise<boolean> {
   try {
-    await bot.api.raw.refundStarPayment({
-      user_id: userId,
-      telegram_payment_charge_id: telegramPaymentChargeId,
-    });
+    // Use bot.api.refundStarPayment — not bot.api.raw
+    await bot.api.refundStarPayment(userId, telegramPaymentChargeId);
     return true;
   } catch (err) {
     console.error("Refund failed:", err);
@@ -1418,10 +1428,8 @@ const nextConfig: NextConfig = {
       {
         source: "/(.*)",
         headers: [
-          {
-            key: "X-Frame-Options",
-            value: "ALLOW-FROM https://web.telegram.org",
-          },
+          // X-Frame-Options ALLOW-FROM is deprecated and ignored by modern browsers.
+          // Use Content-Security-Policy frame-ancestors instead (below).
           {
             key: "Content-Security-Policy",
             value:
@@ -1763,7 +1771,7 @@ Response should show:
 Stars payments work in Telegram's test environment:
 1. Create a test bot via @BotFather with `/newbot` (use test server)
 2. Use Telegram test apps (available on Android/iOS test builds)
-3. Test bots use the `https://api.telegram.org/bot<token>/test/` endpoint
+3. Test bots use the `https://api.telegram.org/bot<token>/test/METHOD` format (append `/test/` before the method name)
 
 Or test on production with 1-Star items and refund immediately after.
 
@@ -1789,8 +1797,8 @@ TURSO_AUTH_TOKEN       # Turso auth token for production
 |--------|-----|
 | `bot.api.sendInvoice(...)` | Send Stars payment invoice |
 | `ctx.answerPreCheckoutQuery(true)` | Approve checkout |
-| `ctx.answerPreCheckoutQuery(false, { error_message })` | Reject checkout |
-| `bot.api.raw.refundStarPayment(...)` | Refund a Stars payment |
+| `ctx.answerPreCheckoutQuery(false, "error message")` | Reject checkout |
+| `bot.api.refundStarPayment(userId, chargeId)` | Refund a Stars payment |
 | `bot.api.setWebhook(...)` | Set webhook URL |
 | `bot.api.getWebhookInfo()` | Check webhook status |
 
