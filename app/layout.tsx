@@ -95,6 +95,7 @@ const navLinks = [
   { label: "Skills", href: "/" },
   { label: "Docs", href: "/docs" },
   { label: "CLI", href: "/cli" },
+  { label: "Pricing", href: "/pricing" },
   { label: "FAQ", href: "/faq" },
 ];
 
