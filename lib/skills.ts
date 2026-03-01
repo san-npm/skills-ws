@@ -11,6 +11,7 @@ export interface Skill {
   useCases?: string[];
   content?: string;
   installs?: number;
+  premium?: boolean;
 }
 
 export interface SkillsConfig {

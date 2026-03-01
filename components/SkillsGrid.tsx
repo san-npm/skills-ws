@@ -31,7 +31,7 @@ export default function SkillsGrid({
   }, []);
 
   const filtered = skills.filter((s) => {
-    const matchFilter = filter === "all" || s.category === filter;
+    const matchFilter = filter === "all" ? true : s.category === filter;
     const matchSearch =
       !search ||
       s.name.toLowerCase().includes(search.toLowerCase()) ||
