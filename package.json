@@ -1,6 +1,6 @@
 {
   "name": "skills-ws",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -25,7 +25,7 @@
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
   },
-  "description": "77 expert agent skills for AI coding assistants — marketing, growth, web3, dev, design & operations. Built for OpenClaw, Claude Code, Cursor, and Codex.",
+  "description": "81 agent skills for AI coding assistants — marketing, growth, web3, dev, design & operations. Built for OpenClaw, Claude Code, Cursor, and Codex.",
   "bin": {
     "skills-ws": "bin/cli.mjs"
   },
