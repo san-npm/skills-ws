@@ -7,3 +7,4 @@ out/
 .vercel
 .DS_Store
 *.tsbuildinfo
+package.json.bak

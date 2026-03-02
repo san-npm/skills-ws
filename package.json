@@ -5,7 +5,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "prepublishOnly": "cp package.json package.json.bak && cp npm-package.json package.json",
+    "postpublish": "mv package.json.bak package.json"
   },
   "dependencies": {
     "@vercel/analytics": "^1.6.1",
@@ -63,5 +65,5 @@
     "url": "https://github.com/san-npm/skills-ws"
   },
   "homepage": "https://skills.ws",
-  "author": "skills.ws"
+  "author": "Commit Media <bob@openletz.com> (https://openletz.com)"
 }
