@@ -1,83 +1,87 @@
 # skills.ws
 
-> 77 agent skills for AI coding assistants. Marketing, growth, web3, dev, design & operations.
+> 81 agent skills for AI coding assistants. Marketing, growth, web3, dev, design & operations.
 
 ## Skills
 
 - [ab-testing](https://skills.ws/skills/ab-testing): A/B test design, statistical analysis, sample size calculation, experiment prioritization, and results interpretation.
-- [accounting-finance](https://skills.ws/skills/accounting-finance): Financial modeling, bookkeeping automation, invoicing workflows, tax compliance checklists, and P&L analysis for SMEs an
-- [affiliate-marketing](https://skills.ws/skills/affiliate-marketing): Affiliate program design, commission structures, partner recruitment, tracking implementation, and performance optimizat
-- [aleph-cloud-self-deployment](https://skills.ws/skills/aleph-cloud-self-deployment): Skill for AI agents to autonomously deploy themselves onto Aleph Cloud decentralized infrastructure. Covers VM provision
+- [accounting-finance](https://skills.ws/skills/accounting-finance): Financial modeling, bookkeeping automation, invoicing workflows, tax compliance checklists, and P&L analysis for SMEs and startups.
+- [affiliate-marketing](https://skills.ws/skills/affiliate-marketing): Affiliate program design, commission structures, partner recruitment, tracking implementation, and performance optimization.
+- [ai-agent-building](https://skills.ws/skills/ai-agent-building): Multi-agent orchestration — CrewAI, LangGraph, AutoGen patterns, tool use, memory systems, and production deployment.
+- [aleph-cloud-self-deployment](https://skills.ws/skills/aleph-cloud-self-deployment): Skill for AI agents to autonomously deploy themselves onto Aleph Cloud decentralized infrastructure. Covers VM provisioning, CRN discovery, agent framework installation, gateway configuration, identity transfer, and becoming fully operational on decentralized compute — without human intervention.
 - [api-design](https://skills.ws/skills/api-design): REST, GraphQL, and OpenAPI design patterns with auth, error handling, versioning, and webhook best practices.
-- [ascii-banner](https://skills.ws/skills/ascii-banner): Build animated ASCII banners for CLI tools and web interfaces. Frame-based animation, ANSI color systems, terminal compa
+- [ascii-banner](https://skills.ws/skills/ascii-banner): Build animated ASCII banners for CLI tools and web interfaces. Frame-based animation, ANSI color systems, terminal compatibility, accessibility, and web-based ASCII shaders.
 - [auth-implementation](https://skills.ws/skills/auth-implementation): Authentication & authorization — OAuth 2.0, JWT, session management, passkeys, RBAC, and security best practices.
+- [aws-production-deploy](https://skills.ws/skills/aws-production-deploy): Complete AWS production deployment — ECS, RDS, CloudFront, Route53, SSL, monitoring, and IaC with CDK/Terraform.
 - [bing-webmaster](https://skills.ws/skills/bing-webmaster): Bing Webmaster Tools setup, IndexNow protocol, URL submission, backlink analysis, and Bing-specific SEO optimization.
-- [blog-engine](https://skills.ws/skills/blog-engine): End-to-end blog post creation pipeline: research, outline, draft, SEO optimize, publish-ready. Headline formulas, intro 
-- [brand-strategy](https://skills.ws/skills/brand-strategy): Brand positioning, messaging hierarchy, visual identity, and brand architecture frameworks for building and managing a c
-- [business-development](https://skills.ws/skills/business-development): BD strategy, partnership frameworks, outreach templates, deal pipeline management, and negotiation playbooks for B2B Saa
+- [blog-engine](https://skills.ws/skills/blog-engine): End-to-end blog post creation pipeline: research, outline, draft, SEO optimize, publish-ready. Headline formulas, intro hooks, CTA patterns, internal linking, featured snippet optimization.
+- [brand-strategy](https://skills.ws/skills/brand-strategy): Brand positioning, messaging hierarchy, visual identity, and brand architecture frameworks for building and managing a cohesive brand system.
+- [business-development](https://skills.ws/skills/business-development): BD strategy, partnership frameworks, outreach templates, deal pipeline management, and negotiation playbooks for B2B SaaS.
+- [ci-cd-pipeline](https://skills.ws/skills/ci-cd-pipeline): Production CI/CD — GitHub Actions, testing strategies, deployment gates, rollbacks, feature flags, and release management.
 - [cicd-pipelines](https://skills.ws/skills/cicd-pipelines): Production-grade CI/CD with GitHub Actions, deployment strategies, caching, and release automation.
-- [cold-outreach](https://skills.ws/skills/cold-outreach): Cold email and LinkedIn outreach. Personalization frameworks, follow-up sequences, deliverability, and reply rate optimi
-- [community-building](https://skills.ws/skills/community-building): Playbook for building, growing, and sustaining online communities from zero to 10,000+ members with engagement framework
-- [competitor-intelligence](https://skills.ws/skills/competitor-intelligence): Competitive analysis frameworks, market positioning, feature comparison matrices, and win/loss analysis for strategic pl
+- [cold-outreach](https://skills.ws/skills/cold-outreach): Cold email and LinkedIn outreach. Personalization frameworks, follow-up sequences, deliverability, and reply rate optimization.
+- [community-building](https://skills.ws/skills/community-building): Playbook for building, growing, and sustaining online communities from zero to 10,000+ members with engagement frameworks and metrics.
+- [competitor-intelligence](https://skills.ws/skills/competitor-intelligence): Competitive analysis frameworks, market positioning, feature comparison matrices, and win/loss analysis for strategic planning.
 - [content-strategy](https://skills.ws/skills/content-strategy): Plan content strategy, decide what to create, figure out what topics to cover for SaaS and software products.
 - [copywriting](https://skills.ws/skills/copywriting): Write, rewrite, or improve marketing copy for any page — homepage, landing, pricing, feature, about, or product pages.
 - [crm-builder](https://skills.ws/skills/crm-builder): Design and implement CRM workflows. Pipeline management, automation, lead nurturing, deal tracking.
-- [crm-operations](https://skills.ws/skills/crm-operations): CRM setup, pipeline automation, lead routing, deal tracking, and operational workflows for HubSpot, Salesforce, Pipedriv
+- [crm-operations](https://skills.ws/skills/crm-operations): CRM setup, pipeline automation, lead routing, deal tracking, and operational workflows for HubSpot, Salesforce, Pipedrive.
 - [customer-acquisition](https://skills.ws/skills/customer-acquisition): CAC optimization, channel mix modeling, attribution analysis, and acquisition strategy for paid and organic channels.
-- [customer-feedback](https://skills.ws/skills/customer-feedback): Design and operate a Voice of Customer program — from NPS/CSAT collection through qualitative analysis to roadmap integr
-- [data-analytics](https://skills.ws/skills/data-analytics): Data analysis workflows, SQL query patterns, dashboard design, KPI frameworks, and data storytelling for business intell
+- [customer-feedback](https://skills.ws/skills/customer-feedback): Design and operate a Voice of Customer program — from NPS/CSAT collection through qualitative analysis to roadmap integration.
+- [data-analytics](https://skills.ws/skills/data-analytics): Data analysis workflows, SQL query patterns, dashboard design, KPI frameworks, and data storytelling for business intelligence.
 - [data-management](https://skills.ws/skills/data-management): Data governance, pipeline design, ETL workflows, data quality frameworks, and warehouse architecture for growing teams.
 - [database-design](https://skills.ws/skills/database-design): Schema design, indexing, migrations, query optimization, and PostgreSQL patterns for production systems.
 - [defi-integration](https://skills.ws/skills/defi-integration): Integrate DeFi protocols — Uniswap, Aave, Compound, Curve. Swaps, lending, liquidity, flash loans, and yield strategies.
 - [design-system](https://skills.ws/skills/design-system): Design system implementation — component libraries, design tokens, Storybook, Figma-to-code, and documentation.
+- [docker-production](https://skills.ws/skills/docker-production): Production Docker — multi-stage builds, compose orchestration, secrets management, health checks, logging, and security.
 - [email-sequence](https://skills.ws/skills/email-sequence): Create or optimize email sequences, drip campaigns, automated flows, and lifecycle email programs.
-- [eu-legal-compliance](https://skills.ws/skills/eu-legal-compliance): Navigate GDPR, DSA, DMA, EU AI Act, NIS2, and consumer protection — with specific article references, deadlines, and pen
-- [eu-tax-accounting](https://skills.ws/skills/eu-tax-accounting): EU tax and accounting by country — VAT regimes, corporate tax rates, payroll taxes, filing deadlines, and cross-border r
+- [eu-legal-compliance](https://skills.ws/skills/eu-legal-compliance): Navigate GDPR, DSA, DMA, EU AI Act, NIS2, and consumer protection — with specific article references, deadlines, and penalties.
+- [eu-tax-accounting](https://skills.ws/skills/eu-tax-accounting): EU tax and accounting by country — VAT regimes, corporate tax rates, payroll taxes, filing deadlines, and cross-border rules for all 27 member states.
 - [git-workflow](https://skills.ws/skills/git-workflow): Branching strategies, commit conventions, code review, and release workflows for professional teams.
 - [google-analytics](https://skills.ws/skills/google-analytics): GA4 setup, event taxonomy, custom dimensions, conversion tracking, audience segments, and reporting automation.
 - [growth-hacking](https://skills.ws/skills/growth-hacking): Growth hacking strategies and tactics. Viral loops, referral programs, activation funnels, retention hooks.
-- [hiring-team-building](https://skills.ws/skills/hiring-team-building): Hire, onboard, and build high-performing teams in the EU — covering labor law, structured interviews, remote work regula
-- [influencer-marketing](https://skills.ws/skills/influencer-marketing): Complete influencer marketing playbook covering identification, outreach, contracts, compliance, and ROI measurement acr
+- [hiring-team-building](https://skills.ws/skills/hiring-team-building): Hire, onboard, and build high-performing teams in the EU — covering labor law, structured interviews, remote work regulations, and team design.
+- [influencer-marketing](https://skills.ws/skills/influencer-marketing): Complete influencer marketing playbook covering identification, outreach, contracts, compliance, and ROI measurement across platforms.
 - [landing-page-builder](https://skills.ws/skills/landing-page-builder): Build high-converting landing pages from scratch. Copy, layout, CTAs, social proof, and responsive design.
 - [lead-scoring](https://skills.ws/skills/lead-scoring): Design and implement lead scoring models. Qualify leads based on behavior, demographics, and engagement.
 - [local-seo](https://skills.ws/skills/local-seo): Local SEO optimization. Google Business Profile, local citations, reviews, location pages, map pack ranking.
 - [marketing-analytics](https://skills.ws/skills/marketing-analytics): Marketing analytics setup and optimization. GA4, attribution, dashboards, KPIs, funnel analysis.
-- [marketplace-launch](https://skills.ws/skills/marketplace-launch): Launch products on marketplaces and directories — Product Hunt, AppSumo, G2, Capterra, indie directories, and niche list
-- [mvp-launcher](https://skills.ws/skills/mvp-launcher): Ship MVPs fast: validation frameworks, scoping, build-vs-buy decisions, 3-week sprint plans, launch checklists, and post
-- [nextjs-stack](https://skills.ws/skills/nextjs-stack): Opinionated full-stack Next.js blueprint: App Router, Tailwind, shadcn/ui, Prisma, Postgres, Stripe, auth, and deploymen
+- [marketplace-launch](https://skills.ws/skills/marketplace-launch): Launch products on marketplaces and directories — Product Hunt, AppSumo, G2, Capterra, indie directories, and niche listings.
+- [mcp-client](https://skills.ws/skills/mcp-client): Consume MCP services — connect AI agents to external tools for screenshots, DNS, WHOIS, SSL, OCR, and blockchain queries with three-tier auth.
+- [mcp-server-builder](https://skills.ws/skills/mcp-server-builder): Build and monetize production MCP servers — tool schemas, transports, auth, Stripe subscriptions, x402 payments, deployment.
+- [monitoring-observability](https://skills.ws/skills/monitoring-observability): Production observability — Grafana, Prometheus, Datadog, alerting strategies, SLOs, distributed tracing, and incident response.
+- [mvp-launcher](https://skills.ws/skills/mvp-launcher): Ship MVPs fast: validation frameworks, scoping, build-vs-buy decisions, 3-week sprint plans, launch checklists, and post-launch playbooks.
+- [nextjs-performance](https://skills.ws/skills/nextjs-performance): Next.js performance mastery — Core Web Vitals, ISR/SSG strategies, edge functions, image optimization, and bundle analysis.
+- [nextjs-stack](https://skills.ws/skills/nextjs-stack): Opinionated full-stack Next.js blueprint: App Router, Tailwind, shadcn/ui, Prisma, Postgres, Stripe, auth, and deployment.
 - [onchain-analytics](https://skills.ws/skills/onchain-analytics): On-chain data analysis — Dune Analytics, Etherscan APIs, The Graph, token flows, wallet profiling, and protocol metrics.
 - [page-cro](https://skills.ws/skills/page-cro): Optimize, improve, or increase conversions on any marketing page — homepage, landing, pricing, feature pages.
 - [paid-ads](https://skills.ws/skills/paid-ads): Paid advertising campaigns on Google Ads, Meta, LinkedIn, Twitter/X. Strategy, copy, targeting, optimization.
-- [popup-cro](https://skills.ws/skills/popup-cro): Create or optimize popups, modals, overlays, slide-ins, and banners for conversion. Exit intent, lead capture, announcem
-- [pr-media-outreach](https://skills.ws/skills/pr-media-outreach): End-to-end PR and media outreach playbook covering press releases, journalist pitching, crisis comms, and PR measurement
+- [popup-cro](https://skills.ws/skills/popup-cro): Create or optimize popups, modals, overlays, slide-ins, and banners for conversion. Exit intent, lead capture, announcements.
+- [postgres-mastery](https://skills.ws/skills/postgres-mastery): Advanced PostgreSQL — index strategies, query optimization, partitioning, pgvector, migrations, backups, and replication.
+- [pr-media-outreach](https://skills.ws/skills/pr-media-outreach): End-to-end PR and media outreach playbook covering press releases, journalist pitching, crisis comms, and PR measurement.
 - [pricing-optimization](https://skills.ws/skills/pricing-optimization): Price testing, value metric selection, packaging strategy, discount frameworks, and willingness-to-pay research.
 - [product-led-growth](https://skills.ws/skills/product-led-growth): Product-led growth playbooks — activation loops, viral mechanics, freemium optimization, and self-serve revenue.
 - [programmatic-seo](https://skills.ws/skills/programmatic-seo): Create SEO-driven pages at scale using templates and data. Directory pages, location pages, comparison pages.
-- [project-management](https://skills.ws/skills/project-management): End-to-end project management frameworks covering sprint planning, OKRs, stakeholder management, risk mitigation, and re
+- [project-management](https://skills.ws/skills/project-management): End-to-end project management frameworks covering sprint planning, OKRs, stakeholder management, risk mitigation, and retrospectives.
 - [prompt-engineering](https://skills.ws/skills/prompt-engineering): Patterns and techniques for designing, evaluating, and optimizing LLM prompts across models and use cases.
 - [retention-analytics](https://skills.ws/skills/retention-analytics): Churn analysis, cohort retention, engagement scoring, health scoring, and win-back strategies for SaaS products.
 - [revenue-operations](https://skills.ws/skills/revenue-operations): RevOps frameworks, funnel metrics, forecasting models, GTM alignment, and operational efficiency for scaling teams.
+- [saas-billing](https://skills.ws/skills/saas-billing): Implement SaaS billing with Stripe — subscriptions, usage-based billing, webhooks, API key provisioning, dunning.
 - [sales-funnel](https://skills.ws/skills/sales-funnel): Design and optimize sales funnels. TOFU/MOFU/BOFU content, qualification stages, conversion paths.
-- [search-console](https://skills.ws/skills/search-console): Google Search Console optimization. Index coverage, performance analysis, sitemap management, and search appearance debu
-- [security-hardening](https://skills.ws/skills/security-hardening): Comprehensive web application security hardening covering OWASP Top 10, secure headers, authentication, and dependency a
+- [search-console](https://skills.ws/skills/search-console): Google Search Console optimization. Index coverage, performance analysis, sitemap management, and search appearance debugging.
+- [security-hardening](https://skills.ws/skills/security-hardening): Comprehensive web application security hardening covering OWASP Top 10, secure headers, authentication, and dependency auditing.
 - [seo-geo](https://skills.ws/skills/seo-geo): SEO & GEO (Generative Engine Optimization) for websites. Optimize for AI search engines and traditional search.
 - [signup-flow-cro](https://skills.ws/skills/signup-flow-cro): Optimize signup, registration, account creation, or trial activation flows for higher conversion.
-- [smart-contract-auditor](https://skills.ws/skills/smart-contract-auditor): Comprehensive smart contract security auditing skill. Covers static analysis tooling (Slither, Mythril, Aderyn), fuzz te
-- [social-media-growth](https://skills.ws/skills/social-media-growth): Platform-specific growth tactics. Algorithmic optimization, engagement hacking, viral mechanics, and community building 
+- [smart-contract-auditor](https://skills.ws/skills/smart-contract-auditor): Comprehensive smart contract security auditing skill. Covers static analysis tooling (Slither, Mythril, Aderyn), fuzz testing (Foundry, Echidna), vulnerability detection with Solidity code examples, proxy/upgrade safety, DeFi-specific audit patterns, gas optimization, and structured audit report generation.
+- [social-media-growth](https://skills.ws/skills/social-media-growth): Platform-specific growth tactics. Algorithmic optimization, engagement hacking, viral mechanics, and community building at scale.
 - [social-media-kit](https://skills.ws/skills/social-media-kit): Create social media content kits. Platform-specific posts, hashtag strategies, content calendars, engagement tactics.
 - [solidity-dev](https://skills.ws/skills/solidity-dev): Solidity smart contract development — Foundry & Hardhat workflows, patterns, testing, deployment, and gas optimization.
-- [testing-strategy](https://skills.ws/skills/testing-strategy): Testing pyramid, framework selection, mocking patterns, CI integration, flaky test management, visual regression, contra
-- [ui-ux-pro-max](https://skills.ws/skills/ui-ux-pro-max): UI/UX design intelligence. Style guides, color palettes, font pairings, component patterns, accessibility audit (WCAG 2.
-- [virustotal](https://skills.ws/skills/virustotal): URL, file, domain, and IP scanning via VirusTotal CLI and API. Threat detection, reputation checks, malware analysis, ph
+- [stripe-billing](https://skills.ws/skills/stripe-billing): Production Stripe integration — subscriptions, usage-based billing, webhooks, customer portal, metering, and tax compliance.
+- [telegram-mini-apps](https://skills.ws/skills/telegram-mini-apps): Build Telegram Mini Apps with Stars payments — TWA SDK, HMAC validation, bot webhooks, deep linking, Next.js deployment.
+- [testing-strategy](https://skills.ws/skills/testing-strategy): Testing pyramid, framework selection, mocking patterns, CI integration, flaky test management, visual regression, contract testing, mutation testing, and performance testing for production codebases.
+- [ui-ux-pro-max](https://skills.ws/skills/ui-ux-pro-max): UI/UX design intelligence. Style guides, color palettes, font pairings, component patterns, accessibility audit (WCAG 2.1 AA), responsive design patterns.
+- [virustotal](https://skills.ws/skills/virustotal): URL, file, domain, and IP scanning via VirusTotal CLI and API. Threat detection, reputation checks, malware analysis, phishing detection.
 - [wallet-integration](https://skills.ws/skills/wallet-integration): Web3 wallet integration — RainbowKit, ConnectKit, WalletConnect, wagmi/viem, transaction signing, and chain switching.
-- [web-performance](https://skills.ws/skills/web-performance): Core Web Vitals optimization, bundle analysis, caching strategies, and server-side performance for modern web applicatio
-- [webinar-events](https://skills.ws/skills/webinar-events): End-to-end webinar funnel design from registration through conversion, including virtual event strategy, email sequences
+- [web-performance](https://skills.ws/skills/web-performance): Core Web Vitals optimization, bundle analysis, caching strategies, and server-side performance for modern web applications.
+- [webinar-events](https://skills.ws/skills/webinar-events): End-to-end webinar funnel design from registration through conversion, including virtual event strategy, email sequences, and content repurposing.
 - [yandex-webmaster](https://skills.ws/skills/yandex-webmaster): Yandex Webmaster setup, Yandex-specific SEO, regional targeting, Turbo pages, and Russian market search optimization.
-- [aws-production-deploy](https://skills.ws/skills/aws-production-deploy): Complete AWS production deployment — ECS, RDS, CloudFront, Route53, SSL, monitoring, and IaC with CDK/Terraform.
-- [stripe-billing](https://skills.ws/skills/stripe-billing): Production Stripe integration — subscriptions, usage-based billing, webhooks, customer portal, metering, and tax complia
-- [ai-agent-building](https://skills.ws/skills/ai-agent-building): Multi-agent orchestration — CrewAI, LangGraph, AutoGen patterns, tool use, memory systems, and production deployment.
-- [nextjs-performance](https://skills.ws/skills/nextjs-performance): Next.js performance mastery — Core Web Vitals, ISR/SSG strategies, edge functions, image optimization, and bundle analys
-- [postgres-mastery](https://skills.ws/skills/postgres-mastery): Advanced PostgreSQL — index strategies, query optimization, partitioning, pgvector, migrations, backups, and replication
-- [docker-production](https://skills.ws/skills/docker-production): Production Docker — multi-stage builds, compose orchestration, secrets management, health checks, logging, and security.
-- [monitoring-observability](https://skills.ws/skills/monitoring-observability): Production observability — Grafana, Prometheus, Datadog, alerting strategies, SLOs, distributed tracing, and incident re
-- [ci-cd-pipeline](https://skills.ws/skills/ci-cd-pipeline): Production CI/CD — GitHub Actions, testing strategies, deployment gates, rollbacks, feature flags, and release managemen

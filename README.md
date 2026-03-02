@@ -1,6 +1,6 @@
 # skills.ws
 
-Agent skills for AI coding assistants. 77 skills across 8 categories — built for OpenClaw, Claude Code, Cursor, Codex, and any agent that supports the SKILL.md format.
+Agent skills for AI coding assistants. 81 skills across 8 categories — built for OpenClaw, Claude Code, Cursor, Codex, and any agent that supports the SKILL.md format.
 
 **Website:** [skills.ws](https://skills.ws) | **npm:** [skills-ws](https://www.npmjs.com/package/skills-ws) | **Docs:** [llms-full.txt](https://skills.ws/llms-full.txt)
 
@@ -19,7 +19,7 @@ Skills are `SKILL.md` files that give AI coding assistants specialized knowledge
 
 ---
 
-## Skills (77 across 8 categories)
+## Skills (81 across 8 categories)
 
 ### Marketing (15)
 SEO/GEO, content strategy, copywriting, paid ads, email sequences, PR/media, influencer marketing, brand strategy, webinars, blog engine, and more.
@@ -156,9 +156,9 @@ skills-ws/
 │   └── NpmDownloads.tsx    # Live npm download counter
 ├── lib/
 │   └── skills.ts           # Skill data access + TypeScript interfaces
-├── skills/                 # Raw SKILL.md files (77 directories)
+├── skills/                 # Raw SKILL.md files (81 directories)
 ├── public/
-│   ├── skills.json         # Skills database (77 skills, all metadata + content)
+│   ├── skills.json         # Skills database (81 skills, all metadata + content)
 │   ├── llms.txt            # LLM-readable skill index
 │   ├── llms-full.txt       # Full content dump for LLMs
 │   ├── robots.txt          # Crawl directives
@@ -170,7 +170,7 @@ skills-ws/
 
 Static export generates ~85 pages:
 - Homepage + docs + CLI + FAQ + 404
-- 77 individual skill detail pages
+- 81 individual skill detail pages
 - XML sitemap
 
 No server needed — deploy to any static host (Vercel, Netlify, GitHub Pages, S3).

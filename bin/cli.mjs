@@ -2,9 +2,8 @@
 
 import { readdir, readFile, copyFile, mkdir, stat } from "node:fs/promises";
 import { join, dirname } from "node:path";
-import { createInterface } from "node:readline";
-import { fileURLToPath } from "node:url";
 import readline from "node:readline";
+import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILLS_DIR = join(__dirname, "..", "skills");
@@ -266,11 +265,81 @@ async function detectTarget() {
   return defaultTarget;
 }
 
+// ── Interactive Picker ───────────────────────────────────────
+
+async function interactivePick(skills) {
+  for (let i = 0; i < skills.length; i++) {
+    process.stdout.write(
+      `  ${GRAY}${String(i + 1).padStart(2)}${R} ${GREEN}${skills[i].name.padEnd(24)}${R}${DIM}${skills[i].desc.slice(0, 50)}${R}\n`
+    );
+  }
+  process.stdout.write(`\n  ${YELLOW}Enter numbers or names (comma-separated), or 'all':${R}\n`);
+
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  const answer = await new Promise((resolve) => rl.question(`  ${CYAN}> ${R}`, resolve));
+  rl.close();
+
+  const names = [];
+  if (answer.trim().toLowerCase() === "all") {
+    names.push(...skills.map((s) => s.name));
+  } else {
+    for (const part of answer.split(",").map((s) => s.trim()).filter(Boolean)) {
+      const num = parseInt(part);
+      if (!isNaN(num) && num >= 1 && num <= skills.length) names.push(skills[num - 1].name);
+      else names.push(part);
+    }
+  }
+  return names;
+}
+
+async function installSkills(names, skills, customDir) {
+  if (names.length === 0) {
+    process.stdout.write(`  ${DIM}Nothing selected.${R}\n`);
+    return;
+  }
+
+  const target = customDir || await detectTarget();
+  process.stdout.write(`\n  ${DIM}${target}${R}\n\n`);
+
+  let installed = 0;
+  for (const name of names) {
+    const skill = skills.find((s) => s.name === name);
+    if (!skill) {
+      process.stdout.write(`  ${YELLOW}skip${R} ${name} ${DIM}(not found)${R}\n`);
+      continue;
+    }
+    await copyDir(skill.dir, join(target, name));
+    installed++;
+  }
+
+  await playInstallProgress(installed);
+  process.stdout.write("\n");
+
+  for (const name of names) {
+    if (skills.find((s) => s.name === name)) {
+      process.stdout.write(`  ${GREEN}+${R} ${name}\n`);
+    }
+  }
+  process.stdout.write(`\n  ${DIM}skills.ws${R}\n\n`);
+}
+
 // ── Main ─────────────────────────────────────────────────────
 
 async function main() {
-  const args = process.argv.slice(2);
+  const rawArgs = process.argv.slice(2);
   const skills = await getSkills();
+
+  // Parse --dir flag from anywhere in args
+  let customDir = null;
+  const args = [];
+  for (let i = 0; i < rawArgs.length; i++) {
+    if (rawArgs[i] === "--dir" && i + 1 < rawArgs.length) {
+      customDir = rawArgs[i + 1];
+      i++; // skip next
+    } else {
+      args.push(rawArgs[i]);
+    }
+  }
 
   await playBanner();
 
@@ -283,125 +352,34 @@ async function main() {
   }
 
   if (args[0] === "install" || args[0] === "add") {
-    const names = args.slice(1);
+    let names = args.slice(1);
 
-    if (names.length === 0) {
-      for (let i = 0; i < skills.length; i++) {
-        process.stdout.write(
-          `  ${GRAY}${String(i + 1).padStart(2)}${R} ${GREEN}${skills[i].name.padEnd(24)}${R}${DIM}${skills[i].desc.slice(0, 50)}${R}\n`
-        );
-      }
-      process.stdout.write(`\n  ${YELLOW}Enter numbers or names (comma-separated), or 'all':${R}\n`);
-
-      const rl = createInterface({ input: process.stdin, output: process.stdout });
-      const answer = await new Promise((resolve) => rl.question(`  ${CYAN}> ${R}`, resolve));
-      rl.close();
-
-      if (answer.trim().toLowerCase() === "all") {
-        names.push(...skills.map((s) => s.name));
-      } else {
-        for (const part of answer.split(",").map((s) => s.trim()).filter(Boolean)) {
-          const num = parseInt(part);
-          if (!isNaN(num) && num >= 1 && num <= skills.length) names.push(skills[num - 1].name);
-          else names.push(part);
-        }
-      }
+    // Handle "all" keyword
+    if (names.includes("all")) {
+      names = skills.map((s) => s.name);
+    } else if (names.length === 0) {
+      names = await interactivePick(skills);
     }
 
-    if (names.length === 0) {
-      process.stdout.write(`  ${DIM}Nothing selected.${R}\n`);
-      return;
-    }
-
-    const target = await detectTarget();
-    process.stdout.write(`\n  ${DIM}${target}${R}\n\n`);
-
-    let installed = 0;
-    for (const name of names) {
-      const skill = skills.find((s) => s.name === name);
-      if (!skill) {
-        process.stdout.write(`  ${YELLOW}skip${R} ${name} ${DIM}(not found)${R}\n`);
-        continue;
-      }
-      await copyDir(skill.dir, join(target, name));
-      installed++;
-    }
-
-    await playInstallProgress(installed);
-    process.stdout.write("\n");
-
-    for (const name of names) {
-      if (skills.find((s) => s.name === name)) {
-        process.stdout.write(`  ${GREEN}+${R} ${name}\n`);
-      }
-    }
-    process.stdout.write(`\n  ${DIM}skills.ws${R}\n\n`);
+    await installSkills(names, skills, customDir);
     return;
   }
 
-  // No args = interactive install (same as `install`)
-  if (!args[0] || args[0] === "help" || args[0] === "-h" || args[0] === "--help") {
-    if (args[0] === "help" || args[0] === "-h" || args[0] === "--help") {
-      process.stdout.write(`  ${B}Usage:${R}\n\n`);
-      process.stdout.write(`    ${CYAN}npx skills-ws${R}                    Interactive picker\n`);
-      process.stdout.write(`    ${CYAN}npx skills-ws list${R}              List all skills\n`);
-      process.stdout.write(`    ${CYAN}npx skills-ws install <name>${R}     Install specific skill(s)\n`);
-      process.stdout.write(`    ${CYAN}npx skills-ws install all${R}        Install everything\n`);
-      process.stdout.write(`\n  ${DIM}${skills.length} skills | skills.ws${R}\n\n`);
-      return;
-    }
+  if (args[0] === "help" || args[0] === "-h" || args[0] === "--help") {
+    process.stdout.write(`  ${B}Usage:${R}\n\n`);
+    process.stdout.write(`    ${CYAN}npx skills-ws${R}                    Interactive picker\n`);
+    process.stdout.write(`    ${CYAN}npx skills-ws list${R}              List all skills\n`);
+    process.stdout.write(`    ${CYAN}npx skills-ws install <name>${R}     Install specific skill(s)\n`);
+    process.stdout.write(`    ${CYAN}npx skills-ws install all${R}        Install everything\n`);
+    process.stdout.write(`    ${CYAN}npx skills-ws install --dir .${R}    Install to custom directory\n`);
+    process.stdout.write(`\n  ${DIM}${skills.length} skills | skills.ws${R}\n\n`);
+    return;
+  }
 
-    // Interactive picker
-    for (let i = 0; i < skills.length; i++) {
-      process.stdout.write(
-        `  ${GRAY}${String(i + 1).padStart(2)}${R} ${GREEN}${skills[i].name.padEnd(24)}${R}${DIM}${skills[i].desc.slice(0, 50)}${R}\n`
-      );
-    }
-    process.stdout.write(`\n  ${YELLOW}Enter numbers or names (comma-separated), or 'all':${R}\n`);
-
-    const rl = createInterface({ input: process.stdin, output: process.stdout });
-    const answer = await new Promise((resolve) => rl.question(`  ${CYAN}> ${R}`, resolve));
-    rl.close();
-
-    const names = [];
-    if (answer.trim().toLowerCase() === "all") {
-      names.push(...skills.map((s) => s.name));
-    } else {
-      for (const part of answer.split(",").map((s) => s.trim()).filter(Boolean)) {
-        const num = parseInt(part);
-        if (!isNaN(num) && num >= 1 && num <= skills.length) names.push(skills[num - 1].name);
-        else names.push(part);
-      }
-    }
-
-    if (names.length === 0) {
-      process.stdout.write(`  ${DIM}Nothing selected.${R}\n`);
-      return;
-    }
-
-    const target = await detectTarget();
-    process.stdout.write(`\n  ${DIM}${target}${R}\n\n`);
-
-    let installed = 0;
-    for (const name of names) {
-      const skill = skills.find((s) => s.name === name);
-      if (!skill) {
-        process.stdout.write(`  ${YELLOW}skip${R} ${name} ${DIM}(not found)${R}\n`);
-        continue;
-      }
-      await copyDir(skill.dir, join(target, name));
-      installed++;
-    }
-
-    await playInstallProgress(installed);
-    process.stdout.write("\n");
-
-    for (const name of names) {
-      if (skills.find((s) => s.name === name)) {
-        process.stdout.write(`  ${GREEN}+${R} ${name}\n`);
-      }
-    }
-    process.stdout.write(`\n  ${DIM}skills.ws${R}\n\n`);
+  // No args = interactive install
+  if (!args[0]) {
+    const names = await interactivePick(skills);
+    await installSkills(names, skills, customDir);
     return;
   }
 }

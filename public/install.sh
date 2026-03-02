@@ -93,7 +93,7 @@ for skill in $SKILLS; do
   SKILL_DIR="$TARGET_DIR/$skill"
   mkdir -p "$SKILL_DIR"
 
-  SKILL_URL="$BASE_URL/skills-data/$skill/SKILL.md"
+  SKILL_URL="$BASE_URL/skills/$skill/SKILL.md"
   if curl -fsSL "$SKILL_URL" -o "$SKILL_DIR/SKILL.md" 2>/dev/null; then
     echo -e "  ${GREEN}+${RESET} $skill"
     INSTALLED=$((INSTALLED + 1))

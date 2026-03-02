@@ -1,6 +1,6 @@
 # skills.ws — Full Skill Index
 
-> 77 agent skills for AI coding assistants.
+> 81 agent skills for AI coding assistants.
 
 ## ab-testing (v1.0.0)
 Category: conversion
@@ -12,7 +12,11 @@ Features:
   - Experiment prioritization (ICE, RICE, PIE)
   - Multi-variant test design
   - Results interpretation and documentation
-URL: https://skills.ws/skills/ab-testing
+Use Cases:
+  - Design an A/B test for a pricing page
+  - Calculate required sample size for significance
+  - Prioritize a backlog of experiment ideas
+  - Interpret test results and make ship/no-ship decisions
 
 ## accounting-finance (v1.0.0)
 Category: operations
@@ -24,7 +28,11 @@ Features:
   - Tax compliance checklists by jurisdiction
   - Revenue recognition patterns
   - Budget vs actual variance analysis
-URL: https://skills.ws/skills/accounting-finance
+Use Cases:
+  - Build a monthly P&L analysis template
+  - Set up automated invoicing workflows
+  - Create a cash flow forecast model
+  - Design a tax compliance checklist for EU SMEs
 
 ## affiliate-marketing (v1.0.0)
 Category: growth
@@ -36,9 +44,29 @@ Features:
   - Tracking pixel and attribution setup
   - Affiliate content and creative guidelines
   - Performance reporting and payout automation
-URL: https://skills.ws/skills/affiliate-marketing
+Use Cases:
+  - Launch an affiliate program from scratch
+  - Design a tiered commission structure
+  - Set up affiliate tracking with proper attribution
+  - Recruit and onboard the first 50 affiliates
 
-## aleph-cloud-self-deployment (v1.0.0)
+## ai-agent-building (v1.0.0)
+Category: dev
+Description: Multi-agent orchestration — CrewAI, LangGraph, AutoGen patterns, tool use, memory systems, and production deployment.
+Features:
+  - CrewAI agent and task configuration
+  - LangGraph stateful workflow patterns
+  - Tool use and function calling patterns
+  - Memory systems: short-term, long-term, episodic
+  - Multi-agent orchestration and delegation
+  - Production deployment with observability
+Use Cases:
+  - Build a multi-agent research pipeline
+  - Create an agent with persistent memory
+  - Orchestrate agents with LangGraph workflows
+  - Deploy agents to production with monitoring
+
+## aleph-cloud-self-deployment (v2.0.0)
 Category: web3
 Description: Skill for AI agents to autonomously deploy themselves onto Aleph Cloud decentralized infrastructure. Covers VM provisioning, CRN discovery, agent framework installation, gateway configuration, identity transfer, and becoming fully operational on decentralized compute — without human intervention.
 Features:
@@ -52,7 +80,6 @@ Features:
   - All-in-one deploy.sh and setup-agent.sh scripts
   - Cost planning across all 6 compute tiers
   - Comprehensive troubleshooting for real-world issues
-URL: https://skills.ws/skills/aleph-cloud-self-deployment
 
 ## api-design (v1.0.0)
 Category: dev
@@ -64,7 +91,11 @@ Features:
   - Rate limiting and error handling (RFC 7807)
   - GraphQL schema design patterns
   - Webhook design with signature verification
-URL: https://skills.ws/skills/api-design
+Use Cases:
+  - Design a RESTful API from scratch
+  - Generate OpenAPI specs for documentation
+  - Implement rate limiting and auth
+  - Design webhook delivery with retry logic
 
 ## ascii-banner (v1.0.0)
 Category: design
@@ -78,7 +109,11 @@ Features:
   - Three.js ASCII post-processing for web UIs
   - figlet text banner generation
   - Static image-to-ASCII conversion (Python)
-URL: https://skills.ws/skills/ascii-banner
+Use Cases:
+  - Create an animated splash screen for a CLI tool
+  - Build a web hero section with ASCII shader effect
+  - Convert a logo to ASCII art for terminal display
+  - Add a branded animation to a dev tool startup
 
 ## auth-implementation (v1.0.0)
 Category: dev
@@ -94,7 +129,31 @@ Features:
   - Password hashing with bcrypt and argon2
   - MFA/2FA with TOTP (Google Authenticator)
   - CSRF protection, secure cookies, and rate limiting
-URL: https://skills.ws/skills/auth-implementation
+Use Cases:
+  - Implement OAuth 2.0 PKCE flow for a single-page application
+  - Set up JWT auth with refresh token rotation
+  - Add Google, GitHub, and Apple social login
+  - Implement role-based access control for an API
+  - Add passkey/WebAuthn authentication to a web app
+  - Set up NextAuth.js with multiple providers
+  - Implement TOTP-based two-factor authentication
+  - Configure secure session management with Redis
+
+## aws-production-deploy (v1.0.0)
+Category: operations
+Description: Complete AWS production deployment — ECS, RDS, CloudFront, Route53, SSL, monitoring, and IaC with CDK/Terraform.
+Features:
+  - ECS Fargate service deployment with auto-scaling
+  - RDS PostgreSQL with read replicas and automated backups
+  - CloudFront CDN with custom domain and SSL
+  - Route53 DNS with health checks and failover
+  - CloudWatch alarms, dashboards, and log aggregation
+  - Infrastructure as Code with CDK and Terraform examples
+Use Cases:
+  - Deploy a production Next.js app on AWS
+  - Set up a highly available database layer
+  - Configure CDN with cache invalidation
+  - Build monitoring dashboards for production services
 
 ## bing-webmaster (v1.0.0)
 Category: analytics
@@ -106,7 +165,11 @@ Features:
   - Backlink profile analysis
   - Bing-specific ranking factor optimization
   - SEO reports and diagnostics
-URL: https://skills.ws/skills/bing-webmaster
+Use Cases:
+  - Set up Bing Webmaster Tools for a new site
+  - Implement IndexNow for instant indexing
+  - Analyze and compare Bing vs Google rankings
+  - Optimize content for Bing search algorithm
 
 ## blog-engine (v1.0.0)
 Category: marketing
@@ -118,7 +181,11 @@ Features:
   - SEO checklist and meta tag generation
   - Internal linking strategy
   - Blog post templates by type
-URL: https://skills.ws/skills/blog-engine
+Use Cases:
+  - Write a complete blog post from topic to publish-ready
+  - Optimize existing posts for featured snippets
+  - Generate headline variants for A/B testing
+  - Build a content production pipeline
 
 ## brand-strategy (v1.0.0)
 Category: marketing
@@ -130,7 +197,11 @@ Features:
   - Visual identity system design
   - Competitive positioning map
   - Brand guidelines document structure
-URL: https://skills.ws/skills/brand-strategy
+Use Cases:
+  - Define brand positioning for a new product
+  - Create a brand voice and tone guide
+  - Design a visual identity system
+  - Build a complete brand guidelines document
 
 ## business-development (v1.0.0)
 Category: growth
@@ -142,7 +213,27 @@ Features:
   - Partnership agreement frameworks
   - Revenue share modeling
   - BD KPI tracking and reporting
-URL: https://skills.ws/skills/business-development
+Use Cases:
+  - Build a partner outreach program from scratch
+  - Design a BD pipeline with qualification stages
+  - Create partnership pitch decks and one-pagers
+  - Set up co-marketing agreement templates
+
+## ci-cd-pipeline (v1.0.0)
+Category: operations
+Description: Production CI/CD — GitHub Actions, testing strategies, deployment gates, rollbacks, feature flags, and release management.
+Features:
+  - GitHub Actions workflow patterns
+  - Testing pyramid: unit, integration, e2e
+  - Deployment gates and approval workflows
+  - Blue-green and canary deployments
+  - Feature flags with gradual rollout
+  - Rollback strategies and incident response
+Use Cases:
+  - Set up a complete CI/CD pipeline with GitHub Actions
+  - Implement canary deployments with automatic rollback
+  - Add feature flags for gradual rollout
+  - Configure deployment gates with manual approval
 
 ## cicd-pipelines (v1.0.0)
 Category: dev
@@ -154,7 +245,11 @@ Features:
   - Semantic-release and changesets automation
   - Docker multi-stage builds
   - Environment promotion and rollback procedures
-URL: https://skills.ws/skills/cicd-pipelines
+Use Cases:
+  - Set up a complete CI/CD pipeline from scratch
+  - Configure caching for faster builds
+  - Implement blue-green deployments
+  - Automate semantic versioning and changelogs
 
 ## cold-outreach (v1.0.0)
 Category: growth
@@ -166,7 +261,11 @@ Features:
   - Deliverability optimization (SPF, DKIM, warmup)
   - Personalization at scale patterns
   - A/B testing for outreach campaigns
-URL: https://skills.ws/skills/cold-outreach
+Use Cases:
+  - Write a 5-touch cold email sequence
+  - Optimize email deliverability for a new domain
+  - Build LinkedIn outreach for B2B lead gen
+  - Personalize outreach using prospect data
 
 ## community-building (v1.0.0)
 Category: growth
@@ -178,7 +277,11 @@ Features:
   - Moderation frameworks and guidelines
   - Onboarding flows for new members
   - Scaling playbook from 0 to 10,000 members
-URL: https://skills.ws/skills/community-building
+Use Cases:
+  - Launch a Discord community for a SaaS product
+  - Design an ambassador program with incentives
+  - Set up moderation guidelines and auto-moderation
+  - Track community health and engagement metrics
 
 ## competitor-intelligence (v1.0.0)
 Category: growth
@@ -190,7 +293,11 @@ Features:
   - Win/loss analysis frameworks
   - Market positioning maps
   - Competitive content gap analysis
-URL: https://skills.ws/skills/competitor-intelligence
+Use Cases:
+  - Build a competitive landscape analysis
+  - Create a feature comparison matrix for sales enablement
+  - Analyze competitor pricing strategies
+  - Run a win/loss analysis on recent deals
 
 ## content-strategy (v1.0.0)
 Category: marketing
@@ -202,7 +309,11 @@ Features:
   - Data-driven topic scoring matrix
   - Content ROI frameworks
   - Editorial workflow design
-URL: https://skills.ws/skills/content-strategy
+Use Cases:
+  - Plan a 90-day content roadmap for a SaaS blog
+  - Identify content gaps vs competitors
+  - Build topic clusters around target keywords
+  - Score and prioritize content ideas by potential impact
 
 ## copywriting (v1.0.0)
 Category: marketing
@@ -213,7 +324,11 @@ Features:
   - Voice and tone guidelines
   - Before/after copy rewrites with reasoning
   - 50+ proven copy patterns from swipe file
-URL: https://skills.ws/skills/copywriting
+Use Cases:
+  - Rewrite a homepage hero section for higher conversion
+  - Write pricing page copy that addresses objections
+  - Craft feature page copy from product specs
+  - Improve CTAs across an entire site
 
 ## crm-builder (v1.0.0)
 Category: conversion
@@ -225,7 +340,11 @@ Features:
   - Deal tracking and forecasting
   - Custom field and property architecture
   - Integration patterns for common CRM platforms
-URL: https://skills.ws/skills/crm-builder
+Use Cases:
+  - Design a sales pipeline for a B2B SaaS product
+  - Build automated lead nurturing workflows
+  - Set up deal tracking with revenue forecasting
+  - Create custom CRM properties for better segmentation
 
 ## crm-operations (v1.0.0)
 Category: operations
@@ -238,7 +357,11 @@ Features:
   - Email sequence integration
   - Reporting dashboard configuration
   - Data hygiene and deduplication workflows
-URL: https://skills.ws/skills/crm-operations
+Use Cases:
+  - Design a sales pipeline in HubSpot from scratch
+  - Set up automated lead routing rules
+  - Build revenue forecasting dashboards
+  - Create data cleanup workflows for CRM hygiene
 
 ## customer-acquisition (v1.0.0)
 Category: growth
@@ -250,7 +373,11 @@ Features:
   - Organic vs paid acquisition analysis
   - Payback period optimization
   - LTV:CAC ratio tracking
-URL: https://skills.ws/skills/customer-acquisition
+Use Cases:
+  - Calculate and optimize customer acquisition cost
+  - Model budget allocation across acquisition channels
+  - Compare attribution models for decision-making
+  - Build an LTV:CAC dashboard for board reporting
 
 ## customer-feedback (v1.0.0)
 Category: growth
@@ -262,7 +389,11 @@ Features:
   - Qualitative analysis (tagging, sentiment, themes)
   - Close-the-loop framework
   - Voice of Customer program design
-URL: https://skills.ws/skills/customer-feedback
+Use Cases:
+  - Set up an NPS survey program
+  - Prioritize feature requests from customer feedback
+  - Design a VoC program for product development
+  - Create churn surveys and exit interviews
 
 ## data-analytics (v1.0.0)
 Category: analytics
@@ -274,7 +405,11 @@ Features:
   - Cohort analysis and retention curves
   - A/B test statistical analysis
   - Data storytelling and visualization best practices
-URL: https://skills.ws/skills/data-analytics
+Use Cases:
+  - Build a retention cohort analysis from raw data
+  - Design a KPI dashboard for a SaaS product
+  - Write SQL queries for funnel analysis
+  - Create a data-driven board presentation
 
 ## data-management (v1.0.0)
 Category: analytics
@@ -286,7 +421,11 @@ Features:
   - Data catalog and documentation standards
   - GDPR and data privacy compliance
   - Data warehouse schema design (star, snowflake)
-URL: https://skills.ws/skills/data-management
+Use Cases:
+  - Design a data pipeline for a SaaS product
+  - Implement data quality monitoring rules
+  - Set up a data catalog for a growing team
+  - Build GDPR-compliant data handling workflows
 
 ## database-design (v1.0.0)
 Category: dev
@@ -298,7 +437,11 @@ Features:
   - Query optimization with EXPLAIN ANALYZE
   - PostgreSQL features (JSONB, CTEs, window functions)
   - Connection pooling and backup strategies
-URL: https://skills.ws/skills/database-design
+Use Cases:
+  - Design a database schema for a new application
+  - Optimize slow queries with proper indexing
+  - Run zero-downtime schema migrations
+  - Set up connection pooling with PgBouncer
 
 ## defi-integration (v1.0.0)
 Category: web3
@@ -314,7 +457,12 @@ Features:
   - Slippage and MEV protection
   - Protocol fee structures and economics
   - Mainnet fork testing for DeFi integrations
-URL: https://skills.ws/skills/defi-integration
+Use Cases:
+  - Build a token swap interface using Uniswap V3
+  - Implement flash loans with Aave V3 for arbitrage
+  - Create a yield aggregator vault
+  - Integrate DEX aggregators for best-price routing
+  - Add lending/borrowing functionality to a dApp
 
 ## design-system (v1.0.0)
 Category: design
@@ -330,7 +478,30 @@ Features:
   - Component testing: visual regression and interaction tests
   - Publishing components to npm with proper versioning
   - MDX documentation with Storybook docs addon
-URL: https://skills.ws/skills/design-system
+Use Cases:
+  - Set up a design system with design tokens and Tailwind
+  - Build accessible components with proper ARIA and keyboard support
+  - Configure Storybook with docs, controls, and visual testing
+  - Implement dark mode theming across a component library
+  - Create component variants using CVA patterns
+  - Publish a private component library to npm
+  - Set up visual regression testing with Chromatic or Playwright
+
+## docker-production (v1.0.0)
+Category: operations
+Description: Production Docker — multi-stage builds, compose orchestration, secrets management, health checks, logging, and security.
+Features:
+  - Multi-stage builds for minimal images
+  - Docker Compose for local and production
+  - Secrets management without env vars in images
+  - Health checks and graceful shutdown
+  - Logging drivers and log aggregation
+  - Security scanning and non-root containers
+Use Cases:
+  - Build a production Docker image for a Node.js app
+  - Set up Docker Compose for a full-stack app
+  - Implement health checks and graceful shutdown
+  - Secure containers with non-root users and read-only filesystems
 
 ## email-sequence (v1.0.0)
 Category: marketing
@@ -341,7 +512,11 @@ Features:
   - Deliverability best practices
   - Segmentation and trigger logic
   - Email copy frameworks
-URL: https://skills.ws/skills/email-sequence
+Use Cases:
+  - Build a 7-email onboarding sequence for a SaaS product
+  - Optimize subject lines for higher open rates
+  - Design a re-engagement campaign for churned users
+  - Set up automated lifecycle email triggers
 
 ## eu-legal-compliance (v1.0.0)
 Category: operations
@@ -353,7 +528,11 @@ Features:
   - ePrivacy Directive and cookie consent
   - NIS2 cybersecurity requirements
   - European Accessibility Act compliance
-URL: https://skills.ws/skills/eu-legal-compliance
+Use Cases:
+  - Audit GDPR compliance for a SaaS product
+  - Implement cookie consent for EU visitors
+  - Classify AI systems under the EU AI Act
+  - Set up data breach notification procedures
 
 ## eu-tax-accounting (v1.0.0)
 Category: operations
@@ -373,7 +552,15 @@ Features:
   - Startup/SME incentives: R&D credits, innovation boxes, JEI status by country
   - Accounting standards: IFRS vs local GAAP, country-specific chart of accounts
   - Patent box / IP box regimes with effective rates by jurisdiction
-URL: https://skills.ws/skills/eu-tax-accounting
+Use Cases:
+  - Determine corporate tax obligations when expanding into a new EU country
+  - Set up VAT compliance for cross-border B2C digital services across the EU
+  - Calculate total employer cost (salary + social contributions) by EU country
+  - Plan filing deadlines and VAT return schedules for multi-country EU operations
+  - Structure a holding company for EU operations with participation exemptions
+  - Identify R&D tax credits and startup incentives available in target EU markets
+  - Implement e-invoicing compliance for Italy, France, and other mandate countries
+  - Assess Pillar Two impact and ATAD compliance for EU group structures
 
 ## git-workflow (v1.0.0)
 Category: dev
@@ -385,7 +572,11 @@ Features:
   - Husky + lint-staged git hooks setup
   - Rebase vs merge decision framework
   - Monorepo patterns and tooling
-URL: https://skills.ws/skills/git-workflow
+Use Cases:
+  - Set up a branching strategy for a new team
+  - Configure git hooks for code quality
+  - Create PR templates and review checklists
+  - Design a release tagging strategy
 
 ## google-analytics (v1.0.0)
 Category: analytics
@@ -398,7 +589,11 @@ Features:
   - Audience segment creation and analysis
   - Looker Studio reporting automation
   - Cross-domain tracking setup
-URL: https://skills.ws/skills/google-analytics
+Use Cases:
+  - Set up GA4 with a structured event taxonomy
+  - Implement e-commerce tracking in GA4
+  - Build automated Looker Studio reports
+  - Create audience segments for remarketing
 
 ## growth-hacking (v1.0.0)
 Category: marketing
@@ -410,7 +605,11 @@ Features:
   - Retention hook design (habit loops, streaks, notifications)
   - Growth experiment prioritization (ICE/RICE scoring)
   - Channel-specific growth playbooks
-URL: https://skills.ws/skills/growth-hacking
+Use Cases:
+  - Design a viral referral loop for a SaaS product
+  - Map and optimize the activation funnel
+  - Prioritize growth experiments with ICE scoring
+  - Build retention mechanics that reduce churn
 
 ## hiring-team-building (v1.0.0)
 Category: operations
@@ -422,7 +621,11 @@ Features:
   - 30-60-90 day onboarding frameworks
   - ESOP and equity in EU context
   - EU Pay Transparency Directive compliance
-URL: https://skills.ws/skills/hiring-team-building
+Use Cases:
+  - Hire across EU countries with proper contracts
+  - Design a structured interview process
+  - Set up remote work policies for EU teams
+  - Create an onboarding program for new hires
 
 ## influencer-marketing (v1.0.0)
 Category: marketing
@@ -434,7 +637,11 @@ Features:
   - ROI tracking (UTM, promo codes, affiliate links)
   - FTC and EU disclosure compliance
   - Long-term ambassador vs one-off campaign design
-URL: https://skills.ws/skills/influencer-marketing
+Use Cases:
+  - Launch an influencer campaign on Instagram or TikTok
+  - Negotiate influencer contracts with proper terms
+  - Track influencer ROI across multiple campaigns
+  - Build a long-term ambassador program
 
 ## landing-page-builder (v1.0.0)
 Category: design
@@ -446,7 +653,11 @@ Features:
   - Responsive design with mobile-first approach
   - CTA placement and design strategy
   - Above-the-fold optimization
-URL: https://skills.ws/skills/landing-page-builder
+Use Cases:
+  - Build a complete SaaS landing page from product specs
+  - Design a product launch page with countdown and waitlist
+  - Create a webinar registration page
+  - Build a comparison landing page for paid ads
 
 ## lead-scoring (v1.0.0)
 Category: conversion
@@ -458,7 +669,11 @@ Features:
   - Score decay and recency weighting
   - CRM integration patterns
   - Score calibration and validation
-URL: https://skills.ws/skills/lead-scoring
+Use Cases:
+  - Build a lead scoring model for a B2B SaaS funnel
+  - Define MQL and SQL criteria based on engagement data
+  - Set up score decay rules for inactive leads
+  - Integrate scoring with HubSpot or Salesforce workflows
 
 ## local-seo (v1.0.0)
 Category: marketing
@@ -470,7 +685,11 @@ Features:
   - Location page content strategy
   - Map pack ranking factors and optimization
   - Local schema markup (LocalBusiness, FAQ)
-URL: https://skills.ws/skills/local-seo
+Use Cases:
+  - Optimize a Google Business Profile for local search
+  - Build location-specific landing pages for multi-location business
+  - Create a review acquisition and response strategy
+  - Audit and fix local citation inconsistencies
 
 ## marketing-analytics (v1.0.0)
 Category: marketing
@@ -482,7 +701,11 @@ Features:
   - KPI dashboard design and metric selection
   - Funnel analysis and drop-off diagnostics
   - Conversion tracking implementation
-URL: https://skills.ws/skills/marketing-analytics
+Use Cases:
+  - Set up GA4 with a structured event taxonomy
+  - Design a UTM naming convention for all marketing channels
+  - Build a marketing KPI dashboard
+  - Implement multi-touch attribution for paid campaigns
 
 ## marketplace-launch (v1.0.0)
 Category: growth
@@ -498,7 +721,57 @@ Features:
   - Maker comment strategy and community engagement playbooks
   - Category selection and comparison page optimization for review sites
   - ROI calculation frameworks per launch channel
-URL: https://skills.ws/skills/marketplace-launch
+Use Cases:
+  - Plan and execute a top-5 Product Hunt launch from scratch
+  - Structure an AppSumo lifetime deal that maximizes revenue without destroying margins
+  - Build a G2/Capterra review generation campaign that hits 50+ reviews in 90 days
+  - Submit to 30+ indie directories with optimized listings and track backlink value
+  - Design a 12-week multi-platform launch sequence across all major marketplaces
+  - Set up attribution and ROI tracking for every marketplace channel
+
+## mcp-client (v1.0.0)
+Category: dev
+Description: Consume MCP services — connect AI agents to external tools for screenshots, DNS, WHOIS, SSL, OCR, and blockchain queries with three-tier auth.
+Features:
+  - Screenshot & PDF capture
+  - DNS, WHOIS, SSL lookups
+  - OCR text extraction
+  - Blockchain balance queries
+  - Three-tier auth (free, API key, x402)
+Use Cases:
+  - Query blockchain balances from AI agents
+  - Capture screenshots for visual analysis
+  - Perform DNS/WHOIS reconnaissance
+
+## mcp-server-builder (v1.0.0)
+Category: dev
+Description: Build and monetize production MCP servers — tool schemas, transports, auth, Stripe subscriptions, x402 payments, deployment.
+Features:
+  - MCP tool schema design
+  - SSE and Streamable HTTP transports
+  - API key & Stripe billing integration
+  - x402 crypto micropayments
+  - Docker & Railway deployment
+Use Cases:
+  - Build a monetized MCP server with Stripe billing
+  - Deploy an MCP tool service with x402 payments
+  - Add authentication to MCP endpoints
+
+## monitoring-observability (v1.0.0)
+Category: operations
+Description: Production observability — Grafana, Prometheus, Datadog, alerting strategies, SLOs, distributed tracing, and incident response.
+Features:
+  - Prometheus metrics and PromQL queries
+  - Grafana dashboard design patterns
+  - Datadog APM and custom metrics
+  - Alerting strategies that reduce noise
+  - SLO/SLI definition and error budgets
+  - Distributed tracing with OpenTelemetry
+Use Cases:
+  - Set up Prometheus + Grafana for a microservices stack
+  - Define SLOs and error budgets for a production service
+  - Implement distributed tracing across services
+  - Build alerting that pages only when it matters
 
 ## mvp-launcher (v1.0.0)
 Category: dev
@@ -512,7 +785,27 @@ Features:
   - Launch checklist (infra, monitoring, SEO, legal, payments)
   - Post-launch 48h playbook with metrics
   - Anti-patterns table (what wastes the most time)
-URL: https://skills.ws/skills/mvp-launcher
+Use Cases:
+  - Scope and plan a new MVP from scratch
+  - Decide what to build vs what services to use
+  - Create a 3-week launch timeline
+  - Validate an idea before writing code
+
+## nextjs-performance (v1.0.0)
+Category: dev
+Description: Next.js performance mastery — Core Web Vitals, ISR/SSG strategies, edge functions, image optimization, and bundle analysis.
+Features:
+  - Core Web Vitals optimization (LCP, FID, CLS)
+  - ISR, SSG, and streaming SSR strategies
+  - Edge functions and middleware patterns
+  - Image and font optimization
+  - Bundle analysis and code splitting
+  - Caching strategies and CDN configuration
+Use Cases:
+  - Achieve 90+ Lighthouse score on a Next.js app
+  - Implement ISR for a high-traffic blog
+  - Optimize bundle size and eliminate render-blocking resources
+  - Set up edge middleware for personalization
 
 ## nextjs-stack (v1.0.0)
 Category: dev
@@ -526,7 +819,11 @@ Features:
   - Stripe Checkout + webhook handler code
   - UploadThing file upload integration
   - Vercel deployment + Sentry monitoring setup
-URL: https://skills.ws/skills/nextjs-stack
+Use Cases:
+  - Scaffold a new SaaS from zero to deployed
+  - Set up Stripe subscriptions with webhook handling
+  - Configure auth with protected routes
+  - Deploy to Vercel with preview environments
 
 ## onchain-analytics (v1.0.0)
 Category: web3
@@ -542,7 +839,12 @@ Features:
   - NFT collection analytics
   - Mempool monitoring basics
   - Dashboard building patterns
-URL: https://skills.ws/skills/onchain-analytics
+Use Cases:
+  - Analyze token holder distribution and whale movements
+  - Build a protocol TVL and revenue dashboard
+  - Track wallet activity and protocol interactions
+  - Query DEX trading volume and liquidity data
+  - Monitor token transfers and large transactions
 
 ## page-cro (v1.0.0)
 Category: conversion
@@ -554,7 +856,11 @@ Features:
   - Friction analysis and removal
   - Mobile conversion optimization
   - A/B test hypothesis generation
-URL: https://skills.ws/skills/page-cro
+Use Cases:
+  - Audit a landing page and get prioritized improvement list
+  - Increase homepage-to-signup conversion rate
+  - Optimize pricing page layout and copy
+  - Generate A/B test ideas for underperforming pages
 
 ## paid-ads (v1.0.0)
 Category: marketing
@@ -567,7 +873,11 @@ Features:
   - ROAS tracking and optimization
   - A/B testing frameworks for ad creative
   - Negative keyword lists and brand safety
-URL: https://skills.ws/skills/paid-ads
+Use Cases:
+  - Set up a Google Ads campaign structure from scratch
+  - Write Meta ad copy variants for A/B testing
+  - Build LinkedIn audience targeting for B2B SaaS
+  - Optimize ad spend allocation across platforms
 
 ## popup-cro (v1.0.0)
 Category: conversion
@@ -579,7 +889,27 @@ Features:
   - Mobile-friendly popup patterns
   - A/B test frameworks for popup variants
   - Frequency capping and user experience balance
-URL: https://skills.ws/skills/popup-cro
+Use Cases:
+  - Design an exit-intent popup that converts without annoying users
+  - Build a lead capture modal with progressive disclosure
+  - Optimize popup timing and frequency rules
+  - Create announcement banners for product launches
+
+## postgres-mastery (v1.0.0)
+Category: dev
+Description: Advanced PostgreSQL — index strategies, query optimization, partitioning, pgvector, migrations, backups, and replication.
+Features:
+  - Index types and strategies (B-tree, GIN, GiST, BRIN)
+  - Query optimization with EXPLAIN ANALYZE
+  - Table partitioning for large datasets
+  - pgvector for AI embeddings and similarity search
+  - Zero-downtime migrations
+  - Backup strategies and point-in-time recovery
+Use Cases:
+  - Optimize slow queries with proper indexing
+  - Set up pgvector for semantic search
+  - Partition a table with billions of rows
+  - Plan zero-downtime schema migrations
 
 ## pr-media-outreach (v1.0.0)
 Category: marketing
@@ -591,7 +921,11 @@ Features:
   - Crisis communications playbook
   - Product launch PR timeline
   - PR measurement and media monitoring
-URL: https://skills.ws/skills/pr-media-outreach
+Use Cases:
+  - Write and distribute a product launch press release
+  - Build a targeted media list for outreach
+  - Respond to a PR crisis with a structured playbook
+  - Measure PR impact on brand awareness and SEO
 
 ## pricing-optimization (v1.0.1)
 Category: conversion
@@ -603,7 +937,11 @@ Features:
   - Discount strategy and guardrails
   - Price localization and PPP adjustments
   - Annual vs monthly pricing optimization
-URL: https://skills.ws/skills/pricing-optimization
+Use Cases:
+  - Run a Van Westendorp survey and analyze results
+  - Select the right value metric for a SaaS product
+  - Design a discount strategy that protects margins
+  - Implement price localization by country
 
 ## product-led-growth (v1.0.0)
 Category: growth
@@ -619,7 +957,13 @@ Features:
   - Onboarding patterns: checklists, progressive disclosure, empty states
   - K-factor calculation and viral coefficient optimization
   - Real-world benchmarks and formulas for every metric
-URL: https://skills.ws/skills/product-led-growth
+Use Cases:
+  - Design a PLG flywheel for a SaaS product from scratch
+  - Define and measure your product's aha moment and activation rate
+  - Build a freemium model with optimal free-to-paid gating
+  - Implement viral loops and referral mechanics that drive organic growth
+  - Set up a PLG metrics dashboard with PQL scoring
+  - Add a sales-assist layer on top of an existing PLG motion
 
 ## programmatic-seo (v1.0.0)
 Category: marketing
@@ -631,7 +975,11 @@ Features:
   - Canonical and pagination strategy
   - Quality control at scale
   - Location page and comparison page templates
-URL: https://skills.ws/skills/programmatic-seo
+Use Cases:
+  - Build 500+ city-specific landing pages from a template
+  - Create comparison pages for competitor alternatives
+  - Generate integration directory pages from API data
+  - Set up automated internal linking between programmatic pages
 
 ## project-management (v1.0.0)
 Category: operations
@@ -643,7 +991,11 @@ Features:
   - Agile ceremonies (standup, planning, retro, demo)
   - Kanban with WIP limits and cycle time
   - Post-mortem and retrospective frameworks
-URL: https://skills.ws/skills/project-management
+Use Cases:
+  - Set up sprint planning for a new team
+  - Define OKRs for a quarter
+  - Run effective retrospectives
+  - Manage project risks with a probability-impact matrix
 
 ## prompt-engineering (v1.0.0)
 Category: dev
@@ -655,7 +1007,11 @@ Features:
   - Evaluation frameworks (human eval, LLM-as-judge)
   - Guardrails and safety patterns
   - Token optimization and prompt versioning
-URL: https://skills.ws/skills/prompt-engineering
+Use Cases:
+  - Design a system prompt for a production AI feature
+  - Set up prompt evaluation and A/B testing
+  - Implement guardrails for content safety
+  - Optimize prompts for cost and latency
 
 ## retention-analytics (v1.0.0)
 Category: analytics
@@ -667,7 +1023,11 @@ Features:
   - Engagement metric design
   - Win-back campaign frameworks
   - NPS and satisfaction tracking
-URL: https://skills.ws/skills/retention-analytics
+Use Cases:
+  - Build a customer health score model
+  - Analyze retention by acquisition cohort
+  - Design a churn prediction early warning system
+  - Create a win-back email campaign for churned users
 
 ## revenue-operations (v1.0.0)
 Category: operations
@@ -679,7 +1039,25 @@ Features:
   - Quota and territory planning
   - Tech stack audit and optimization
   - Handoff process design (marketing to sales to CS)
-URL: https://skills.ws/skills/revenue-operations
+Use Cases:
+  - Design a revenue forecasting model
+  - Align marketing and sales on funnel definitions
+  - Audit and optimize the GTM tech stack
+  - Build handoff processes between teams
+
+## saas-billing (v1.0.0)
+Category: dev
+Description: Implement SaaS billing with Stripe — subscriptions, usage-based billing, webhooks, API key provisioning, dunning.
+Features:
+  - Stripe subscriptions & checkout
+  - Usage-based metered billing
+  - Webhook signature verification
+  - API key provisioning
+  - Dunning & failed payment recovery
+Use Cases:
+  - Add subscription billing to a SaaS app
+  - Implement usage-based API billing
+  - Set up Stripe webhooks with idempotency
 
 ## sales-funnel (v1.0.0)
 Category: conversion
@@ -691,7 +1069,11 @@ Features:
   - Conversion path optimization
   - Funnel velocity metrics
   - Bottleneck identification and resolution
-URL: https://skills.ws/skills/sales-funnel
+Use Cases:
+  - Map content to each stage of the buyer journey
+  - Identify and fix funnel bottlenecks
+  - Design qualification criteria for each funnel stage
+  - Optimize the path from first touch to closed deal
 
 ## search-console (v1.0.0)
 Category: analytics
@@ -704,7 +1086,11 @@ Features:
   - Rich results and structured data validation
   - URL inspection and indexing requests
   - Search appearance optimization
-URL: https://skills.ws/skills/search-console
+Use Cases:
+  - Audit and fix index coverage issues
+  - Analyze search performance trends by page cluster
+  - Debug rich results and structured data errors
+  - Optimize CTR using search appearance data
 
 ## security-hardening (v1.0.0)
 Category: dev
@@ -716,7 +1102,11 @@ Features:
   - JWT security and authentication best practices
   - Dependency auditing (npm audit, Snyk, Socket)
   - Secrets management and HTTPS enforcement
-URL: https://skills.ws/skills/security-hardening
+Use Cases:
+  - Audit a web application for OWASP vulnerabilities
+  - Configure security headers for production
+  - Implement secure authentication flows
+  - Set up automated dependency vulnerability scanning
 
 ## seo-geo (v1.0.0)
 Category: marketing
@@ -729,7 +1119,11 @@ Features:
   - E-E-A-T assessment and improvement
   - Core Web Vitals diagnostics
   - International SEO and hreflang setup
-URL: https://skills.ws/skills/seo-geo
+Use Cases:
+  - Audit a website for technical SEO issues
+  - Optimize content for AI search engines
+  - Generate structured data for rich snippets
+  - Research keywords and content gaps
 
 ## signup-flow-cro (v1.0.0)
 Category: conversion
@@ -741,7 +1135,11 @@ Features:
   - Trial activation optimization
   - Onboarding handoff design
   - Drop-off analysis and recovery
-URL: https://skills.ws/skills/signup-flow-cro
+Use Cases:
+  - Reduce signup form abandonment rate
+  - Design a frictionless trial-to-paid flow
+  - Add progressive profiling to reduce upfront fields
+  - Optimize the signup-to-first-value path
 
 ## smart-contract-auditor (v2.0.0)
 Category: web3
@@ -761,7 +1159,14 @@ Features:
   - Unchecked external call and denial-of-service detection
   - Test coverage assessment and fuzzing strategy design
   - Storage collision detection in upgradeable contracts
-URL: https://skills.ws/skills/smart-contract-auditor
+Use Cases:
+  - Run a full security audit on a smart contract before mainnet deployment
+  - Identify gas optimization opportunities with concrete before/after diffs
+  - Audit a DeFi protocol for flash loan, oracle, and MEV attack vectors
+  - Review proxy/upgrade patterns for storage collisions and initializer safety
+  - Generate a structured audit report with severity-classified findings
+  - Set up continuous fuzzing and static analysis in CI pipelines
+  - Assess test coverage gaps and design targeted fuzz campaigns
 
 ## social-media-growth (v1.0.0)
 Category: growth
@@ -774,7 +1179,11 @@ Features:
   - Hashtag and trending topic strategies
   - Cross-platform content distribution
   - Influencer outreach and collaboration
-URL: https://skills.ws/skills/social-media-growth
+Use Cases:
+  - Grow a LinkedIn following from 0 to 10k
+  - Optimize content for the Twitter/X algorithm
+  - Build a community-led growth strategy
+  - Create a viral content playbook for TikTok
 
 ## social-media-kit (v1.0.0)
 Category: marketing
@@ -786,7 +1195,11 @@ Features:
   - Engagement tactics and community building
   - Content repurposing workflows
   - Social proof and UGC strategy
-URL: https://skills.ws/skills/social-media-kit
+Use Cases:
+  - Create a month of LinkedIn posts from blog content
+  - Build a Twitter/X content calendar with engagement hooks
+  - Design a hashtag strategy for Instagram growth
+  - Repurpose long-form content into social media formats
 
 ## solidity-dev (v1.0.0)
 Category: web3
@@ -802,7 +1215,42 @@ Features:
   - Contract verification on Etherscan and Sourcify
   - Environment management with .env and encrypted keystores
   - Solidity style guide and common gotchas
-URL: https://skills.ws/skills/solidity-dev
+Use Cases:
+  - Set up a new Foundry or Hardhat project from scratch
+  - Write and test a Solidity smart contract with full coverage
+  - Deploy and verify contracts on mainnet or testnets
+  - Optimize gas usage in existing contracts
+  - Implement upgradeable proxy patterns with OpenZeppelin
+
+## stripe-billing (v1.0.0)
+Category: dev
+Description: Production Stripe integration — subscriptions, usage-based billing, webhooks, customer portal, metering, and tax compliance.
+Features:
+  - Subscription lifecycle management
+  - Usage-based billing with metering API
+  - Webhook signature verification and idempotency
+  - Customer portal and billing management
+  - Stripe Tax and invoice generation
+  - SCA/3D Secure payment flows
+Use Cases:
+  - Add subscription billing to a SaaS app
+  - Implement usage-based pricing with metering
+  - Handle webhook events reliably in production
+  - Set up customer self-service billing portal
+
+## telegram-mini-apps (v1.0.0)
+Category: dev
+Description: Build Telegram Mini Apps with Stars payments — TWA SDK, HMAC validation, bot webhooks, deep linking, Next.js deployment.
+Features:
+  - TWA SDK v2 setup
+  - initData HMAC-SHA256 validation
+  - Stars (XTR) payments & refunds
+  - Bot webhooks with grammy
+  - Deep linking & theme variables
+Use Cases:
+  - Build a Telegram Mini App with Stars payments
+  - Validate Telegram initData on the backend
+  - Deploy a bot-powered Mini App on Vercel
 
 ## testing-strategy (v1.0.2)
 Category: dev
@@ -822,7 +1270,18 @@ Features:
   - Mutation testing with Stryker
   - API testing patterns (supertest, Playwright API, contract validation)
   - Performance testing with k6 and Artillery
-URL: https://skills.ws/skills/testing-strategy
+Use Cases:
+  - Set up a testing strategy for a new project
+  - Configure CI with coverage gates
+  - Write integration tests for an API
+  - Run load tests before a product launch
+  - Add visual regression testing to catch UI regressions
+  - Set up contract testing between microservices
+  - Build test data factories for consistent test fixtures
+  - Configure CI sharding for faster test runs
+  - Measure test suite quality with mutation testing
+  - Set up performance testing with SLOs
+  - Implement snapshot testing without snapshot bloat
 
 ## ui-ux-pro-max (v1.0.0)
 Category: design
@@ -834,7 +1293,11 @@ Features:
   - Responsive breakpoint patterns
   - Component design best practices
   - Spacing system design (4px/8px grid)
-URL: https://skills.ws/skills/ui-ux-pro-max
+Use Cases:
+  - Design a complete color palette for a new product
+  - Audit a site for WCAG 2.1 AA compliance
+  - Choose font pairings for a brand
+  - Review UI code for design system consistency
 
 ## virustotal (v1.0.0)
 Category: dev
@@ -846,7 +1309,11 @@ Features:
   - Python API integration
   - Security audit workflow
   - Reputation and community scoring
-URL: https://skills.ws/skills/virustotal
+Use Cases:
+  - Scan URLs for malware before including in a project
+  - Audit all external links on a website
+  - Check domain reputation for partner sites
+  - Batch scan files for security review
 
 ## wallet-integration (v1.0.0)
 Category: web3
@@ -864,7 +1331,12 @@ Features:
   - Token balance display patterns
   - Error handling and transaction state management
   - Mobile wallet deep links
-URL: https://skills.ws/skills/wallet-integration
+Use Cases:
+  - Add wallet connection to a React dApp
+  - Build a multi-chain token dashboard
+  - Implement contract read/write with wagmi hooks
+  - Add EIP-712 message signing for authentication
+  - Create a responsive wallet connection flow
 
 ## web-performance (v1.0.0)
 Category: dev
@@ -876,7 +1348,11 @@ Features:
   - Image optimization (WebP, AVIF, srcset)
   - Font loading and caching strategies
   - Resource hints and server-side optimization
-URL: https://skills.ws/skills/web-performance
+Use Cases:
+  - Fix Core Web Vitals issues for better SEO
+  - Set up Lighthouse performance budgets in CI
+  - Optimize images and fonts for faster loading
+  - Implement caching and CDN strategies
 
 ## webinar-events (v1.0.0)
 Category: marketing
@@ -888,7 +1364,11 @@ Features:
   - Content structure for 60-minute webinars
   - Attendance rate optimization tactics
   - Webinar content repurposing workflow
-URL: https://skills.ws/skills/webinar-events
+Use Cases:
+  - Plan and execute a lead-gen webinar
+  - Optimize registration-to-attendance rate
+  - Design a co-hosted webinar with a partner
+  - Repurpose webinar content into blog posts and social
 
 ## yandex-webmaster (v1.0.0)
 Category: analytics
@@ -900,101 +1380,8 @@ Features:
   - Yandex-specific meta tags and directives
   - Content quality assessment (ICS rating)
   - Russian market keyword research
-URL: https://skills.ws/skills/yandex-webmaster
-
-## aws-production-deploy (v1.0.0)
-Category: operations
-Description: Complete AWS production deployment — ECS, RDS, CloudFront, Route53, SSL, monitoring, and IaC with CDK/Terraform.
-Features:
-  - ECS Fargate service deployment with auto-scaling
-  - RDS PostgreSQL with read replicas and automated backups
-  - CloudFront CDN with custom domain and SSL
-  - Route53 DNS with health checks and failover
-  - CloudWatch alarms, dashboards, and log aggregation
-  - Infrastructure as Code with CDK and Terraform examples
-URL: https://skills.ws/skills/aws-production-deploy
-
-## stripe-billing (v1.0.0)
-Category: dev
-Description: Production Stripe integration — subscriptions, usage-based billing, webhooks, customer portal, metering, and tax compliance.
-Features:
-  - Subscription lifecycle management
-  - Usage-based billing with metering API
-  - Webhook signature verification and idempotency
-  - Customer portal and billing management
-  - Stripe Tax and invoice generation
-  - SCA/3D Secure payment flows
-URL: https://skills.ws/skills/stripe-billing
-
-## ai-agent-building (v1.0.0)
-Category: dev
-Description: Multi-agent orchestration — CrewAI, LangGraph, AutoGen patterns, tool use, memory systems, and production deployment.
-Features:
-  - CrewAI agent and task configuration
-  - LangGraph stateful workflow patterns
-  - Tool use and function calling patterns
-  - Memory systems: short-term, long-term, episodic
-  - Multi-agent orchestration and delegation
-  - Production deployment with observability
-URL: https://skills.ws/skills/ai-agent-building
-
-## nextjs-performance (v1.0.0)
-Category: dev
-Description: Next.js performance mastery — Core Web Vitals, ISR/SSG strategies, edge functions, image optimization, and bundle analysis.
-Features:
-  - Core Web Vitals optimization (LCP, FID, CLS)
-  - ISR, SSG, and streaming SSR strategies
-  - Edge functions and middleware patterns
-  - Image and font optimization
-  - Bundle analysis and code splitting
-  - Caching strategies and CDN configuration
-URL: https://skills.ws/skills/nextjs-performance
-
-## postgres-mastery (v1.0.0)
-Category: dev
-Description: Advanced PostgreSQL — index strategies, query optimization, partitioning, pgvector, migrations, backups, and replication.
-Features:
-  - Index types and strategies (B-tree, GIN, GiST, BRIN)
-  - Query optimization with EXPLAIN ANALYZE
-  - Table partitioning for large datasets
-  - pgvector for AI embeddings and similarity search
-  - Zero-downtime migrations
-  - Backup strategies and point-in-time recovery
-URL: https://skills.ws/skills/postgres-mastery
-
-## docker-production (v1.0.0)
-Category: operations
-Description: Production Docker — multi-stage builds, compose orchestration, secrets management, health checks, logging, and security.
-Features:
-  - Multi-stage builds for minimal images
-  - Docker Compose for local and production
-  - Secrets management without env vars in images
-  - Health checks and graceful shutdown
-  - Logging drivers and log aggregation
-  - Security scanning and non-root containers
-URL: https://skills.ws/skills/docker-production
-
-## monitoring-observability (v1.0.0)
-Category: operations
-Description: Production observability — Grafana, Prometheus, Datadog, alerting strategies, SLOs, distributed tracing, and incident response.
-Features:
-  - Prometheus metrics and PromQL queries
-  - Grafana dashboard design patterns
-  - Datadog APM and custom metrics
-  - Alerting strategies that reduce noise
-  - SLO/SLI definition and error budgets
-  - Distributed tracing with OpenTelemetry
-URL: https://skills.ws/skills/monitoring-observability
-
-## ci-cd-pipeline (v1.0.0)
-Category: operations
-Description: Production CI/CD — GitHub Actions, testing strategies, deployment gates, rollbacks, feature flags, and release management.
-Features:
-  - GitHub Actions workflow patterns
-  - Testing pyramid: unit, integration, e2e
-  - Deployment gates and approval workflows
-  - Blue-green and canary deployments
-  - Feature flags with gradual rollout
-  - Rollback strategies and incident response
-URL: https://skills.ws/skills/ci-cd-pipeline
-
+Use Cases:
+  - Set up Yandex Webmaster for a Russian market launch
+  - Implement Turbo pages for mobile speed
+  - Configure regional targeting for multi-city businesses
+  - Optimize content for Yandex ranking factors
