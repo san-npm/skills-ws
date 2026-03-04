@@ -6,7 +6,36 @@ const skillCount = getSkills().length;
 export const metadata: Metadata = {
   title: "CLI Reference — npx skills-ws",
   description: `Install agent skills from the command line with npx skills-ws. List, install, and manage ${skillCount} skills for AI coding assistants.`,
+  keywords: [
+    "npx skills-ws",
+    "skills-ws CLI",
+    "install agent skills",
+    "SKILL.md installer",
+    "AI skills command line",
+  ],
+  openGraph: {
+    title: "CLI Reference — npx skills-ws",
+    description: `Install and manage ${skillCount} agent skills from the command line.`,
+    url: "https://skills.ws/cli",
+    type: "article",
+    siteName: "skills.ws",
+    images: [{ url: "https://skills.ws/og.png", width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: "summary",
+    title: "CLI Reference — skills.ws",
+    description: `Install ${skillCount} agent skills with npx skills-ws.`,
+  },
   alternates: { canonical: "https://skills.ws/cli" },
+};
+
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://skills.ws" },
+    { "@type": "ListItem", position: 2, name: "CLI Reference", item: "https://skills.ws/cli" },
+  ],
 };
 
 export default function CliPage() {
@@ -95,6 +124,10 @@ Understand the site context before auditing:
           ))}
         </div>
       </section>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema).replace(/</g, "\\u003c") }}
+      />
     </div>
   );
 }

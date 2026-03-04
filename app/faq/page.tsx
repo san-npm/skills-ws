@@ -5,6 +5,27 @@ export const metadata: Metadata = {
   title: "FAQ — Agent Skills for AI",
   description:
     "Frequently asked questions about skills.ws — installation, security, compatibility, supported AI assistants, and how agent skills work with OpenClaw, Claude Code, Cursor, and Codex.",
+  keywords: [
+    "skills.ws FAQ",
+    "agent skills questions",
+    "SKILL.md FAQ",
+    "AI coding assistant help",
+    "skills-ws support",
+  ],
+  openGraph: {
+    title: "FAQ — Agent Skills for AI",
+    description:
+      "Frequently asked questions about skills.ws — installation, security, compatibility, and supported AI assistants.",
+    url: "https://skills.ws/faq",
+    type: "article",
+    siteName: "skills.ws",
+    images: [{ url: "https://skills.ws/og.png", width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: "summary",
+    title: "FAQ — skills.ws",
+    description: "Frequently asked questions about agent skills for AI coding assistants.",
+  },
   alternates: { canonical: "https://skills.ws/faq" },
 };
 
@@ -65,6 +86,15 @@ const faqs: { q: string; a: string | React.ReactElement; schemaA: string }[] = [
   },
 ];
 
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://skills.ws" },
+    { "@type": "ListItem", position: 2, name: "FAQ", item: "https://skills.ws/faq" },
+  ],
+};
+
 const faqSchema = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -86,6 +116,10 @@ export default function FaqPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema).replace(/</g, "\\u003c") }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema).replace(/</g, "\\u003c") }}
       />
     </div>
   );

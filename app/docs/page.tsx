@@ -4,7 +4,38 @@ export const metadata: Metadata = {
   title: "Documentation — How Agent Skills Work",
   description:
     "Learn how SKILL.md agent skills work, how to install them with npx skills-ws, and the security model. Compatible with OpenClaw, Claude Code, Cursor, and Codex.",
+  keywords: [
+    "SKILL.md",
+    "agent skills documentation",
+    "AI coding assistant skills",
+    "npx skills-ws",
+    "OpenClaw skills",
+    "Claude Code skills",
+  ],
+  openGraph: {
+    title: "Documentation — How Agent Skills Work",
+    description:
+      "Learn how SKILL.md agent skills work, how to install them, and the security model.",
+    url: "https://skills.ws/docs",
+    type: "article",
+    siteName: "skills.ws",
+    images: [{ url: "https://skills.ws/og.png", width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: "summary",
+    title: "Docs — skills.ws",
+    description: "How SKILL.md agent skills work, installation, and security model.",
+  },
   alternates: { canonical: "https://skills.ws/docs" },
+};
+
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://skills.ws" },
+    { "@type": "ListItem", position: 2, name: "Documentation", item: "https://skills.ws/docs" },
+  ],
 };
 
 export default function DocsPage() {
@@ -112,6 +143,10 @@ export default function DocsPage() {
           </li>
         </ul>
       </section>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema).replace(/</g, "\\u003c") }}
+      />
     </div>
   );
 }

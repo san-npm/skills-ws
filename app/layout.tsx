@@ -83,6 +83,12 @@ export const metadata: Metadata = {
     canonical: BASE_URL,
   },
   category: "technology",
+  other: {
+    "geo.region": "LU",
+    "geo.placename": "Luxembourg",
+    "geo.position": "49.6117;6.1300",
+    ICBM: "49.6117, 6.1300",
+  },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "32x32" },
@@ -135,7 +141,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               "@type": "Organization",
               name: "Commit Media",
               url: "https://openletz.com",
-              sameAs: ["https://github.com/san-npm"],
+              sameAs: [
+                "https://github.com/san-npm",
+                "https://www.linkedin.com/company/openletz",
+                "https://x.com/3615crypto",
+              ],
             }).replace(/</g, "\\u003c"),
           }}
         />
@@ -180,7 +190,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               operatingSystem: "Any",
               url: BASE_URL,
               downloadUrl: "https://www.npmjs.com/package/skills-ws",
-              softwareVersion: "1.5.0",
+              softwareVersion: "1.5.2",
               description:
                 `CLI tool to install agent skills for AI coding assistants. ${skillCount} skills for marketing, growth, web3, dev, design & operations.`,
               offers: {
