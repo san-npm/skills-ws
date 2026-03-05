@@ -6,6 +6,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "node test/cli.test.mjs",
     "prepublishOnly": "cp package.json package.json.bak && cp npm-package.json package.json",
     "postpublish": "mv package.json.bak package.json"
   },

@@ -77,6 +77,11 @@ process.stdin.on('end', () => {
 });
 ")
 
+if [ -z "$SKILLS" ]; then
+  echo "Error: Could not parse skill list. Ensure python3 or node is installed."
+  exit 1
+fi
+
 if [ -n "$SPECIFIC_SKILL" ]; then
   # Validate skill name to prevent path traversal
   if ! echo "$SPECIFIC_SKILL" | grep -qE '^[a-z0-9-]+$'; then
@@ -99,7 +104,7 @@ for skill in $SKILLS; do
     INSTALLED=$((INSTALLED + 1))
   else
     echo -e "  ${DIM}x $skill (not found)${RESET}"
-    rmdir "$SKILL_DIR" 2>/dev/null || true
+    rm -rf "$SKILL_DIR" 2>/dev/null || true
     FAILED=$((FAILED + 1))
   fi
 done

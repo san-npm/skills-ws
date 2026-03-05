@@ -334,7 +334,13 @@ async function main() {
   const args = [];
   for (let i = 0; i < rawArgs.length; i++) {
     if (rawArgs[i] === "--dir" && i + 1 < rawArgs.length) {
-      customDir = rawArgs[i + 1];
+      const dir = rawArgs[i + 1];
+      // Reject absolute paths and path traversal
+      if (dir.startsWith("/") || dir.includes("..")) {
+        process.stderr.write(`  ${YELLOW}Error:${R} --dir must be a relative path without '..' components.\n`);
+        process.exit(1);
+      }
+      customDir = dir;
       i++; // skip next
     } else {
       args.push(rawArgs[i]);

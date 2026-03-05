@@ -3,8 +3,14 @@ node_modules/
 out/
 .env
 .env.*
+.env.local
 *.pem
+*.key
 .vercel
 .DS_Store
+Thumbs.db
 *.tsbuildinfo
 package.json.bak
+coverage/
+*.log
+npm-debug.log*

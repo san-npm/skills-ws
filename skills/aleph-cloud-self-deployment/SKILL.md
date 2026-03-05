@@ -1,19 +1,19 @@
 ---
 name: aleph-cloud-self-deployment
-description: Expert-level Aleph Cloud deployment with multi-node fleet management, self-replication protocols, inter-VM communication, load distribution, disaster recovery, and security hardening
+description: Expert-level Aleph Cloud deployment with multi-node fleet management, auto-scaling protocols, inter-VM communication, load distribution, disaster recovery, and security hardening
 version: 2.0.0
 ---
 
 # Aleph Cloud Self-Deployment v2.0: Multi-Node Fleet Management
 
-Comprehensive framework for deploying and managing OpenClaw instances across Aleph Cloud infrastructure with advanced orchestration, self-replication protocols, and enterprise-grade reliability.
+Comprehensive framework for deploying and managing OpenClaw instances across Aleph Cloud infrastructure with advanced orchestration, auto-scaling protocols, and enterprise-grade reliability.
 
 ## Table of Contents
 
 1. [Infrastructure Planning & Architecture](#infrastructure-planning--architecture)
 2. [Single Node Deployment Foundation](#single-node-deployment-foundation)
 3. [Multi-Node Fleet Management](#multi-node-fleet-management)
-4. [Self-Replication Protocol (SRP)](#self-replication-protocol-srp)
+4. [Auto-Provisioning Protocol (SRP)](#auto-provisioning-protocol-srp)
 5. [Inter-VM Communication Networks](#inter-vm-communication-networks)
 6. [Load Distribution & Orchestration](#load-distribution--orchestration)
 7. [Disaster Recovery & Auto-Recreation](#disaster-recovery--auto-recreation)
@@ -940,14 +940,14 @@ esac
 
 ---
 
-## Self-Replication Protocol (SRP)
+## Auto-Provisioning Protocol (SRP)
 
 ### Agent Continuity System
 
-**Self-Replication Framework:**
+**Auto-Provisioning Framework:**
 ```bash
 #!/bin/bash
-# self-replication-protocol.sh
+# auto-provisioning-protocol.sh
 
 set -e
 
@@ -957,10 +957,10 @@ REPLICATION_DIR="/opt/openclaw/replication"
 BACKUP_RETENTION_DAYS=30
 SYNC_INTERVAL=300  # 5 minutes
 
-echo "🧬 Self-Replication Protocol v$SRP_VERSION"
+echo "🧬 Auto-Provisioning Protocol v$SRP_VERSION"
 
 initialize_srp() {
-    echo "🔬 Initializing Self-Replication Protocol..."
+    echo "🔬 Initializing Auto-Provisioning Protocol..."
     
     # Create replication directory structure
     mkdir -p "$REPLICATION_DIR"/{soul,agents,memory,skills,config,logs}
@@ -1219,7 +1219,7 @@ setup_continuous_replication() {
 export PATH="/usr/local/bin:/usr/bin:/bin"
 
 # Source SRP functions
-source /opt/openclaw/replication/self-replication-protocol.sh
+source /opt/openclaw/replication/auto-provisioning-protocol.sh
 
 # Check if we're the primary node
 if [[ -f /opt/fleet-manager/fleet-manager.js ]]; then
@@ -2510,7 +2510,7 @@ create_disaster_recovery_runbook() {
    ```
 2. Restore specific components:
    ```bash
-   ./self-replication-protocol.sh emergency data_loss
+   ./auto-provisioning-protocol.sh emergency data_loss
    ```
 3. Verify data integrity
 4. Restart affected services
@@ -3864,8 +3864,8 @@ ssh ubuntu@PRIMARY_IP 'sudo systemctl enable auto-scaler && sudo systemctl start
 ssh ubuntu@PRIMARY_IP 'sudo systemctl stop auto-scaler && sudo systemctl disable auto-scaler'
 
 # Replication
-ssh ubuntu@PRIMARY_IP '/opt/openclaw/replication/self-replication-protocol.sh replicate'
-ssh ubuntu@PRIMARY_IP '/opt/openclaw/replication/self-replication-protocol.sh emergency manual'
+ssh ubuntu@PRIMARY_IP '/opt/openclaw/replication/auto-provisioning-protocol.sh replicate'
+ssh ubuntu@PRIMARY_IP '/opt/openclaw/replication/auto-provisioning-protocol.sh emergency manual'
 
 # Tailscale mesh
 ssh ubuntu@PRIMARY_IP 'tailscale status'
