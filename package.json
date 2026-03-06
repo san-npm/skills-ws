@@ -1,6 +1,6 @@
 {
   "name": "skills-ws",
-  "version": "1.5.4",
+  "version": "1.5.5",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

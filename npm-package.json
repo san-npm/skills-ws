@@ -1,6 +1,6 @@
 {
   "name": "skills-ws",
-  "version": "1.5.4",
+  "version": "1.5.5",
   "description": "83 agent skills for AI coding assistants \u2014 marketing, growth, web3, dev, design & operations. Built for OpenClaw, Claude Code, Cursor, and Codex.",
   "scripts": {
     "test": "node test/cli.test.mjs"
