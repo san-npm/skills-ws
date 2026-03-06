@@ -11,16 +11,23 @@ Autonomous threat detection and response. Scan URLs, wallets, domains, emails, a
 
 ## Decision Framework
 
-When an agent encounters untrusted input, follow this escalation:
+When an agent encounters untrusted input, classify it and run ALL matching checks in parallel:
 
 ```
-1. URL/link encountered     → URL scan + domain threat check
-2. Wallet address received  → Wallet reputation + contract scan (if contract)
-3. Email received           → Header analysis + sender domain check
-4. New domain encountered   → WHOIS age + DNS + SSL + typosquatting check
-5. Smart contract address   → Bytecode analysis + honeypot detection
-6. Suspicious IP/hash/IOC   → Threat intelligence lookup
+Classification (applied independently — input may match multiple):
+─────────────────────────────────────────────────────────────────
+Contains URL pattern        → URL scan + domain threat check
+Contains wallet address     → Wallet reputation + contract scan (if contract)
+Contains email headers      → Header analysis + sender domain check
+Contains domain name        → WHOIS age + DNS + SSL + typosquatting check
+Contains contract address   → Bytecode analysis + honeypot detection
+Contains IP/hash/IOC        → Threat intelligence lookup
+
+Example: A URL with a wallet address as a query parameter triggers
+BOTH a URL scan AND a wallet reputation check.
 ```
+
+Final severity = highest severity across all matched checks.
 
 **Severity responses:**
 - **Clean** → proceed normally
@@ -109,7 +116,7 @@ curl -s "https://api.etherscan.io/api?module=account&action=txlist&address=$ADDR
 |--------|-----------|---------------|
 | Address reported on ChainAbuse | Critical | Direct scam reports from victims |
 | OFAC/SDN sanctioned address | Critical | US Treasury sanctions list |
-| Tornado Cash interaction | High | Privacy mixer usage (not always malicious) |
+| Tornado Cash interaction | Context-dependent | See mixer assessment below |
 | High-frequency small txs | Medium | Dust attack / address poisoning pattern |
 | Contract with no verified source | Medium | Etherscan/Basescan verification status |
 | Recently created + high value received | High | Potential rug pull collection wallet |
@@ -125,6 +132,28 @@ Fake:    0xAbC12...............different............45678
 
 Defense: Always verify the FULL address, not just first/last characters.
 ```
+
+### Mixer / Privacy Protocol Assessment
+
+Do NOT automatically flag all mixer interactions as suspicious. Apply contextual analysis:
+
+```
+HIGH RISK (flag as Suspicious):
+- Direct deposits/withdrawals > $10,000 equivalent
+- Multiple mixer interactions within 24 hours
+- Mixer usage immediately followed by transfers to exchanges
+- Address appears on OFAC SDN list regardless of mixer use
+
+LOWER RISK (note but do not flag):
+- Single small-value mixer interaction
+- Interaction via intermediary contract (indirect)
+- Known privacy-preserving DeFi protocols (not mixers)
+```
+
+When mixer interaction is detected, include this context:
+"This address has interacted with [protocol]. Privacy tool usage alone
+is not inherently malicious. Risk assessment considers transaction
+patterns, volume, and regulatory context."
 
 ---
 
@@ -276,16 +305,23 @@ curl -s "https://otx.alienvault.com/api/v1/indicators/domain/example.com/general
 ### Threat Intelligence Decision Matrix
 
 ```
-Combined verdict from multiple sources:
+Each source has a confidence weight:
+- VirusTotal (multi-engine):  weight = engines_flagging / total_engines (0.0–1.0)
+- Google Safe Browsing:       weight = 0.9 (high-confidence source)
+- AbuseIPDB:                  weight = reported_confidence / 100
+- PhishTank (community):      weight = 0.6 if verified, 0.3 if unverified
+- OTX AlienVault:             weight = 0.5
 
-Sources flagging = 0       → CLEAN
-Sources flagging = 1       → LIKELY FALSE POSITIVE (investigate the specific vendor)
-Sources flagging = 2-3     → SUSPICIOUS (warn user, provide details)
-Sources flagging = 4+      → MALICIOUS (block and explain)
+Scoring (sum of weights from all sources):
+- Combined weight = 0         → CLEAN
+- Combined weight < 0.5       → LOW CONFIDENCE (note in output, proceed with caution)
+- Combined weight 0.5–1.49    → SUSPICIOUS (warn user, provide source details)
+- Combined weight >= 1.5      → MALICIOUS (block and explain)
 
-Always cross-reference:
-- A single vendor flagging is often a false positive
-- Multiple vendors agreeing is strong signal
+IMPORTANT:
+- NEVER dismiss a single source automatically — a VirusTotal result with 30+
+  engine flags (weight >= 0.4) is a strong signal on its own
+- New threats often start with only one vendor detecting them
 - Check the specific threat type (phishing vs malware vs adware)
 - Recent reports carry more weight than old ones
 ```
@@ -341,20 +377,39 @@ File download from external      → VirusTotal file hash check   Every time
 
 ---
 
-## 8. API Quick Reference
+## 8. Result Caching
+
+Cache scan results to preserve API quota and avoid redundant checks:
+
+| Check Type | Cache TTL | Cache Key |
+|-----------|----------|-----------|
+| URL scan | 1 hour | Normalized URL (strip tracking params) |
+| Domain WHOIS | 24 hours | Domain name |
+| Wallet reputation | 15 minutes | Address (lowercased) |
+| Contract scan | 1 hour | Contract address + chain ID |
+| Threat intel IOC | 30 minutes | IOC value |
+
+- Cache is in-memory only (no persistence across sessions)
+- Force refresh available via user request: "rescan [target]"
+- Cache hit returns cached result with age note (e.g., "cached 12 min ago")
+
+---
+
+## 9. API Quick Reference
 
 ### Free Tier APIs
 
-| Service | Free Limit | Best For |
-|---------|-----------|----------|
-| VirusTotal | 4/min, 500/day | URL, file, domain, IP scans |
-| AbuseIPDB | 1000/day | IP reputation |
-| PhishTank | Unlimited lookups | Known phishing URL check |
-| OTX AlienVault | Unlimited | Threat indicators, IOCs |
-| Google Safe Browsing | 10,000/day | URL safety check |
-| Etherscan | 5/sec | Contract verification, tx history |
-| Honeypot.is | Unlimited | Token honeypot detection |
-| WHOIS (CLI) | Unlimited | Domain age and registrar |
+| Service | Free Limit | Best For | Notes |
+|---------|-----------|----------|-------|
+| VirusTotal | 4/min, 500/day | URL, file, domain, IP scans | |
+| AbuseIPDB | 1,000/day | IP reputation | |
+| PhishTank | Deprecated | Known phishing URL check | API access restricted; use as supplementary source only if legacy key available |
+| OpenPhish | Community feed, updated every 12h | Phishing URL feed | Free, no API key needed — recommended PhishTank replacement |
+| OTX AlienVault | Unlimited | Threat indicators, IOCs | |
+| Google Safe Browsing | 10,000/day | URL safety check | |
+| Etherscan | 5/sec | Contract verification, tx history | |
+| Honeypot.is | Unlimited | Token honeypot detection | |
+| WHOIS (CLI) | ~30-50/min per registrar | Domain age and registrar | Rate varies by TLD server; implement backoff on failures |
 
 ### Environment Variables
 
@@ -362,8 +417,30 @@ File download from external      → VirusTotal file hash check   Every time
 VT_API_KEY=          # VirusTotal
 GSB_API_KEY=         # Google Safe Browsing
 ABUSEIPDB_API_KEY=   # AbuseIPDB
-PHISHTANK_API_KEY=   # PhishTank
+PHISHTANK_API_KEY=   # PhishTank (deprecated — optional, legacy keys only)
 OTX_API_KEY=         # AlienVault OTX
 ETHERSCAN_API_KEY=   # Etherscan (or Basescan, etc.)
 CHAINABUSE_API_KEY=  # ChainAbuse
 ```
+
+### Graceful Degradation
+
+Not all API keys are required. The agent should adapt based on what's available:
+
+```
+Keys configured   Capability level   Behavior
+─────────────── ─────────────────── ────────────────────────────────────────────
+All keys          Full                All checks enabled
+4-6 keys          Partial             Run available checks, warn about gaps
+1-3 keys          Degraded            Heuristic-heavy mode, warn prominently
+0 keys            Heuristic-only      Pattern matching only, no external lookups
+```
+
+On startup, log which checks are unavailable:
+- Example: "VT_API_KEY not set — URL reputation checks will use heuristics only"
+
+On API errors during operation:
+- Timeout (>5s): skip source, note in output, continue with other sources
+- Rate limited (429): queue and retry with exponential backoff, warn user of delay
+- Server error (5xx): skip source, note in output, continue
+- All external sources fail: switch to heuristic mode and warn explicitly
