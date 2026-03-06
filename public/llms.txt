@@ -1,6 +1,6 @@
 # skills.ws
 
-> 81 agent skills for AI coding assistants. Marketing, growth, web3, dev, design & operations.
+> 83 agent skills for AI coding assistants. Marketing, growth, web3, dev, design & operations.
 
 ## Skills
 
@@ -70,6 +70,8 @@
 - [sales-funnel](https://skills.ws/skills/sales-funnel): Design and optimize sales funnels. TOFU/MOFU/BOFU content, qualification stages, conversion paths.
 - [search-console](https://skills.ws/skills/search-console): Google Search Console optimization. Index coverage, performance analysis, sitemap management, and search appearance debugging.
 - [security-hardening](https://skills.ws/skills/security-hardening): Comprehensive web application security hardening covering OWASP Top 10, secure headers, authentication, and dependency auditing.
+- [security-pentester](https://skills.ws/skills/security-pentester): Autonomous web application penetration testing — OWASP Top 10 exploitation, white-box source-aware scanning, CI/CD security gates, vulnerability report interpretation, and remediation workflows. Powered by Shannon pentest framework.
+- [security-sentinel](https://skills.ws/skills/security-sentinel): Autonomous security vigilance — URL/phishing scanning, wallet scam detection, domain threat analysis, email header validation, smart contract risk assessment, and threat intelligence lookups. Teaches agents to proactively protect users from scams, malware, and fraud.
 - [seo-geo](https://skills.ws/skills/seo-geo): SEO & GEO (Generative Engine Optimization) for websites. Optimize for AI search engines and traditional search.
 - [signup-flow-cro](https://skills.ws/skills/signup-flow-cro): Optimize signup, registration, account creation, or trial activation flows for higher conversion.
 - [smart-contract-auditor](https://skills.ws/skills/smart-contract-auditor): Comprehensive smart contract security auditing skill. Covers static analysis tooling (Slither, Mythril, Aderyn), fuzz testing (Foundry, Echidna), vulnerability detection with Solidity code examples, proxy/upgrade safety, DeFi-specific audit patterns, gas optimization, and structured audit report generation.

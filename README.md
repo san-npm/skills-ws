@@ -1,6 +1,6 @@
 # skills.ws
 
-Agent skills for AI coding assistants. 81 skills across 8 categories — built for OpenClaw, Claude Code, Cursor, Codex, and any agent that supports the SKILL.md format.
+Agent skills for AI coding assistants. 83 skills across 8 categories — built for OpenClaw, Claude Code, Cursor, Codex, and any agent that supports the SKILL.md format.
 
 **Website:** [skills.ws](https://skills.ws) | **npm:** [skills-ws](https://www.npmjs.com/package/skills-ws) | **Docs:** [llms-full.txt](https://skills.ws/llms-full.txt)
 
@@ -158,7 +158,7 @@ skills-ws/
 │   └── skills.ts           # Skill data access + TypeScript interfaces
 ├── skills/                 # Raw SKILL.md files (81 directories)
 ├── public/
-│   ├── skills.json         # Skills database (81 skills, all metadata + content)
+│   ├── skills.json         # Skills database (83 skills, all metadata + content)
 │   ├── llms.txt            # LLM-readable skill index
 │   ├── llms-full.txt       # Full content dump for LLMs
 │   ├── robots.txt          # Crawl directives
