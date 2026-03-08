@@ -42,19 +42,52 @@ const SPORT_META = {
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-function getKeychainSecret(service) {
-  return execSync(`security find-generic-password -s ${service} -a stuart -w`, {
-    encoding: 'utf8',
-  }).trim();
+function getOddsApiKey() {
+  // Preferred: explicit env var (portable for Linux/CI/containers)
+  if (process.env.ODDS_API_KEY && process.env.ODDS_API_KEY.trim()) {
+    return process.env.ODDS_API_KEY.trim();
+  }
+
+  // Fallback: macOS Keychain for local developer setup
+  if (process.platform === 'darwin') {
+    try {
+      return execSync('security find-generic-password -s odds-api-key -a stuart -w', {
+        encoding: 'utf8',
+      }).trim();
+    } catch {}
+  }
+
+  throw new Error('Missing ODDS_API_KEY. Set environment variable ODDS_API_KEY (or use macOS keychain fallback).');
 }
 
-async function fetchJSON(url) {
-  const res = await fetch(url, { headers: { Accept: 'application/json' } });
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    throw new Error(`HTTP ${res.status} from ${url}: ${body.slice(0, 200)}`);
+async function fetchJSON(url, { timeoutMs = 12000, retries = 2 } = {}) {
+  let lastErr;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const res = await fetch(url, {
+        headers: { Accept: 'application/json' },
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        throw new Error(`HTTP ${res.status} from ${url}: ${body.slice(0, 200)}`);
+      }
+      return await res.json();
+    } catch (e) {
+      lastErr = e;
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
+      }
+    } finally {
+      clearTimeout(timeout);
+    }
   }
-  return res.json();
+
+  throw lastErr;
 }
 
 function parseArgs() {
@@ -287,8 +320,8 @@ async function main() {
   try {
     apiKey = getOddsApiKey();
   } catch (e) {
-    console.error('❌ Failed to get Odds API key from Keychain.');
-    console.error('   Run: security find-generic-password -s odds-api-key -a stuart -w');
+    console.error('❌ Failed to get Odds API key.');
+    console.error('   Set ODDS_API_KEY env var (or use macOS keychain fallback).');
     process.exit(1);
   }
 
