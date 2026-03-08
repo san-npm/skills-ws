@@ -1558,8 +1558,8 @@
     },
     {
       "name": "polymarket-trading",
-      "version": "1.0.0",
-      "description": "Polymarket prediction market trading \u2014 market analysis, edge calculation, bookmaker cross-referencing, order placement via CLOB API, position management, and redemption. Covers sports betting strategy, risk management, and the full Polymarket SDK workflow.",
+      "version": "2.0.0",
+      "description": "Sports betting on Polymarket \u2014 automated odds scanning via The Odds API (20+ bookmakers), edge calculation, PM market matching with token ID resolution, order execution via CLOB API, position tracking, and auto-redemption. Strict >70% bookmaker favorite filter. Use when asked about sports bets, Polymarket odds, or betting picks.",
       "color": "6366F1",
       "category": "web3",
       "platforms": [
@@ -1569,23 +1569,23 @@
         "codex"
       ],
       "features": [
-        "Edge calculation with American/decimal odds conversion and vig removal",
-        "Bookmaker cross-referencing pipeline (3-source rule)",
-        "Gamma, CLOB, and Data API reference with all endpoints",
-        "TypeScript SDK trading workflow (order placement, cancellation)",
-        "Position tracking and resolved market redemption (standard + negRisk)",
-        "Risk management rules \u2014 bankroll sizing, exposure limits",
-        "Sport betting strategy with scan pipeline",
-        "Market selection criteria and liquidity analysis",
-        "Common pitfalls and profitable trader habits"
+        "Automated scan pipeline: fetch odds \u2192 filter favorites \u2192 match PM markets \u2192 resolve tokens",
+        "The Odds API integration (NBA, EPL, La Liga, Serie A, Bundesliga, Ligue 1, EFL Championship)",
+        "Bookmaker cross-referencing across 20+ books with implied probability calculation",
+        "Polymarket market matching with fuzzy team name resolution",
+        "Token ID auto-resolution for direct CLOB trading",
+        "Edge calculation (book probability vs PM price)",
+        "Order placement via CLOB API (buy/sell with price and size)",
+        "Position tracking and auto-redemption of resolved bets",
+        "Risk management: sport-only, >70% favorites, no long shots, 70%+ winrate target"
       ],
       "useCases": [
-        "Analyze Polymarket odds vs bookmaker lines to find edges",
-        "Place bets on Polymarket via the CLOB API",
-        "Track and redeem resolved positions",
-        "Build a systematic sports betting strategy",
-        "Cross-reference 3+ bookmakers before placing a bet",
-        "Calculate true probabilities by removing bookmaker vig"
+        "Scan all sports for todays betting picks",
+        "Find edges between bookmaker odds and Polymarket prices",
+        "Place bets on Polymarket with one command",
+        "Track open positions and P&L",
+        "Redeem resolved winning bets automatically",
+        "Cross-reference 20+ bookmakers before betting"
       ],
       "keywords": [
         "polymarket",
