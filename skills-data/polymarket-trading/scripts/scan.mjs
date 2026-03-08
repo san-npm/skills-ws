@@ -285,7 +285,7 @@ async function main() {
   // 1. Get API key
   let apiKey;
   try {
-    apiKey = getKeychainSecret('odds-api-key');
+    apiKey = getOddsApiKey();
   } catch (e) {
     console.error('❌ Failed to get Odds API key from Keychain.');
     console.error('   Run: security find-generic-password -s odds-api-key -a stuart -w');
