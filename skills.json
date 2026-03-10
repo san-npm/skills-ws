@@ -1840,6 +1840,35 @@
       "installs": 0
     },
     {
+      "name": "reddit-community-engagement",
+      "description": "Safer Reddit community engagement for researching subreddits, scanning relevant threads, checking rules, drafting helpful replies, deciding when to skip, and documenting outcomes.",
+      "category": "growth",
+      "features": [
+        "Explicit read, draft, and post operating modes",
+        "Subreddit rule and moderation-risk checks",
+        "Decision framework for reply vs value-only vs skip",
+        "Disclosure guidance for company or product participation",
+        "Account warm-up and pacing guidance",
+        "Outcome logging for Reddit engagement sessions"
+      ],
+      "useCases": [
+        "Research Reddit communities before outreach",
+        "Draft safe, useful replies for subreddit threads",
+        "Run brand-safe Reddit engagement without spammy behavior",
+        "Decide when to skip risky or low-fit Reddit threads"
+      ],
+      "version": "1.0.0",
+      "color": "FF6B35",
+      "platforms": [
+        "openclaw",
+        "claude-code",
+        "cursor",
+        "codex"
+      ],
+      "installs": 0,
+      "content": "---\nname: reddit-community-engagement\ndescription: Safer Reddit community engagement for researching subreddits, scanning relevant threads, checking rules, drafting helpful replies, deciding when to skip, and documenting outcomes. Use when work involves Reddit outreach, community participation, response drafting, moderation-risk checks, or planning brand-safe participation in subreddit discussions. Trigger on requests about Reddit growth, Reddit engagement, subreddit outreach, thread scanning, reply drafting, or posting guidance.\n---\n\n# Reddit Community Engagement\n\nUse Reddit to be useful first. Prefer **read** and **draft** modes. Use **post** mode only when the user explicitly wants it and subreddit rules allow it.\n\n## Operating modes\n\n- **Read mode**: research subreddits, find relevant threads, summarize themes, capture rules, recommend whether to engage.\n- **Draft mode**: prepare reply options for human review. This is the default for anything external-facing.\n- **Post mode**: only after explicit user approval when rules, disclosure needs, and tone are all clear.\n\nIf anything is ambiguous, stay in read/draft mode.\n\n## Non-negotiables\n\n- Do not pretend to be an ordinary user if you are acting for a company, client, or product.\n- Do not invent personal experience, results, customers, or usage.\n- Do not hide affiliation when disclosure is appropriate or required.\n- Do not mass-post, reuse near-identical comments, or force product mentions into weak-fit threads.\n- Do not argue with moderators. If content is removed or warned on, pause and reassess.\n\n## Before engaging\n\nCapture these basics:\n\n- Product / client:\n- What it does in one sentence:\n- Who it helps:\n- Allowed disclosure language:\n- Target subreddits or themes:\n- Keywords / pain points to scan:\n- Current mode: read / draft / post\n\nIf representing a brand, state it plainly in drafts when relevant, e.g. \u201cI work on X\u201d or \u201cI\u2019m with X.\u201d\n\n## Account readiness\n\nWarm up accounts through normal participation, not manipulation:\n\n- Build a history of on-topic, non-promotional participation before any outreach.\n- Prefer genuine comments in communities you expect to revisit.\n- Keep early activity light and human-paced.\n- Avoid links or product mentions until the account has normal-looking participation and you understand each subreddit\u2019s norms.\n- If the account is new, low-karma, or has removals, favor read mode or draft mode.\n\n## Rule and risk check\n\nBefore drafting any reply for a subreddit, verify:\n\n1. Sidebar / about / pinned rules\n2. Whether self-promotion, links, surveys, or company participation are restricted\n3. Whether user flair, account age, or karma minimums are required\n4. Whether the thread is asking for recommendations, troubleshooting help, comparison advice, or something unrelated\n5. Whether a reply from a brand rep would feel additive or intrusive\n\n## Decide: reply, value-only, or skip\n\n### Strong candidates\n\n- The post clearly matches the product\u2019s use case or expertise\n- The user is asking for help, recommendations, or tool comparisons\n- The subreddit allows this kind of participation\n- You can answer the actual question even without mentioning the product\n\n### Value-only candidates\n\n- The thread is relevant but promo rules are strict\n- A direct answer helps, but mentioning the product adds risk\n- Disclosure is still needed if speaking as a representative\n\n### Skip immediately\n\n- Rules ban self-promo, brand accounts, or links and the reply would clearly be promotional\n- The thread is grief-heavy, legal/medical/high-risk, hostile, or moderation-sensitive\n- The product is only loosely relevant\n- Another reply would be repetitive, opportunistic, or defensive\n- You cannot be honest about affiliation without hurting trust or breaking norms\n\nWhen in doubt, skip.\n\n## Drafting guidance\n\nWrite like a helpful participant, not an ad.\n\n- Answer the question first\n- Keep it specific to the post\n- Use plain language; avoid slogans, hype, or CTA-heavy phrasing\n- Mention the product only if it is genuinely useful and allowed\n- Prefer no link unless the thread, rules, and user intent clearly support it\n- If affiliated, disclose briefly and naturally\n- Offer next-step help without pressure\n\n## Simple reply pattern\n\n1. Acknowledge the exact problem\n2. Give 1\u20133 practical points that help on their own\n3. If appropriate, add a brief disclosed mention of the product\n4. End with a low-pressure offer or clarifying question\n\n## Draft output format\n\nFor each candidate thread, produce:\n\n- **Thread**: title + URL\n- **Subreddit**:\n- **Intent**: what the user seems to need\n- **Rules / risk**: short note\n- **Recommendation**: reply / value-only / skip\n- **Why**: one or two sentences\n- **Draft reply**: only for reply or value-only\n- **Disclosure note**: exact wording if needed\n\n## Posting checklist\n\nOnly in explicit post mode:\n\n- User approved the draft\n- Rules were checked in this session\n- Disclosure wording is appropriate\n- No copied text from another thread\n- Pace is conservative; avoid bursts\n- Log the outcome after posting or attempted posting\n\n## Outcome logging\n\nAfter a session, record a short summary with:\n\n- Date\n- Mode used\n- Subreddits reviewed\n- Threads scanned\n- Drafts prepared\n- Posts actually made\n- Skips and why\n- Any removals, warnings, or rule changes noticed\n- Recommended next step\n\n## Good defaults\n\n- Default to draft mode\n- Default to no link\n- Default to skip over borderline cases\n- Default to transparency over cleverness\n"
+    },
+    {
       "name": "retention-analytics",
       "description": "Churn analysis, cohort retention, engagement scoring, health scoring, and win-back strategies for SaaS products.",
       "category": "analytics",
