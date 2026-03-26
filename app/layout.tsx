@@ -190,7 +190,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               operatingSystem: "Any",
               url: BASE_URL,
               downloadUrl: "https://www.npmjs.com/package/skills-ws",
-              softwareVersion: "1.5.2",
+              softwareVersion: "1.6.0",
               description:
                 `CLI tool to install agent skills for AI coding assistants. ${skillCount} skills for marketing, growth, web3, dev, design & operations.`,
               offers: {
