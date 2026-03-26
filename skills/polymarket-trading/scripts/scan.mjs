@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import os from 'os';
 /**
  * Polymarket Sports Betting Scanner
  *
@@ -51,7 +52,7 @@ function getOddsApiKey() {
   // Fallback: macOS Keychain for local developer setup
   if (process.platform === 'darwin') {
     try {
-      return execSync('security find-generic-password -s odds-api-key -a stuart -w', {
+      return execSync(`security find-generic-password -s odds-api-key -a ${os.userInfo().username} -w`, {
         encoding: 'utf8',
       }).trim();
     } catch {}
