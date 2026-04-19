@@ -3,6 +3,7 @@
   "version": "1.6.1",
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/build-agent-skills.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

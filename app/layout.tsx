@@ -3,6 +3,7 @@ import Link from "next/link";
 import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import { getSkills } from "@/lib/skills";
+import WebMcpTools from "@/components/WebMcpTools";
 import "./globals.css";
 
 const BASE_URL = "https://skills.ws";
@@ -109,6 +110,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <head />
       <body className="font-mono min-h-screen overflow-x-hidden relative">
+        <WebMcpTools />
         <nav className="sticky top-0 z-50 bg-bg/80 backdrop-blur-md border-b border-border">
           <div className="max-w-[900px] mx-auto px-6 flex items-center justify-between h-12">
             <Link

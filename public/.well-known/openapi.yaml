@@ -1,0 +1,61 @@
+openapi: 3.1.0
+info:
+  title: skills.ws Public API
+  version: 1.0.0
+  description: >-
+    skills.ws is a static catalog of agent skills. There are no dynamic
+    endpoints — the canonical data is published as two JSON documents:
+    the full skill registry at /skills.json, and the agentskills.io
+    discovery index at /.well-known/agent-skills/index.json. Each skill's
+    markdown body is served at /.well-known/agent-skills/<name>/SKILL.md.
+  contact:
+    name: skills.ws
+    url: https://skills.ws/
+  license:
+    name: MIT
+    url: https://github.com/san-npm/skills-ws/blob/main/LICENSE
+servers:
+  - url: https://skills.ws
+paths:
+  /skills.json:
+    get:
+      summary: Full skill registry
+      description: Every skill with metadata and inline markdown content.
+      responses:
+        '200':
+          description: Skill registry
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  version: { type: string }
+                  skills:
+                    type: array
+                    items: { type: object }
+  /.well-known/agent-skills/index.json:
+    get:
+      summary: agentskills.io discovery index
+      description: Skill discovery index per schemas.agentskills.io/discovery/0.2.0.
+      responses:
+        '200':
+          description: Discovery index
+          content:
+            application/json:
+              schema: { type: object }
+  /.well-known/agent-skills/{name}/SKILL.md:
+    get:
+      summary: Canonical skill markdown
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Skill markdown body
+          content:
+            text/markdown:
+              schema: { type: string }
+        '404':
+          description: Unknown skill

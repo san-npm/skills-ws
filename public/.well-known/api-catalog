@@ -1,0 +1,22 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://skills.ws/skills.json",
+      "service-desc": [
+        { "href": "https://skills.ws/.well-known/openapi.yaml", "type": "application/yaml" }
+      ],
+      "service-doc": [
+        { "href": "https://skills.ws/", "type": "text/html" }
+      ]
+    },
+    {
+      "anchor": "https://skills.ws/.well-known/agent-skills/index.json",
+      "service-desc": [
+        { "href": "https://schemas.agentskills.io/discovery/0.2.0/schema.json", "type": "application/schema+json" }
+      ],
+      "service-doc": [
+        { "href": "https://agentskills.io/", "type": "text/html" }
+      ]
+    }
+  ]
+}
