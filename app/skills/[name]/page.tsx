@@ -11,8 +11,9 @@ export function generateStaticParams() {
   return getSkills().map((s) => ({ name: s.name }));
 }
 
-export function generateMetadata({ params }: { params: { name: string } }): Metadata {
-  const skill = getSkill(params.name);
+export async function generateMetadata({ params }: { params: Promise<{ name: string }> }): Promise<Metadata> {
+  const { name } = await params;
+  const skill = getSkill(name);
   if (!skill) return notFound();
 
   const title = `${skill.name} — AI Agent Skill`;
@@ -49,8 +50,9 @@ export function generateMetadata({ params }: { params: { name: string } }): Meta
   };
 }
 
-export default function SkillPage({ params }: { params: { name: string } }) {
-  const skill = getSkill(params.name);
+export default async function SkillPage({ params }: { params: Promise<{ name: string }> }) {
+  const { name } = await params;
+  const skill = getSkill(name);
   if (!skill) notFound();
 
   const colors = categoryColors[skill.category] ?? {

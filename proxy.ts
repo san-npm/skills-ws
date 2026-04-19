@@ -6,14 +6,14 @@ import { NextResponse, type NextRequest } from 'next/server';
 //
 // Previously attempted via vercel.json `has` rewrites on the static
 // export, but Vercel's edge cache served the HTML without re-evaluating
-// the header on subsequent requests. Middleware runs per-request and
-// sidesteps that.
+// the header on subsequent requests. The proxy (formerly middleware)
+// runs per-request and sidesteps that.
 function prefersMarkdown(accept: string | null): boolean {
   if (!accept) return false;
   return /(^|,)\s*text\/markdown\b/i.test(accept);
 }
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   if (req.method === 'GET' && prefersMarkdown(req.headers.get('accept'))) {
     const target = new URL('/index.md', req.nextUrl.origin);
     return NextResponse.rewrite(target);

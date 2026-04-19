@@ -1,10 +1,8 @@
-import dynamic from "next/dynamic";
 import { getSkills, getCategories } from "@/lib/skills";
 import InstallBox from "@/components/InstallBox";
 import SkillsGrid from "@/components/SkillsGrid";
 import NpmDownloads from "@/components/NpmDownloads";
-
-const AsciiBackground = dynamic(() => import("@/components/AsciiBackground"), { ssr: false });
+import AsciiBackground from "@/components/AsciiBackgroundClient";
 
 const ASCII = `███████╗██╗  ██╗██╗██╗     ██╗     ███████╗   ██╗    ██╗███████╗
 ██╔════╝██║ ██╔╝██║██║     ██║     ██╔════╝   ██║    ██║██╔════╝
