@@ -1,10 +1,11 @@
 ---
 name: mcp-client
-description: Consume MCP services — connect AI agents to external tools for screenshots, DNS, WHOIS, SSL, OCR, and blockchain queries with three-tier authentication
-version: 1.0.0
+description: "Consume MCP servers — connect AI agents to external tools via stdio, SSE (deprecated 2025-03-26), or Streamable HTTP. Covers Claude Desktop/Cursor/Claude Code config, three-tier auth, and common tool patterns. Use when wiring an agent to MCP servers."
 ---
 
 # MCP Client — Consuming Model Context Protocol Services
+
+> Transports: prefer **Streamable HTTP** (`StreamableHTTPClientTransport`) per MCP spec 2025-03-26; SSE is deprecated; **stdio** stays for local processes.
 
 > Connect AI agents to external MCP services for web intelligence, blockchain data, document processing, and more. Production patterns for authentication, payments, and multi-tool workflows.
 

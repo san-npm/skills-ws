@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import JsonLd from "@/components/JsonLd";
 
 export const metadata: Metadata = {
   title: "Documentation — How Agent Skills Work",
@@ -35,6 +36,50 @@ const breadcrumbSchema = {
   itemListElement: [
     { "@type": "ListItem", position: 1, name: "Home", item: "https://skills.ws" },
     { "@type": "ListItem", position: 2, name: "Documentation", item: "https://skills.ws/docs" },
+  ],
+};
+
+const howToSchema = {
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  name: "How to install agent skills with skills-ws",
+  description:
+    "Install SKILL.md agent skills for AI coding assistants — Claude Code, OpenClaw, Cursor, Codex, and Gemini CLI — using the skills-ws CLI.",
+  totalTime: "PT1M",
+  supply: [{ "@type": "HowToSupply", name: "Node.js 18 or later" }],
+  tool: [
+    { "@type": "HowToTool", name: "npm or npx" },
+    {
+      "@type": "HowToTool",
+      name: "An AI coding assistant supporting SKILL.md (Claude Code, OpenClaw, Cursor, Codex, or Gemini CLI)",
+    },
+  ],
+  step: [
+    {
+      "@type": "HowToStep",
+      position: 1,
+      name: "Open a terminal in your project directory",
+      text: "cd into the project where you want skills installed. The CLI auto-detects which agent you use and installs to the correct directory.",
+    },
+    {
+      "@type": "HowToStep",
+      position: 2,
+      name: "Run the installer",
+      text: "Execute npx skills-ws to install all 85 skills, or add --skill name to install just one.",
+      url: "https://skills.ws/cli",
+    },
+    {
+      "@type": "HowToStep",
+      position: 3,
+      name: "Verify the skill directory",
+      text: "Claude Code uses .claude/skills/, OpenClaw uses ~/openclaw/skills/, Cursor uses .cursor/skills/, Codex uses .codex/skills/. Confirm the SKILL.md files are present.",
+    },
+    {
+      "@type": "HowToStep",
+      position: 4,
+      name: "Start using the skills",
+      text: "Your AI assistant reads each SKILL.md frontmatter to decide when to activate the skill. No further configuration required.",
+    },
   ],
 };
 
@@ -143,10 +188,8 @@ export default function DocsPage() {
           </li>
         </ul>
       </section>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema).replace(/</g, "\\u003c") }}
-      />
+      <JsonLd schema={breadcrumbSchema} />
+      <JsonLd schema={howToSchema} />
     </div>
   );
 }

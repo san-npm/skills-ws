@@ -1,7 +1,6 @@
 ---
 name: telegram-mini-apps
-description: Build Telegram Mini Apps with Stars payments — TWA SDK, HMAC validation, bot webhooks, deep linking, Next.js deployment
-version: 1.0.0
+description: "Telegram Mini Apps with Stars (XTR) payments — TMA SDK 7.x (cloudStorage, biometric, fullscreen, share-story), initData HMAC validation, bot webhooks, deep linking, `pre_checkout_query` 10s window, grammY, Next.js deployment. Use when building or shipping a Telegram Mini App."
 ---
 
 # Telegram Mini Apps with Stars Payments — Expert Skill

@@ -1,9 +1,11 @@
 ---
 name: ci-cd-pipeline
-description: "Production CI/CD pipelines with GitHub Actions — reusable workflows, testing strategies, deployment gates, rollbacks, and monorepo builds."
+description: "Canonical CI/CD handbook — GitHub Actions reusable workflows, OIDC deploys, SLSA/sigstore provenance, monorepo affected-only builds, testing gates, rollbacks. Use for production pipelines; for short snippets see `cicd-pipelines`."
 ---
 
 # CI/CD Pipeline Engineering
+
+> Canonical handbook. For a quick cheatsheet of patterns see `cicd-pipelines`.
 
 ## Philosophy
 

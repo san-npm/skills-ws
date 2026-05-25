@@ -1,7 +1,6 @@
 ---
 name: aleph-cloud-self-deployment
-description: Expert-level Aleph Cloud deployment with multi-node fleet management, auto-scaling protocols, inter-VM communication, load distribution, disaster recovery, and security hardening
-version: 2.0.0
+description: "Expert Aleph Cloud deployment — multi-node fleet management, auto-scaling, inter-VM communication, load distribution, disaster recovery, and security hardening. Use when deploying confidential or persistent VMs/instances on Aleph Cloud."
 ---
 
 # Aleph Cloud Self-Deployment v2.0: Multi-Node Fleet Management

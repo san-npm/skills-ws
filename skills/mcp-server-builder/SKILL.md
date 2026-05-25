@@ -1,10 +1,11 @@
 ---
 name: mcp-server-builder
-description: Build and monetize production MCP servers — tool schemas, transports, auth, Stripe subscriptions, x402 payments, deployment
-version: 1.0.0
+description: "Build production MCP servers — tool schemas (Zod/Pydantic), Streamable HTTP transport (MCP spec 2025-03-26, replaces SSE), stdio, OAuth/bearer auth, FastMCP (Python) and @modelcontextprotocol/sdk (TS), Stripe + x402 monetization, deployment. Use when shipping an MCP server."
 ---
 
 # MCP Server Builder — Production Skill
+
+> Default to **Streamable HTTP** transport (`StreamableHTTPServerTransport` in TS, `FastMCP` in Python). SSE is deprecated as of MCP spec 2025-03-26. Keep stdio only for local-process servers.
 
 > Build production-grade Model Context Protocol servers that wrap any REST API into AI-callable tools, with three-tier auth, monetization, and battle-tested deployment.
 

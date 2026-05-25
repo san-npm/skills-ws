@@ -1,8 +1,13 @@
+import Link from "next/link";
 import { getSkills, getCategories } from "@/lib/skills";
+import { skillDisplayName, categoryDisplayName } from "@/lib/display";
 import InstallBox from "@/components/InstallBox";
 import SkillsGrid from "@/components/SkillsGrid";
 import NpmDownloads from "@/components/NpmDownloads";
 import AsciiBackground from "@/components/AsciiBackgroundClient";
+import JsonLd from "@/components/JsonLd";
+
+const BASE_URL = "https://skills.ws";
 
 const ASCII = `███████╗██╗  ██╗██╗██╗     ██╗     ███████╗   ██╗    ██╗███████╗
 ██╔════╝██║ ██╔╝██║██║     ██║     ██╔════╝   ██║    ██║██╔════╝
@@ -16,6 +21,22 @@ const platforms = ["OpenClaw", "Claude Code", "Cursor", "Codex"];
 export default function Home() {
   const skills = getSkills();
   const categories = getCategories();
+
+  const itemListSchema = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "Agent Skills for AI Coding Assistants",
+    description: `${skills.length} agent skills for AI coding assistants — marketing, growth, web3, dev, design, conversion, analytics, operations.`,
+    numberOfItems: skills.length,
+    itemListOrder: "https://schema.org/ItemListUnordered",
+    itemListElement: skills.map((s, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: `${BASE_URL}/skills/${s.name}`,
+      name: skillDisplayName(s.name),
+      description: s.description,
+    })),
+  };
 
   return (
     <div className="max-w-[900px] mx-auto px-4 sm:px-6">
@@ -103,7 +124,29 @@ export default function Home() {
 
       </div>
 
-      <footer className="text-center py-12 border-t border-border mt-6">
+      <nav aria-labelledby="browse-heading" className="mt-12 pt-8 border-t border-border">
+        <h2 id="browse-heading" className="text-sm font-semibold text-text-main font-sans mb-4">
+          Browse by category
+        </h2>
+        <ul className="flex flex-wrap gap-2">
+          {categories.map((cat) => {
+            const count = skills.filter((s) => s.category === cat).length;
+            return (
+              <li key={cat}>
+                <Link
+                  href={`/skills/category/${cat}`}
+                  className="inline-flex items-center gap-2 text-[13px] text-text-dim bg-bg-card border border-border rounded-md px-3 py-1.5 hover:border-accent hover:text-accent transition-colors capitalize"
+                >
+                  {categoryDisplayName(cat)}
+                  <span className="text-[11px] text-text-muted">{count}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
+      <footer className="text-center py-12 border-t border-border mt-12">
         <p className="text-text-muted text-[13px] leading-8">
           Built by{" "}
           <a
@@ -116,10 +159,11 @@ export default function Home() {
           </a>
         </p>
         <p className="text-text-muted text-[13px]">Agent skills for humans & agents alike</p>
-        <div className="flex justify-center gap-6 mt-4">
+        <div className="flex justify-center gap-6 mt-4 flex-wrap">
           {[
             ["GitHub", "https://github.com/san-npm/skills-ws"],
             ["API", "/skills.json"],
+            ["llms.txt", "/llms.txt"],
             ["OpenClaw", "https://docs.openclaw.ai"],
           ].map(([label, href]) => (
             <a
@@ -134,6 +178,8 @@ export default function Home() {
           ))}
         </div>
       </footer>
+
+      <JsonLd schema={itemListSchema} />
     </div>
   );
 }

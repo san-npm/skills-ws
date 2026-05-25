@@ -1,9 +1,11 @@
 ---
 name: security-hardening
-description: "Application security hardening — OWASP Top 10 with real code fixes, authentication, authorization, CORS, CSP, rate limiting, dependency security, and incident response."
+description: "Defensive code patterns — OWASP Top 10 with real fixes, authN/authZ, CORS, CSP `strict-dynamic` + Trusted Types, rate limiting, dependency security, supply-chain provenance (SLSA/sigstore), AI-app risks (prompt injection, LLM data leakage), incident response. Use when hardening application code."
 ---
 
 # Security Hardening
+
+> Disambiguation: this skill = defensive code patterns. For active offensive testing see `security-pentester`. For runtime threat intel (URL/wallet/domain scans) see `security-sentinel`.
 
 ## OWASP Top 10 (2021): Vulnerable Code → Fixed Code
 

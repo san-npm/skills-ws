@@ -1,9 +1,11 @@
 ---
 name: cicd-pipelines
-description: "Production-grade CI/CD with GitHub Actions, deployment strategies, caching, and release automation."
+description: "Quick reference: production-grade CI/CD with GitHub Actions, deployment strategies, caching, release automation. Use for short snippets and concrete examples; for the full handbook (reusable workflows, OIDC, SLSA, monorepo affected-only) see `ci-cd-pipeline`."
 ---
 
-# CI/CD Pipelines
+# CI/CD Pipelines — Quick Reference
+
+> Companion to `ci-cd-pipeline` (the canonical, longer handbook). Keep this file for fast lookups; use `ci-cd-pipeline` for reusable-workflow architecture, OIDC deploys, SLSA provenance, and monorepo affected-only patterns.
 
 ## GitHub Actions — Core Workflow
 

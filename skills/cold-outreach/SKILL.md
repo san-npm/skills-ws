@@ -129,9 +129,26 @@ Hi [Name],
 | Bounce rate | > 5% | 2-5% | 1-2% | < 1% |
 | Unsubscribe rate | > 2% | 1-2% | 0.5-1% | < 0.5% |
 
+> **Apple MPP caveat:** Apple Mail Privacy Protection (iOS 15, Sept 2021) pre-fetches every remote image through Apple proxies, so Apple Mail clients register as an "open" whether the recipient read the message or not. Reported open rates above ~50% are dominated by MPP noise — pivot decision-making to reply rate and downstream conversions, not opens.
+
 **If open rate is low:** Subject line problem. A/B test subjects.
 **If open rate is high but reply is low:** Copy problem. Test different frameworks.
 **If bounce rate is high:** List quality problem. Verify emails before sending.
+
+### 5b. Google + Yahoo bulk-sender compliance (Feb 1, 2024)
+
+Mandatory for any domain sending **>5,000 messages/day** to Gmail or Yahoo. Below 5,000/day, treat the same rules as "strongly recommended" — Gmail in particular tightens enforcement on smaller senders over time.
+
+| Requirement | Implementation | Verify with |
+|---|---|---|
+| SPF + DKIM authentication on every send | Publish SPF TXT record; sign with DKIM (1024-bit minimum, 2048-bit recommended) | `mail-tester.com`, Google Postmaster Tools |
+| DMARC published, minimum `p=none` with reporting | `_dmarc.example.com TXT "v=DMARC1; p=none; rua=mailto:dmarc@example.com"` (move to `p=quarantine` once aligned) | dmarcian, dmarcadvisor |
+| One-click List-Unsubscribe (RFC 8058) | Headers: `List-Unsubscribe: <mailto:u@example.com>, <https://example.com/unsub?t=…>` **plus** `List-Unsubscribe-Post: List-Unsubscribe=One-Click` | Send to a Gmail account, view "Show original" |
+| Honor unsubscribes within 2 days | Wire the `POST` endpoint to actually suppress (don't 200-OK and ignore) | Self-test the URL |
+| Spam complaint rate < 0.3% (target < 0.1%) | Postmaster Tools "User reported spam rate" panel | Google Postmaster Tools |
+| One-to-one DKIM alignment on From: domain | DKIM-signing domain must align with the From: header domain | DMARC `aspf=s; adkim=s` |
+
+Sequence-tool vendors (Instantly, Smartlead, Lemlist) usually inject the unsubscribe headers automatically when you publish a custom sending domain — but **always test once** with a real Gmail/Yahoo inbox before scaling.
 
 ### 6. A/B Testing
 
@@ -154,10 +171,12 @@ Hi [Name],
 | Function | Tools |
 |----------|-------|
 | Email finding | Apollo, Hunter.io, Snov.io |
-| Verification | NeverBounce, ZeroBounce, MillionVerifier |
-| Sequencing | Instantly, Lemlist, Smartlead, Apollo |
+| Enrichment & orchestration | **Clay** (waterfall enrichment + AI lookups), Apollo, Hunter Discovery |
+| Verification | NeverBounce, ZeroBounce, MillionVerifier, Bouncer |
+| Sequencing | Instantly, Smartlead, Lemlist, Apollo, Salesloft, Outreach |
 | Warmup | Instantly (built-in), Warmbox, Mailwarm |
-| LinkedIn | PhantomBuster, Expandi, Dripify |
+| LinkedIn | HeyReach, Aimfox, Expandi (note: LinkedIn cracked down on PhantomBuster/Dripify-style automation 2024-25 — use cautiously) |
+| Deliverability monitoring | Google Postmaster Tools, Yahoo Sender Hub, GlockApps |
 | CRM | HubSpot, Pipedrive, Close |
 
 ## Daily Operations Checklist

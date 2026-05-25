@@ -9,7 +9,7 @@ description: "Opinionated full-stack Next.js blueprint: App Router, Tailwind, sh
 
 | Layer | Choice | Why |
 |-------|--------|-----|
-| Framework | Next.js 14+ (App Router) | RSC, Server Actions, file routing |
+| Framework | Next.js 15+ (App Router, RSC, PPR) | Partial Prerendering, `'use cache'` directive, `cacheLife`/`cacheTag`, React Compiler, Server Actions |
 | Styling | Tailwind CSS + shadcn/ui | Fast, consistent, copy-paste components |
 | State | Zustand (client) + Server Components (server) | Minimal boilerplate |
 | API | Server Actions or tRPC | Type-safe, no REST boilerplate |

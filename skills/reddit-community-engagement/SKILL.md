@@ -1,6 +1,6 @@
 ---
 name: reddit-community-engagement
-description: Safer Reddit community engagement for researching subreddits, scanning relevant threads, checking rules, drafting helpful replies, deciding when to skip, and documenting outcomes. Use when work involves Reddit outreach, community participation, response drafting, moderation-risk checks, or planning brand-safe participation in subreddit discussions. Trigger on requests about Reddit growth, Reddit engagement, subreddit outreach, thread scanning, reply drafting, or posting guidance.
+description: "Safer Reddit engagement — research subreddits, scan threads, check rules, draft replies, document outcomes, and avoid AI-comment detection bans (mods actively scan for LLM signatures post-2024). Use for Reddit outreach, brand participation, or moderation-risk checks."
 ---
 
 # Reddit Community Engagement

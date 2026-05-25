@@ -1,6 +1,10 @@
 # skills.ws
 
-> 83 agent skills for AI coding assistants. Marketing, growth, web3, dev, design & operations.
+> 85 agent skills for AI coding assistants. Marketing, growth, web3, dev, design, security, ops, and EU compliance.
+
+Skills work with OpenClaw, Claude Code, Cursor, Codex, Gemini CLI, and any agent that supports the SKILL.md standard. Install with: `npx skills-ws`.
+
+Last updated: 2026-05-18
 
 ## Skills
 
@@ -13,7 +17,7 @@
 - [ascii-banner](https://skills.ws/skills/ascii-banner): Build animated ASCII banners for CLI tools and web interfaces. Frame-based animation, ANSI color systems, terminal compatibility, accessibility, and web-based ASCII shaders.
 - [auth-implementation](https://skills.ws/skills/auth-implementation): Authentication & authorization — OAuth 2.0, JWT, session management, passkeys, RBAC, and security best practices.
 - [aws-production-deploy](https://skills.ws/skills/aws-production-deploy): Complete AWS production deployment — ECS, RDS, CloudFront, Route53, SSL, monitoring, and IaC with CDK/Terraform.
-- [bing-webmaster](https://skills.ws/skills/bing-webmaster): Bing Webmaster Tools setup, IndexNow protocol, URL submission, backlink analysis, and Bing-specific SEO optimization.
+- [bing-webmaster](https://skills.ws/skills/bing-webmaster): Bing Webmaster Tools setup, IndexNow protocol, URL submission, backlink analysis, AI Performance report (Feb 2026), Generative Engine Optimization (GEO) per Bing's official guidelines, Copilot citation tracking, meta-directive controls for AI surfaces, and Bing-specific SEO. Use when setting up Bing Webmaster Tools, implementing IndexNow, tracking Copilot citations, optimizing for Bing search or AI answers.
 - [blog-engine](https://skills.ws/skills/blog-engine): End-to-end blog post creation pipeline: research, outline, draft, SEO optimize, publish-ready. Headline formulas, intro hooks, CTA patterns, internal linking, featured snippet optimization.
 - [brand-strategy](https://skills.ws/skills/brand-strategy): Brand positioning, messaging hierarchy, visual identity, and brand architecture frameworks for building and managing a cohesive brand system.
 - [business-development](https://skills.ws/skills/business-development): BD strategy, partnership frameworks, outreach templates, deal pipeline management, and negotiation playbooks for B2B SaaS.
@@ -56,6 +60,7 @@
 - [onchain-analytics](https://skills.ws/skills/onchain-analytics): On-chain data analysis — Dune Analytics, Etherscan APIs, The Graph, token flows, wallet profiling, and protocol metrics.
 - [page-cro](https://skills.ws/skills/page-cro): Optimize, improve, or increase conversions on any marketing page — homepage, landing, pricing, feature pages.
 - [paid-ads](https://skills.ws/skills/paid-ads): Paid advertising campaigns on Google Ads, Meta, LinkedIn, Twitter/X. Strategy, copy, targeting, optimization.
+- [polymarket-trading](https://skills.ws/skills/polymarket-trading): Sports betting on Polymarket — automated odds scanning via The Odds API (20+ bookmakers), edge calculation, PM market matching with token ID resolution, order execution via CLOB API, position tracking, and auto-redemption. Strict >70% bookmaker favorite filter. Use when asked about sports bets, Polymarket odds, or betting picks.
 - [popup-cro](https://skills.ws/skills/popup-cro): Create or optimize popups, modals, overlays, slide-ins, and banners for conversion. Exit intent, lead capture, announcements.
 - [postgres-mastery](https://skills.ws/skills/postgres-mastery): Advanced PostgreSQL — index strategies, query optimization, partitioning, pgvector, migrations, backups, and replication.
 - [pr-media-outreach](https://skills.ws/skills/pr-media-outreach): End-to-end PR and media outreach playbook covering press releases, journalist pitching, crisis comms, and PR measurement.
@@ -64,6 +69,7 @@
 - [programmatic-seo](https://skills.ws/skills/programmatic-seo): Create SEO-driven pages at scale using templates and data. Directory pages, location pages, comparison pages.
 - [project-management](https://skills.ws/skills/project-management): End-to-end project management frameworks covering sprint planning, OKRs, stakeholder management, risk mitigation, and retrospectives.
 - [prompt-engineering](https://skills.ws/skills/prompt-engineering): Patterns and techniques for designing, evaluating, and optimizing LLM prompts across models and use cases.
+- [reddit-community-engagement](https://skills.ws/skills/reddit-community-engagement): Safer Reddit community engagement for researching subreddits, scanning relevant threads, checking rules, drafting helpful replies, deciding when to skip, and documenting outcomes.
 - [retention-analytics](https://skills.ws/skills/retention-analytics): Churn analysis, cohort retention, engagement scoring, health scoring, and win-back strategies for SaaS products.
 - [revenue-operations](https://skills.ws/skills/revenue-operations): RevOps frameworks, funnel metrics, forecasting models, GTM alignment, and operational efficiency for scaling teams.
 - [saas-billing](https://skills.ws/skills/saas-billing): Implement SaaS billing with Stripe — subscriptions, usage-based billing, webhooks, API key provisioning, dunning.
@@ -72,7 +78,7 @@
 - [security-hardening](https://skills.ws/skills/security-hardening): Comprehensive web application security hardening covering OWASP Top 10, secure headers, authentication, and dependency auditing.
 - [security-pentester](https://skills.ws/skills/security-pentester): Autonomous web application penetration testing — OWASP Top 10 exploitation, white-box source-aware scanning, CI/CD security gates, vulnerability report interpretation, and remediation workflows. Powered by Shannon pentest framework.
 - [security-sentinel](https://skills.ws/skills/security-sentinel): Autonomous security vigilance — URL/phishing scanning, wallet scam detection, domain threat analysis, email header validation, smart contract risk assessment, and threat intelligence lookups. Teaches agents to proactively protect users from scams, malware, and fraud.
-- [seo-geo](https://skills.ws/skills/seo-geo): SEO & GEO (Generative Engine Optimization) for websites. Optimize for AI search engines and traditional search.
+- [seo-geo](https://skills.ws/skills/seo-geo): SEO & GEO (Generative Engine Optimization) for websites. Technical SEO audits, keyword research, schema markup (JSON-LD), Core Web Vitals (LCP/INP/CLS), E-E-A-T, international SEO (hreflang), and AI search optimization for Google AI Overviews & AI Mode, Bing Copilot, ChatGPT Search, Claude, Perplexity, and Gemini. Reflects 2026 primary-source guidance from Google, Microsoft, OpenAI, and Anthropic. Use when improving search visibility, AI citations, indexing, meta tags, structured data, keyword clustering, or competitor analysis.
 - [signup-flow-cro](https://skills.ws/skills/signup-flow-cro): Optimize signup, registration, account creation, or trial activation flows for higher conversion.
 - [smart-contract-auditor](https://skills.ws/skills/smart-contract-auditor): Comprehensive smart contract security auditing skill. Covers static analysis tooling (Slither, Mythril, Aderyn), fuzz testing (Foundry, Echidna), vulnerability detection with Solidity code examples, proxy/upgrade safety, DeFi-specific audit patterns, gas optimization, and structured audit report generation.
 - [social-media-growth](https://skills.ws/skills/social-media-growth): Platform-specific growth tactics. Algorithmic optimization, engagement hacking, viral mechanics, and community building at scale.
@@ -87,3 +93,9 @@
 - [web-performance](https://skills.ws/skills/web-performance): Core Web Vitals optimization, bundle analysis, caching strategies, and server-side performance for modern web applications.
 - [webinar-events](https://skills.ws/skills/webinar-events): End-to-end webinar funnel design from registration through conversion, including virtual event strategy, email sequences, and content repurposing.
 - [yandex-webmaster](https://skills.ws/skills/yandex-webmaster): Yandex Webmaster setup, Yandex-specific SEO, regional targeting, Turbo pages, and Russian market search optimization.
+
+## Optional
+
+- [llms-full.txt](https://skills.ws/llms-full.txt): Full content of every skill (~33k lines).
+- [skills.json](https://skills.ws/skills.json): Machine-readable catalog.
+- [sitemap.xml](https://skills.ws/sitemap.xml): All indexable URLs.

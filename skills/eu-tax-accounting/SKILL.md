@@ -5,7 +5,7 @@ description: "EU tax and accounting by country — VAT regimes, corporate tax ra
 
 # EU Tax & Accounting — All 27 Member States
 
-Comprehensive reference for corporate tax, VAT, payroll taxes, filing deadlines, cross-border rules, and compliance requirements across the European Union. Data current as of 2025.
+Comprehensive reference for corporate tax, VAT, payroll taxes, filing deadlines, cross-border rules, and compliance requirements across the European Union. Data current as of 2026; always re-verify country rates against the relevant tax authority before filing. Note: mandatory e-invoicing began in Germany (Jan 2025 receive, Jan 2027 issue B2B), Belgium (Jan 2026 B2B), France (Sept 2026 receive, Sept 2027 issue B2B); VAT in the Digital Age (ViDA) rolls out platform-economy rules through 2030.
 
 ---
 

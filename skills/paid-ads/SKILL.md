@@ -1,11 +1,6 @@
 ---
 name: paid-ads
-description: >
-  When the user wants help with paid advertising campaigns on Google Ads, Meta (Facebook/Instagram),
-  LinkedIn, Twitter/X, or other ad platforms. Also use when the user mentions 'PPC,' 'paid media,'
-  'ad copy,' 'ad creative,' 'ROAS,' 'CPA,' 'ad campaign,' 'retargeting,' or 'audience targeting.'
-  This skill covers campaign strategy, ad creation, audience targeting, and optimization.
-version: 2.0.0
+description: "Paid advertising on Google (PMax, AI Max), Meta (Advantage+ Shopping/Sales), LinkedIn (Accelerate), TikTok (Symphony), X — campaign strategy, ad copy, audience targeting, ROAS/CPA. Use when user mentions PPC, paid media, ad creative, retargeting, or campaign optimization."
 ---
 
 # Paid Ads — Expert Playbook

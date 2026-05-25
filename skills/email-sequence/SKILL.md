@@ -1,11 +1,6 @@
 ---
 name: email-sequence
-description: >
-  When the user wants to create or optimize an email sequence, drip campaign, automated email flow,
-  or lifecycle email program. Also use when the user mentions 'email sequence,' 'drip campaign,'
-  'nurture sequence,' 'onboarding emails,' 'welcome sequence,' 're-engagement emails,' 'email
-  automation,' or 'lifecycle emails.' For in-app onboarding, see onboarding-cro.
-version: 2.0.0
+description: "Lifecycle email sequences — welcome/onboarding/nurture/re-engagement/abandoned-cart/winback flows with deliverability and Google+Yahoo 2024 bulk-sender compliance. Use when user mentions drip campaign, nurture, lifecycle emails, or email automation."
 ---
 
 # Email Sequences — Expert Playbook

@@ -1,7 +1,6 @@
 ---
 name: signup-flow-cro
-description: Signup flow conversion optimization with single vs multi-step analysis, social login impact, progressive profiling, friction audit, and 20+ A/B test ideas
-version: 2.0.0
+description: "Signup flow CRO — single vs multi-step analysis, social/passkey login impact, progressive profiling, friction audit, and 20+ A/B test ideas. Use when designing or optimizing signup, onboarding form, or registration funnel. For general pages see `page-cro`; for popups see `popup-cro`."
 ---
 
 # Signup Flow CRO Optimization Framework

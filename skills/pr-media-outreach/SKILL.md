@@ -58,17 +58,27 @@ Happy to send more details or jump on a quick call.
 | Twitter/X Lists | Track reporters covering your space |
 | Similar stories | Who covered competitors? Pitch them. |
 | Podcast directories | Filter by category, check guest history |
-| HARO / Qwoted / Help a B2B Writer | Inbound journalist requests |
+| Qwoted / Featured.com / Help a B2B Writer / SourceBottle | Inbound journalist requests (HARO shut down mid-2024 — Cision discontinued the Connectively rebrand) |
 
 Build a spreadsheet: Name, Outlet, Beat, Email, Twitter, Last Pitched, Notes. Keep under 50 targets per campaign — quality over quantity.
 
-## HARO Strategy
+## Source-Request Strategy (post-HARO)
 
-1. Sign up at helpareporter.com (free tier works)
-2. Filter to your categories — respond within 2 hours (speed wins)
+HARO was shut down by Cision in mid-2024. Modern replacements:
+
+- **Qwoted** (qwoted.com) — closest HARO successor, freemium, strong B2B coverage
+- **Featured.com** — pay-per-pitch model, expert quotes published with backlink
+- **Help a B2B Writer** — focused on SaaS/B2B journalists
+- **SourceBottle** — international (US/UK/AU), free tier
+- **Terkel** — sister product of Featured, expert Q&A
+
+Workflow:
+1. Sign up to 2-3 platforms — Qwoted + Featured is a strong default
+2. Filter by your categories — respond within 2 hours (speed wins)
 3. Format: **[Subject line matching query]** → 2-3 paragraph expert response with credentials
 4. Include headshot + bio link. Don't hard-sell.
 5. Track responses → ~5-10% conversion to placement is good
+6. Bonus: expert quotes also fuel AI-Overview brand mentions (LLMs train on published articles)
 
 ## Press Kit Essentials
 

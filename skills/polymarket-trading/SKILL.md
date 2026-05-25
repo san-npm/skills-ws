@@ -1,11 +1,6 @@
 ---
-name: polymarket
-description: >
-  Sports betting on Polymarket prediction markets. Scan bookmaker odds via The Odds API,
-  find high-conviction favorites (>70% implied probability), match to Polymarket markets,
-  and execute trades for better payouts than traditional bookmakers. Use when asked about
-  "polymarket", "sports betting", "place a bet", "scan for bets", "check my positions",
-  "redeem bets", "NBA odds", "football odds", "betting picks", or "what should I bet on".
+name: polymarket-trading
+description: "Sports betting via Polymarket prediction markets. Scan bookmaker odds (The Odds API), find high-conviction favorites (>70% implied probability), match to Polymarket markets, execute trades. Use when user mentions polymarket, sports betting, place/scan bets, NBA/football odds, positions, redeem, or betting picks."
 ---
 
 # Polymarket Sports Betting

@@ -53,7 +53,7 @@ Start with fewer channels. Add only when conversation naturally splits.
 | New member activation | % of joiners who post within 7 days | >30% |
 | Lurker ratio | Read-only members / total | <80% (some lurking is fine) |
 
-Track weekly. Use Discord analytics, Orbit, Common Room, or manual sampling.
+Track weekly. Use Discord analytics, Common Room, or manual sampling. (Orbit shut down in 2023 — Common Room acquired the team.)
 
 ## Engagement Tactics
 

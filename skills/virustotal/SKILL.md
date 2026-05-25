@@ -1,6 +1,6 @@
 ---
 name: virustotal
-description: "URL, file, domain, and IP scanning via VirusTotal CLI and API. Threat detection, reputation checks, malware analysis, phishing detection."
+description: "URL, file, domain, and IP scanning via VirusTotal CLI (`vt`) and API (`vt-py`). Threat detection, reputation checks, malware analysis, phishing detection. Use when you need VirusTotal specifics; for a broader runtime-threat workflow see `security-sentinel`."
 ---
 
 # VirusTotal Scanner

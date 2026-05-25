@@ -1,9 +1,11 @@
 ---
 name: stripe-billing
-description: "Production Stripe billing: subscriptions, usage-based metering, webhooks, tax, price migrations, and testing."
+description: "Production Stripe billing on Next.js — subscriptions, usage metering (`billing.meterEvents`), webhooks, Stripe Tax + Adaptive Pricing, price migrations, testing. Pins apiVersion '2025-09-30.clover'. Use for Next.js App Router billing; for Express/Node see `saas-billing`."
 ---
 
 # Stripe Billing
+
+> Disambiguation: this skill = Next.js App Router + Server Actions. For Express/Node backends see `saas-billing`.
 
 Production patterns for Stripe billing that handle the edge cases tutorials skip. Subscription lifecycle, usage-based billing, webhook idempotency, EU VAT, and price migrations.
 
@@ -22,7 +24,7 @@ npm install stripe @stripe/stripe-js @stripe/react-stripe-js
 import Stripe from 'stripe';
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20',  // Pin the version. Always.
+  apiVersion: '2025-09-30.clover',  // Pin a specific Stripe API version. Bump deliberately.
   typescript: true,
   maxNetworkRetries: 3,
   timeout: 20000,

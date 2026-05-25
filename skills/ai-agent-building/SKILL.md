@@ -50,7 +50,7 @@ def create_order(product_name: str, quantity: int) -> str:
     return f"Order {order_id} created: {quantity}x {product_name}"
 
 tools = [search_database, create_order]
-model = ChatOpenAI(model="gpt-4o", temperature=0).bind_tools(tools)
+model = ChatOpenAI(model="gpt-5", temperature=0).bind_tools(tools)
 
 # Define nodes
 def agent(state: AgentState) -> AgentState:
@@ -168,7 +168,7 @@ const searchTool = tool(
   }
 );
 
-const model = new ChatOpenAI({ model: "gpt-4o", temperature: 0 }).bindTools([searchTool]);
+const model = new ChatOpenAI({ model: "gpt-5", temperature: 0 }).bindTools([searchTool]);
 
 // Nodes
 async function agent(state: typeof AgentState.State) {
@@ -216,7 +216,7 @@ researcher = Agent(
     tools=[SerperDevTool(), ScrapeWebsiteTool()],
     verbose=True,
     allow_delegation=False,
-    llm="gpt-4o",
+    llm="gpt-5",
 )
 
 writer = Agent(
@@ -224,7 +224,7 @@ writer = Agent(
     goal="Create clear, engaging content based on research findings",
     backstory="You're a technical writer who excels at making complex topics accessible.",
     verbose=True,
-    llm="gpt-4o",
+    llm="gpt-5",
 )
 
 editor = Agent(
@@ -232,7 +232,7 @@ editor = Agent(
     goal="Review and polish the content for accuracy, clarity, and engagement",
     backstory="You're a meticulous editor with an eye for detail and factual accuracy.",
     verbose=True,
-    llm="gpt-4o",
+    llm="gpt-5",
 )
 
 # Define tasks
@@ -575,10 +575,13 @@ import tiktoken
 from contextlib import contextmanager
 
 class CostTracker:
-    PRICES = {  # per 1M tokens, as of 2024
-        "gpt-4o": {"input": 2.50, "output": 10.00},
-        "gpt-4o-mini": {"input": 0.15, "output": 0.60},
-        "claude-3-5-sonnet": {"input": 3.00, "output": 15.00},
+    PRICES = {  # per 1M tokens, late-2025 list prices — re-check the provider pricing pages before relying on these
+        "gpt-5": {"input": 1.25, "output": 10.00},
+        "gpt-5-mini": {"input": 0.25, "output": 2.00},
+        "gpt-5-nano": {"input": 0.05, "output": 0.40},
+        "claude-opus-4-5": {"input": 15.00, "output": 75.00},
+        "claude-sonnet-4-5": {"input": 3.00, "output": 15.00},
+        "claude-haiku-4-5": {"input": 1.00, "output": 5.00},
     }
 
     def __init__(self):
@@ -624,12 +627,64 @@ async for event in app.astream_events(
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 
-primary = ChatOpenAI(model="gpt-4o", timeout=30)
-fallback = ChatAnthropic(model="claude-3-5-sonnet-20241022", timeout=30)
+primary = ChatOpenAI(model="gpt-5", timeout=30)
+fallback = ChatAnthropic(model="claude-sonnet-4-5", timeout=30)
 
 model = primary.with_fallbacks([fallback])
 # Automatically tries fallback if primary fails
 ```
+
+---
+
+## Modern Agent Surfaces (2025-2026)
+
+### Anthropic Memory Tool (beta)
+
+Lets Claude store and retrieve files across turns so long-running agents don't blow context. Operations: `view`, `create`, `str_replace`, `insert`, `delete`, `rename`. Anthropic reports ~84% token reduction in extended workflows.
+
+```python
+# Server-side: pass the memory tool + beta header. You implement the storage backend
+# (typically a per-conversation /memories/ directory on your filesystem or object store)
+# by handling tool_use blocks named "memory" and returning tool_result blocks.
+
+response = client.beta.messages.create(
+    model="claude-sonnet-4-5",
+    max_tokens=4096,
+    extra_headers={"anthropic-beta": "context-management-2025-06-27"},
+    tools=[{"type": "memory_20250818", "name": "memory"}],
+    messages=conversation,
+)
+```
+
+Pair with **prompt caching** on a long system prompt so the agent's "personality + memory index" is cached across turns at 10% of base input price.
+
+### OpenAI Responses API (March 2025)
+
+Stateful successor to Chat Completions: tools, file/web/MCP, reasoning models, and conversation `store: true` for server-held state.
+
+```python
+# pip install openai
+from openai import OpenAI
+client = OpenAI()
+
+resp = client.responses.create(
+    model="gpt-5",
+    input="Summarize the latest issues in repo X and open one for the worst.",
+    store=True,
+    reasoning={"effort": "medium"},
+    tools=[
+        {
+            "type": "mcp",
+            "server_label": "github",
+            "server_url": "https://mcp.github.com",  # remote MCP server
+            "require_approval": "never",
+        },
+    ],
+)
+print(resp.output_text)
+```
+
+The `mcp` tool type lets the model call any remote MCP server (Streamable HTTP) without you proxying every call. See the `mcp-client` skill for client patterns and `mcp-server-builder` for shipping your own.
 
 ---
 
@@ -954,7 +1009,7 @@ from langchain_openai import ChatOpenAI
 
 MODELS = {
     "fast": ChatOpenAI(model="gpt-4o-mini", temperature=0),     # $0.15/1M in
-    "smart": ChatOpenAI(model="gpt-4o", temperature=0),          # $2.50/1M in
+    "smart": ChatOpenAI(model="gpt-5", temperature=0),          # $2.50/1M in
     "reasoning": ChatOpenAI(model="o1", temperature=1),          # $15/1M in
 }
 

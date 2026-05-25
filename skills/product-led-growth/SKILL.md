@@ -77,30 +77,42 @@ The aha moment is the action (or set of actions) that correlates most strongly w
 5. Test by driving more users to that action — does retention improve?
 
 ```sql
--- Find aha moment candidates
+-- Find aha-moment candidates: for each candidate action,
+-- compare day-30 retention of users who did it vs users who didn't.
 WITH user_actions AS (
   SELECT
-    user_id,
-    MAX(CASE WHEN event = 'invited_teammate' THEN 1 ELSE 0 END) AS invited,
-    MAX(CASE WHEN event = 'created_project' THEN 1 ELSE 0 END) AS created_project,
-    MAX(CASE WHEN event = 'connected_integration' THEN 1 ELSE 0 END) AS connected
-  FROM events
+    e.user_id,
+    MAX(CASE WHEN e.event = 'invited_teammate'     THEN 1 ELSE 0 END) AS invited,
+    MAX(CASE WHEN e.event = 'created_project'      THEN 1 ELSE 0 END) AS created_project,
+    MAX(CASE WHEN e.event = 'connected_integration' THEN 1 ELSE 0 END) AS connected
+  FROM events e
+  JOIN users  u ON u.id = e.user_id
   WHERE e.created_at BETWEEN u.signup_date AND u.signup_date + INTERVAL '7 days'
   GROUP BY e.user_id
 ),
 retention AS (
-  SELECT e.user_id, 1 AS retained_d30
+  SELECT DISTINCT e.user_id, 1 AS retained_d30
   FROM events e
-  JOIN users u ON u.id = e.user_id
-  WHERE e.created_at BETWEEN u.signup_date + INTERVAL '28 days' AND u.signup_date + INTERVAL '35 days'
-  GROUP BY e.user_id
+  JOIN users  u ON u.id = e.user_id
+  WHERE e.created_at BETWEEN u.signup_date + INTERVAL '28 days'
+                         AND u.signup_date + INTERVAL '35 days'
+),
+candidate AS (
+  SELECT 'invited_teammate'      AS action, invited      AS did_it, user_id FROM user_actions
+  UNION ALL
+  SELECT 'created_project',      created_project, user_id FROM user_actions
+  UNION ALL
+  SELECT 'connected_integration', connected,      user_id FROM user_actions
 )
 SELECT
-  'invited_teammate' AS action,
-  AVG(CASE WHEN a.invited = 1 THEN r.retained_d30 ELSE 0 END) AS retention_if_yes,
-  AVG(CASE WHEN a.invited = 0 THEN COALESCE(r.retained_d30, 0) ELSE NULL END) AS retention_if_no
-FROM user_actions a LEFT JOIN retention r ON a.user_id = r.user_id
--- Repeat UNION ALL for each action
+  c.action,
+  AVG(CASE WHEN c.did_it = 1 THEN COALESCE(r.retained_d30, 0) END) AS retention_if_yes,
+  AVG(CASE WHEN c.did_it = 0 THEN COALESCE(r.retained_d30, 0) END) AS retention_if_no
+FROM candidate c
+LEFT JOIN retention r ON r.user_id = c.user_id
+GROUP BY c.action
+ORDER BY (retention_if_yes - retention_if_no) DESC;
+-- The action with the highest delta is your aha-moment candidate.
 ```
 
 ### Time-to-Value (TTV) Optimization
@@ -483,7 +495,7 @@ PQL Sales Score = (Product Score × 0.6) + (Firmographic Score × 0.4)
 | Invited users from 3+ departments | +15 | Cross-functional spread |
 | Admin viewed pricing 3+ times | +10 | Purchase intent |
 
-**Firmographic signals (via enrichment — Clearbit, Apollo):**
+**Firmographic signals (via enrichment — HubSpot Breeze Intelligence (formerly Clearbit), Apollo, Clay):**
 
 | Signal | Score | Weight |
 |--------|-------|--------|

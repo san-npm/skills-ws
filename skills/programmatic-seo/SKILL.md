@@ -1,12 +1,6 @@
 ---
 name: programmatic-seo
-description: >
-  When the user wants to create SEO-driven pages at scale using templates and data.
-  Also use when the user mentions "programmatic SEO," "template pages," "pages at scale,"
-  "directory pages," "location pages," "[keyword] + [city] pages," "comparison pages,"
-  "integration pages," or "building many pages for SEO."
-  For auditing existing SEO issues, see seo-audit.
-version: 2.0.0
+description: "Build template-driven SEO pages at scale that survive Google's March 2024 scaled-content-abuse policy. Use when user mentions programmatic SEO, template pages, directory/location/comparison/integration pages, or pages at scale."
 ---
 
 # Programmatic SEO — Build Thousands of High-Quality Pages at Scale

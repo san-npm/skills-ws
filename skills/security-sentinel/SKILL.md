@@ -1,11 +1,11 @@
 ---
 name: security-sentinel
-description: "Autonomous security vigilance — URL/phishing scanning, wallet scam detection, domain threat analysis, email header validation, smart contract risk assessment, and threat intelligence lookups. Teaches agents to proactively protect users from scams, malware, and fraud."
-version: 1.0.0
-category: dev
+description: "Runtime threat intelligence — URL/phishing scans, wallet scam detection, domain reputation, email header validation, smart-contract risk lookups. Use when a user/agent needs to vet an unknown link, address, or sender. Paired with security-hardening (defensive code) and security-pentester (offensive testing); for VirusTotal specifics see `virustotal`."
 ---
 
 # Security Sentinel
+
+> Disambiguation: this skill = runtime threat intel. For defensive code patterns see `security-hardening`. For active offensive testing see `security-pentester`. For VirusTotal API specifics see `virustotal`.
 
 Autonomous threat detection and response. Scan URLs, wallets, domains, emails, and contracts before trusting them.
 

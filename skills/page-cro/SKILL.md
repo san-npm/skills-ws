@@ -1,7 +1,6 @@
 ---
 name: page-cro
-description: Landing page CRO audit framework with 100-point checklist, heatmap analysis, statistical testing, and conversion optimization strategies
-version: 2.0.0
+description: "Landing page CRO — 100-point audit checklist, heatmap analysis, statistical testing, conversion optimization. Use when auditing or optimizing a landing/marketing page. For popups see `popup-cro`; for signup flows see `signup-flow-cro`."
 ---
 
 # Landing Page CRO Optimization Framework

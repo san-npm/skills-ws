@@ -1,10 +1,11 @@
 ---
 name: saas-billing
-description: Implement SaaS billing with Stripe — subscriptions, usage-based billing, webhooks, API key provisioning, dunning
-version: 1.0.0
+description: "Express/Node SaaS billing with Stripe — subscriptions, usage billing (`billing.meterEvents`), webhooks, API key provisioning, dunning runbook, Adaptive Pricing, Stripe Tax. Use when building SaaS billing on an Express/Node backend; for Next.js see `stripe-billing`."
 ---
 
 # SaaS Billing with Stripe — Expert Skill
+
+> Disambiguation: this skill = Express/Node stack. For Next.js App Router + Server Actions billing, see `stripe-billing`. Both pin Stripe `apiVersion: '2025-09-30.clover'`.
 
 > Production-grade billing integration for SaaS applications using Stripe.
 > Covers subscription, usage-based, and hybrid billing models with complete Express.js examples.
@@ -64,7 +65,7 @@ DATABASE_URL=postgres://...
 
 ```js
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2024-12-18.acacia',   // pin the API version
+  apiVersion: '2025-09-30.clover',   // pin the API version
   maxNetworkRetries: 2,
 });
 ```
@@ -500,7 +501,7 @@ Stripe webhook signature verification requires the **raw request body**. If `exp
 const express = require('express');
 // Always pin your API version — see "Stripe Client Initialization" above.
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2024-12-18.acacia',
+  apiVersion: '2025-09-30.clover',
 });
 
 const app = express();
@@ -1586,7 +1587,7 @@ const stripe = require('stripe')(key);  // Uses latest version — may break une
 
 **Right:**
 ```js
-const stripe = require('stripe')(key, { apiVersion: '2024-12-18.acacia' });
+const stripe = require('stripe')(key, { apiVersion: '2025-09-30.clover' });
 ```
 
 ### 6. Ignoring `past_due` Status
@@ -1642,7 +1643,7 @@ const express = require('express');
 const crypto = require('crypto');
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2024-12-18.acacia',
+  apiVersion: '2025-09-30.clover',
   maxNetworkRetries: 2,
 });
 

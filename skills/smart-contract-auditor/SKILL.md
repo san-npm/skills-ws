@@ -19,7 +19,7 @@ slither . --print contract-summary  # function visibility overview
 ### Mythril (Symbolic Execution)
 ```bash
 pip3 install mythril
-myth analyze contracts/Vault.sol --solv 0.8.20 --execution-timeout 300
+myth analyze contracts/Vault.sol --solv 0.8.28 --execution-timeout 300
 myth analyze contracts/Vault.sol --max-depth 30 -o jsonv2
 ```
 

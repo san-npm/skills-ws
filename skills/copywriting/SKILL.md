@@ -1,7 +1,6 @@
 ---
 name: copywriting
-description: Headline frameworks (PAS/AIDA/4U/BAB), page-by-page playbooks, CTA optimization, voice calibration, and before/after rewrites
-version: 2.0.0
+description: "Copywriting — headline frameworks (PAS/AIDA/4U/BAB), page-by-page playbooks, CTA optimization, voice calibration, before/after rewrites, AI-snippet-friendly leads. Use when writing or revising landing pages, ads, emails, or product copy."
 ---
 
 # Copywriting v2.0: Headlines, CTAs & Voice Calibration

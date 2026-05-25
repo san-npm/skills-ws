@@ -1,7 +1,6 @@
 ---
 name: content-strategy
-description: Topic clusters, pillar/cluster model, content scoring matrix, editorial calendar template, gap analysis workflow, repurposing framework, and audit checklist
-version: 2.0.0
+description: "Content strategy — topic clusters, pillar/cluster model, scoring matrix, editorial calendar, gap analysis, repurposing framework, and audit checklist for AI-era discovery (AI Overviews, ChatGPT Search, Perplexity). Use when planning a content program or auditing an existing one."
 ---
 
 # Content Strategy v2.0: Topic Clusters & Editorial Planning

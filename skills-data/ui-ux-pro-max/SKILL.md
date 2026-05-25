@@ -1,6 +1,6 @@
 ---
 name: ui-ux-pro-max
-description: "UI/UX design intelligence. Style guides, color palettes, font pairings, component patterns, accessibility audit (WCAG 2.1 AA), responsive design patterns, animation guidelines. Use when designing user interfaces, choosing color palettes, selecting font pairings, auditing accessibility, reviewing UI code, creating component libraries, or implementing responsive layouts."
+description: "UI/UX Pro Max is a premium design intelligence skill — turns Claude Code, Cursor, OpenClaw, and Codex into a senior UI/UX designer. Covers design systems, WCAG 2.1 AA accessibility audits, color palettes, font pairings, component libraries, responsive layouts, and motion guidelines. Use when designing user interfaces, choosing color palettes, selecting font pairings, auditing accessibility, reviewing UI code, building component libraries, or implementing responsive design."
 ---
 
 # UI/UX Pro Max v2

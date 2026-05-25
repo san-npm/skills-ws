@@ -112,7 +112,7 @@ def evaluate(prompt, response, criteria):
     Response: {response}
     
     Return JSON: {{"score": int, "reasoning": str}}"""
-    return call_llm(judge_prompt, model="claude-sonnet")
+    return call_llm(judge_prompt, model="claude-sonnet-4-5")
 ```
 
 | Method | Cost | Speed | When |
@@ -176,6 +176,95 @@ Question: {user_query}
 - Compress few-shot examples to minimal differentiating features
 - Move static context to cached system prompts (Claude prompt caching, GPT cached tokens)
 - Measure: `cost = (input_tokens × input_price) + (output_tokens × output_price)`
+
+## Prompt Caching & Reasoning Budgets
+
+### Anthropic prompt caching (`cache_control`)
+
+```python
+# pip install anthropic
+import anthropic
+client = anthropic.Anthropic()
+
+# Mark the system prompt + a tool definition for caching (5-minute TTL default).
+# Use {"type": "ephemeral", "ttl": "1h"} for the 1-hour cache.
+msg = client.messages.create(
+    model="claude-sonnet-4-5",
+    max_tokens=1024,
+    system=[
+        {"type": "text", "text": LONG_INSTRUCTIONS, "cache_control": {"type": "ephemeral"}},
+    ],
+    tools=[
+        {"name": "search_docs", "description": "...", "input_schema": {...},
+         "cache_control": {"type": "ephemeral"}},
+    ],
+    messages=[{"role": "user", "content": user_query}],
+)
+
+print(msg.usage)
+# Usage(cache_creation_input_tokens=…, cache_read_input_tokens=…,
+#       input_tokens=…, output_tokens=…)
+```
+
+- `cache_control` markers can sit on system blocks, tool definitions, message blocks, or top-level (auto-marks the last cacheable block).
+- Cache reads are billed at ~10% of base input price (writes are ~125% — break-even after ~2 reads).
+- Default TTL is 5 minutes (`ephemeral_5m`); also `"ttl": "1h"` (`ephemeral_1h`, premium pricing).
+- Cache is keyed by exact-byte prefix, so put stable content (system + tools + long shared context) **before** anything user-specific.
+
+### OpenAI prefix caching (automatic)
+
+OpenAI caches prompt prefixes ≥1024 tokens automatically. There is no API flag — just keep the prefix stable. Inspect cache hits in `usage.prompt_tokens_details.cached_tokens` on Responses or Chat Completions output. Cached input is billed at a 50% discount on most models.
+
+### Gemini context caching (explicit)
+
+```python
+# pip install google-genai
+from google import genai
+client = genai.Client()
+
+cache = client.caches.create(
+    model="models/gemini-2.5-pro",
+    config={
+        "contents": [{"role": "user", "parts": [{"text": LONG_DOCUMENT}]}],
+        "system_instruction": LONG_INSTRUCTIONS,
+        "ttl": "3600s",
+    },
+)
+resp = client.models.generate_content(
+    model="models/gemini-2.5-pro",
+    contents="Summarize section 4 of the document.",
+    config={"cached_content": cache.name},
+)
+```
+
+- Minimum cacheable token count varies by model (Gemini 1.5/2.5 supports it).
+- Billed as a per-hour storage rate plus a per-call discounted read rate.
+
+### Extended thinking (Anthropic)
+
+```python
+msg = client.messages.create(
+    model="claude-sonnet-4-5",
+    max_tokens=16000,
+    thinking={"type": "enabled", "budget_tokens": 8000},  # min 1024, counts toward max_tokens
+    messages=[{"role": "user", "content": "Prove √2 is irrational."}],
+)
+for block in msg.content:
+    if block.type == "thinking":
+        print("[thinking]", block.thinking)   # summarized reasoning
+    elif block.type == "text":
+        print("[answer]", block.text)
+```
+
+Use extended thinking for math, multi-step reasoning, and code planning. Keep budget proportional to task complexity — over-budgeting wastes tokens.
+
+### Picking the right reasoning surface
+
+| Provider | Reasoning surface | When to use |
+|---|---|---|
+| Anthropic | `thinking={"type":"enabled","budget_tokens":N}` | Explicit per-call budget control |
+| OpenAI | `reasoning={"effort":"low/medium/high"}` on Responses API (o-series & GPT-5 reasoning) | Effort levels rather than raw budgets |
+| Google | `thinking_config={"thinking_budget":N}` on Gemini 2.5+ | Per-call budget control |
 
 ## Prompt Versioning
 

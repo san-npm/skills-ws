@@ -1,12 +1,13 @@
 # skills.ws
 # Content Signals (https://contentsignals.org/) express AI usage preferences.
+# Skills are published under MIT; we permit search indexing and AI answer/input
+# use, but opt out of model training by default.
 
 User-agent: *
 Content-Signal: search=yes, ai-input=yes, ai-train=no
 Allow: /
 
-# AI Crawlers — welcome. Skills are published under MIT; we permit search
-# indexing and AI answer/input use, but opt out of model training by default.
+# AI Crawlers (citation + training) — explicit per-bot directives
 User-agent: GPTBot
 Content-Signal: search=yes, ai-input=yes, ai-train=no
 Allow: /
@@ -20,6 +21,14 @@ Content-Signal: search=yes, ai-input=yes, ai-train=no
 Allow: /
 
 User-agent: ClaudeBot
+Content-Signal: search=yes, ai-input=yes, ai-train=no
+Allow: /
+
+User-agent: Claude-SearchBot
+Content-Signal: search=yes, ai-input=yes, ai-train=no
+Allow: /
+
+User-agent: Claude-User
 Content-Signal: search=yes, ai-input=yes, ai-train=no
 Allow: /
 
@@ -43,12 +52,19 @@ User-agent: Google-Extended
 Content-Signal: search=yes, ai-input=yes, ai-train=no
 Allow: /
 
+# ─── Traditional search ───────────────────────────────
 User-agent: Googlebot
 Content-Signal: search=yes, ai-input=yes, ai-train=no
 Allow: /
 
 User-agent: Bingbot
 Content-Signal: search=yes, ai-input=yes, ai-train=no
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: YandexBot
 Allow: /
 
 User-agent: Applebot
@@ -68,6 +84,10 @@ Content-Signal: search=yes, ai-input=yes, ai-train=no
 Allow: /
 
 User-agent: meta-externalagent
+Content-Signal: search=yes, ai-input=yes, ai-train=no
+Allow: /
+
+User-agent: meta-externalfetcher
 Content-Signal: search=yes, ai-input=yes, ai-train=no
 Allow: /
 

@@ -58,7 +58,7 @@ description: "Platform-specific growth tactics. Algorithmic optimization, engage
 
 ### Instagram
 
-**Algorithm priority (2025):**
+**Algorithm priority (2026 baseline — re-verify before quoting to clients):**
 - Reels > Carousels > Static images > Stories for reach
 - Saves and shares weighted higher than likes
 - Watch time on Reels (completion rate)

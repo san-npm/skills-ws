@@ -31,10 +31,10 @@ cd my-project
 src = "src"
 out = "out"
 libs = ["lib"]
-solc_version = "0.8.24"
+solc_version = "0.8.28"   # ≥0.8.27 unlocks transient storage (TSTORE/TLOAD), MCOPY, and BLOBHASH; 0.8.28 stabilizes EOF previews
 optimizer = true
 optimizer_runs = 200
-via_ir = false
+via_ir = true             # required for some 0.8.27+ features and reduces stack-too-deep errors
 ffi = false
 
 [profile.default.fuzz]
