@@ -9,6 +9,9 @@ export default function NpmDownloads() {
     const cached = sessionStorage.getItem("npm-dl");
     const cachedAt = sessionStorage.getItem("npm-dl-at");
     if (cached && cachedAt && Date.now() - Number(cachedAt) < 86400000) {
+      // Hydrating from sessionStorage on mount — same-tick setState is the
+      // intended pattern here (no fetch needed when cache is fresh).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDownloads(Number(cached));
       return;
     }

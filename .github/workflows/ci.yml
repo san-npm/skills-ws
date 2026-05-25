@@ -11,7 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18, 20, 22]
+        # Next.js 16 requires Node 20.9+. The published CLI bin still
+        # works on Node >=18 per npm-package.json engines field, but the
+        # framework toolchain we need at CI time does not.
+        node-version: [20, 22]
 
     steps:
       - uses: actions/checkout@v4

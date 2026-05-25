@@ -179,6 +179,9 @@ export default function AsciiBackground() {
     };
 
     animate();
+    // One-shot mount flag for the Three.js canvas — intentional sync setState
+    // so the surrounding wrapper can fade in on first frame without flicker.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setReady(true);
 
     return () => {
@@ -193,7 +196,6 @@ export default function AsciiBackground() {
       pMat.dispose();
       if (asciiCanvas.parentNode) asciiCanvas.parentNode.removeChild(asciiCanvas);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
