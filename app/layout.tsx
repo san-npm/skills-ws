@@ -9,6 +9,12 @@ import "./globals.css";
 const BASE_URL = "https://www.skills.ws";
 const skillCount = getSkills().length;
 
+// Bing Webmaster Tools verification. Optional: the site is already verified via
+// "Import from Google Search Console", but setting BING_SITE_VERIFICATION (the
+// msvalidate.01 code from Bing → Add site → HTML meta tag) renders the meta tag
+// as an independent verification method. Read at build time; set it in Vercel.
+const BING_VERIFICATION = process.env.BING_SITE_VERIFICATION;
+
 export const viewport: Viewport = {
   themeColor: "#0a0a0a",
   width: "device-width",
@@ -83,6 +89,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: BASE_URL,
   },
+  verification: BING_VERIFICATION
+    ? { other: { "msvalidate.01": BING_VERIFICATION } }
+    : undefined,
   category: "technology",
   other: {
     "geo.region": "LU",
