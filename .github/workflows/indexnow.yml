@@ -1,0 +1,53 @@
+name: IndexNow
+
+# Ping IndexNow (Bing, Yandex, Seznam, Naver, Yep, …) when published content
+# changes, so search engines re-crawl in minutes instead of days.
+#
+# Vercel deploys the same push in parallel; the submit script polls the live
+# key file first, so it only fires once the new deploy is actually serving.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "skills.json"
+      - "skills-data/**"
+      - "app/**"
+      - "lib/**"
+      - "public/**"
+  # Manual run — optionally target specific paths/URLs via the input.
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: "Space-separated URLs or site paths (blank = whole sitemap)"
+        required: false
+        default: ""
+  # Weekly safety net in case a push-triggered run was missed.
+  schedule:
+    - cron: "17 6 * * 1"
+
+# Don't let overlapping runs race each other.
+concurrency:
+  group: indexnow
+  cancel-in-progress: false
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Submit to IndexNow
+        # Pass the dispatch input via env (not inline ${{ }}) to avoid shell
+        # injection. Unquoted $URLS word-splits into separate argv entries;
+        # the value is never re-parsed for shell metacharacters.
+        env:
+          URLS: ${{ github.event.inputs.urls }}
+        run: |
+          set -f   # disable globbing of URL arguments
+          node scripts/indexnow-submit.mjs $URLS

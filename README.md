@@ -185,6 +185,28 @@ No server needed — deploy to any static host (Vercel, Netlify, GitHub Pages, S
 - Google Analytics 4 integration
 - `llms.txt` + `llms-full.txt` for AI crawlers
 - `robots.txt` with sitemap reference
+- **IndexNow** instant-indexing for Bing, Yandex, Seznam, Naver & Yep (see below)
+
+### IndexNow
+
+[IndexNow](https://www.indexnow.org) pushes URL changes to participating search
+engines immediately instead of waiting to be re-crawled.
+
+- **Key file:** `public/81658695aad54ee3a7ce2951b5cb4a4e.txt`, served at
+  `https://skills.ws/81658695aad54ee3a7ce2951b5cb4a4e.txt`
+- **Submitter:** `scripts/indexnow-submit.mjs` builds the URL list from
+  `skills.json` (kept in lockstep with `app/sitemap.ts`) and POSTs once to the
+  shared `api.indexnow.org` endpoint, which fans out to every engine.
+- **Automation:** `.github/workflows/indexnow.yml` runs on every push to `main`
+  that touches content, plus a weekly cron and manual dispatch. The script polls
+  the live key file first, so it only fires after the matching Vercel deploy is
+  serving.
+
+```bash
+npm run indexnow                      # submit the whole sitemap
+npm run indexnow -- --dry-run         # print payload, send nothing
+npm run indexnow -- /faq /skills/seo  # submit specific paths only
+```
 
 ---
 

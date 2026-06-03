@@ -6,6 +6,7 @@
     "prebuild": "node scripts/build-agent-skills.mjs",
     "build": "next build",
     "start": "next start",
+    "indexnow": "node scripts/indexnow-submit.mjs",
     "lint": "eslint .",
     "test": "node test/cli.test.mjs",
     "prepublishOnly": "cp package.json package.json.bak && cp npm-package.json package.json",
