@@ -3,7 +3,7 @@
   "name": "Skills",
   "description": "Agent skills for AI coding assistants — built for OpenClaw, Claude Code, Cursor, and Codex",
   "repository": "https://github.com/san-npm/skills-ws",
-  "website": "https://skills.ws",
+  "website": "https://www.skills.ws",
   "skills": [
     {
       "name": "ab-testing",

@@ -21,26 +21,26 @@ export const metadata: Metadata = {
   openGraph: {
     title: "npx skills — CLI Reference",
     description: `Install and manage ${skillCount} agent skills from the command line with npx skills-ws.`,
-    url: "https://skills.ws/cli",
+    url: "https://www.skills.ws/cli",
     type: "article",
     siteName: "skills.ws",
-    images: [{ url: "https://skills.ws/og.png", width: 1200, height: 630 }],
+    images: [{ url: "https://www.skills.ws/og.png", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
     title: "npx skills — CLI Reference",
     description: `Install ${skillCount} agent skills with npx skills-ws.`,
-    images: ["https://skills.ws/og.png"],
+    images: ["https://www.skills.ws/og.png"],
   },
-  alternates: { canonical: "https://skills.ws/cli" },
+  alternates: { canonical: "https://www.skills.ws/cli" },
 };
 
 const breadcrumbSchema = {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   itemListElement: [
-    { "@type": "ListItem", position: 1, name: "Home", item: "https://skills.ws" },
-    { "@type": "ListItem", position: 2, name: "CLI Reference", item: "https://skills.ws/cli" },
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://www.skills.ws" },
+    { "@type": "ListItem", position: 2, name: "CLI Reference", item: "https://www.skills.ws/cli" },
   ],
 };
 

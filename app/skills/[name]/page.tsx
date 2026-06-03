@@ -6,7 +6,7 @@ import { skillDisplayName, categoryDisplayName, answerFirstDescription } from "@
 import InstallBox from "@/components/InstallBox";
 import SkillContent from "@/components/SkillContent";
 
-const BASE_URL = "https://skills.ws";
+const BASE_URL = "https://www.skills.ws";
 const ORG = {
   "@type": "Organization",
   name: "Commit Media",

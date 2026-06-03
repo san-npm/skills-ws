@@ -7,7 +7,7 @@ import NpmDownloads from "@/components/NpmDownloads";
 import AsciiBackground from "@/components/AsciiBackgroundClient";
 import JsonLd from "@/components/JsonLd";
 
-const BASE_URL = "https://skills.ws";
+const BASE_URL = "https://www.skills.ws";
 
 const ASCII = `███████╗██╗  ██╗██╗██╗     ██╗     ███████╗   ██╗    ██╗███████╗
 ██╔════╝██║ ██╔╝██║██║     ██║     ██╔════╝   ██║    ██║██╔════╝

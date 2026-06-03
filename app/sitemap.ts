@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 import { getSkills } from "@/lib/skills";
 
-const BASE = "https://skills.ws";
+const BASE = "https://www.skills.ws";
 
 // Stable build-time timestamp. Bumps only when the build runs (i.e. when content
 // actually changes), not on every page hit — avoids "everything changed yesterday"

@@ -6,7 +6,7 @@ import { getSkills } from "@/lib/skills";
 import WebMcpTools from "@/components/WebMcpTools";
 import "./globals.css";
 
-const BASE_URL = "https://skills.ws";
+const BASE_URL = "https://www.skills.ws";
 const skillCount = getSkills().length;
 
 export const viewport: Viewport = {

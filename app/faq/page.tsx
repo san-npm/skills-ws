@@ -16,17 +16,17 @@ export const metadata: Metadata = {
     title: "FAQ — Agent Skills for AI",
     description:
       "Frequently asked questions about skills.ws — installation, security, compatibility, and supported AI assistants.",
-    url: "https://skills.ws/faq",
+    url: "https://www.skills.ws/faq",
     type: "article",
     siteName: "skills.ws",
-    images: [{ url: "https://skills.ws/og.png", width: 1200, height: 630 }],
+    images: [{ url: "https://www.skills.ws/og.png", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary",
     title: "FAQ — skills.ws",
     description: "Frequently asked questions about agent skills for AI coding assistants.",
   },
-  alternates: { canonical: "https://skills.ws/faq" },
+  alternates: { canonical: "https://www.skills.ws/faq" },
 };
 
 const Code = ({ children }: { children: React.ReactNode }) => (
@@ -90,8 +90,8 @@ const breadcrumbSchema = {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   itemListElement: [
-    { "@type": "ListItem", position: 1, name: "Home", item: "https://skills.ws" },
-    { "@type": "ListItem", position: 2, name: "FAQ", item: "https://skills.ws/faq" },
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://www.skills.ws" },
+    { "@type": "ListItem", position: 2, name: "FAQ", item: "https://www.skills.ws/faq" },
   ],
 };
 

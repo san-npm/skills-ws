@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { getSkills, getCategories, categoryColors } from "@/lib/skills";
 import { skillDisplayName, categoryDisplayName } from "@/lib/display";
 
-const BASE_URL = "https://skills.ws";
+const BASE_URL = "https://www.skills.ws";
 const MODIFIED = new Date().toISOString().slice(0, 10);
 
 const CATEGORY_DESCRIPTIONS: Record<string, string> = {

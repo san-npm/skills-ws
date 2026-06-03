@@ -103,4 +103,4 @@ User-agent: CCBot
 Content-Signal: search=yes, ai-input=yes, ai-train=no
 Allow: /
 
-Sitemap: https://skills.ws/sitemap.xml
+Sitemap: https://www.skills.ws/sitemap.xml

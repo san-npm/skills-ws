@@ -17,25 +17,25 @@ export const metadata: Metadata = {
     title: "Documentation — How Agent Skills Work",
     description:
       "Learn how SKILL.md agent skills work, how to install them, and the security model.",
-    url: "https://skills.ws/docs",
+    url: "https://www.skills.ws/docs",
     type: "article",
     siteName: "skills.ws",
-    images: [{ url: "https://skills.ws/og.png", width: 1200, height: 630 }],
+    images: [{ url: "https://www.skills.ws/og.png", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary",
     title: "Docs — skills.ws",
     description: "How SKILL.md agent skills work, installation, and security model.",
   },
-  alternates: { canonical: "https://skills.ws/docs" },
+  alternates: { canonical: "https://www.skills.ws/docs" },
 };
 
 const breadcrumbSchema = {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   itemListElement: [
-    { "@type": "ListItem", position: 1, name: "Home", item: "https://skills.ws" },
-    { "@type": "ListItem", position: 2, name: "Documentation", item: "https://skills.ws/docs" },
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://www.skills.ws" },
+    { "@type": "ListItem", position: 2, name: "Documentation", item: "https://www.skills.ws/docs" },
   ],
 };
 
@@ -66,7 +66,7 @@ const howToSchema = {
       position: 2,
       name: "Run the installer",
       text: "Execute npx skills-ws to install all 85 skills, or add --skill name to install just one.",
-      url: "https://skills.ws/cli",
+      url: "https://www.skills.ws/cli",
     },
     {
       "@type": "HowToStep",
