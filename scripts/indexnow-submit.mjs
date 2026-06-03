@@ -73,7 +73,10 @@ function normalizeUrl(arg) {
  * submit. This both follows IndexNow's verification model and acts as a poll for
  * "is the latest deploy live yet?" in CI, where we may run moments after a push.
  */
-async function verifyKeyLive({ attempts = 6, delayMs = 10000 } = {}) {
+async function verifyKeyLive({
+  attempts = Number(process.env.INDEXNOW_VERIFY_ATTEMPTS) || 30,
+  delayMs = Number(process.env.INDEXNOW_VERIFY_DELAY_MS) || 20000,
+} = {}) {
   for (let i = 1; i <= attempts; i++) {
     try {
       const res = await fetch(KEY_LOCATION, { headers: { Accept: "text/plain" } });
