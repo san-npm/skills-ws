@@ -1,11 +1,15 @@
 ---
 name: aleph-cloud-self-deployment
-description: "Expert Aleph Cloud deployment — multi-node fleet management, auto-scaling, inter-VM communication, load distribution, disaster recovery, and security hardening. Use when deploying confidential or persistent VMs/instances on Aleph Cloud."
+description: "Deploy and operate VMs on Aleph Cloud with the aleph-client CLI — single node or multi-node fleets, Tailscale mesh, HAProxy distribution, backup/recovery, cost control, and security hardening. Use when deploying confidential/persistent VMs (e.g. an OpenClaw agent runtime) on Aleph Cloud, or building an Aleph node fleet."
 ---
 
-# Aleph Cloud Self-Deployment v2.0: Multi-Node Fleet Management
+# Aleph Cloud Self-Deployment: VM & Multi-Node Fleet Management
 
-Comprehensive framework for deploying and managing OpenClaw instances across Aleph Cloud infrastructure with advanced orchestration, auto-scaling protocols, and enterprise-grade reliability.
+Framework for deploying and managing persistent/confidential VMs on Aleph Cloud's decentralized compute network using the official `aleph-client` CLI, with patterns for running an OpenClaw agent runtime across one or many nodes (Tailscale mesh, HAProxy distribution, pull-based backup, and hardening).
+
+> **Verify before you ship.** Aleph CLI flags, OpenClaw install commands, and pricing change over time. This skill is current as of **Jun 2026**. Authoritative sources, used throughout: the Aleph CLI command reference at https://docs.aleph.cloud/devhub/sdks-and-tools/aleph-cli/ (instance subcommands: https://docs.aleph.cloud/devhub/sdks-and-tools/aleph-cli/commands/instance.html), and OpenClaw docs at https://docs.openclaw.ai/. Run `aleph instance create --help` and `aleph pricing instance` to confirm current flags and prices on your machine.
+
+> **Sibling skills.** This skill focuses on Aleph-specific provisioning and fleet orchestration. For deep, vendor-neutral coverage prefer: `security-hardening` (SSH/firewall/CIS), `monitoring-observability` (metrics, alerting, log pipelines), and `docker-production` (Compose v2, image hygiene). Use those alongside this one rather than duplicating their depth here.
 
 ## Table of Contents
 
@@ -45,76 +49,166 @@ Comprehensive framework for deploying and managing OpenClaw instances across Ale
                      SSH Tunnels
 ```
 
-**Resource Planning Matrix:**
+**Resource Planning Matrix.** Aleph instances are sized in **compute units** (1 CU ≈ 1 vCPU + 2 GiB RAM); you can override with explicit `--vcpus`/`--memory`/`--rootfs-size`. Persistent/confidential VMs run on a specific **CRN** (Compute Resource Node) that you choose by URL or hash.
+
 ```yaml
 Node Types:
   Orchestrator (Primary):
-    CRN: aleph.im
-    Tier: 4 vCPU, 8GB RAM, 100GB SSD
-    Role: Fleet management, load balancing, coordination
-    Cost: ~50 ALEPH/month
-    
-  Compute Nodes (Workers):
-    CRN: aleph.im, twentysix.cloud, cybernodes.io
-    Tier: 2 vCPU, 4GB RAM, 50GB SSD  
-    Role: OpenClaw instances, task execution
-    Cost: ~25 ALEPH/month each
-    
-  Backup Node (Optional):
-    CRN: Different provider for redundancy
-    Tier: 1 vCPU, 2GB RAM, 20GB SSD
-    Role: Configuration backup, emergency recovery
-    Cost: ~15 ALEPH/month
+    Tier: 4 vCPU / 8 GiB RAM / 80–100 GiB rootfs  (≈ 4 compute units)
+    CRN: a high-uptime CRN you have verified (see "CRN selection" below)
+    Role: fleet manager, HAProxy, backup coordinator, SSH gateway
 
-Total Monthly Cost (5-node setup): ~165 ALEPH (~$50-80 USD)
+  Compute Nodes (Workers):
+    Tier: 2 vCPU / 4 GiB RAM / 40–50 GiB rootfs  (≈ 2 compute units)
+    CRN: spread across 2–3 distinct CRNs for fault isolation
+    Role: OpenClaw agent runtime, task execution
+
+  Backup Node (Optional):
+    Tier: 1 vCPU / 2 GiB RAM / 20 GiB rootfs  (≈ 1 compute unit)
+    CRN: a *different* CRN/region than the primary, for redundancy
+    Role: off-node backup target, emergency recovery
 ```
+
+**Cost model (read this — it changed).** Aleph supports two payment modes, selected with `--payment-type`:
+
+- **`hold`** — lock (don't spend) a quantity of $ALEPH tokens for as long as the VM runs; tokens are released on `delete`. No ongoing burn.
+- **`superfluid` / `credit`** — pay-as-you-go streaming (per second) priced in **USD**, settled in $ALEPH or credits. This is the model most users want for fleets.
+
+Do **not** hardcode "ALEPH/month" figures — the token price floats and tiers change. Always read live pricing with the CLI:
+
+```bash
+aleph pricing instance                 # all tiers, all payment types
+aleph pricing instance --tier 1 --json # one tier, machine-readable
+aleph pricing instance --payment-type credit
+```
+
+As of **Jun 2026**, pay-as-you-go instance pricing is roughly (confirm with `aleph pricing instance`, do not quote these as fixed):
+
+| Tier | vCPU / RAM / rootfs | Approx. PAYG (USD/hr) | Approx. (USD/mo, 730h) |
+|------|---------------------|-----------------------|------------------------|
+| 1    | 1 / 2 GiB / 20 GiB  | ~$0.0036              | ~$2.6                  |
+| 2    | 2 / 4 GiB / 40 GiB  | ~$0.0066              | ~$4.8                  |
+| 3    | 4 / 8 GiB / 80 GiB  | ~$0.0132              | ~$9.6                  |
+
+> These are dated examples for planning only. Confirm current numbers at the Aleph console (https://app.aleph.cloud) or via `aleph pricing instance` before budgeting. A 1 primary + 4 worker fleet on these tiers lands around $30–40/mo PAYG as of Jun 2026 — but verify.
 
 ### CRN Selection Strategy
 
-**Provider Tier Assessment:**
+A CRN is the physical node that hosts your persistent/confidential VM. Pick CRNs by **compute availability, payment-mode support, terms acceptance, region, and (for confidential VMs) SEV support** — not by hitting an Aleph API messages endpoint. Discover and inspect CRNs with the CLI rather than guessing URLs:
+
 ```bash
 #!/bin/bash
-# CRN evaluation script
+# crn-discovery.sh — list and shortlist real CRNs for instance deployment.
+set -euo pipefail
 
-evaluate_crn() {
-    local crn_url=$1
-    local crn_name=$2
-    
-    echo "=== Evaluating $crn_name ($crn_url) ==="
-    
-    # Performance test
-    echo "Performance Test:"
-    time curl -s "$crn_url/api/v0/messages" | head -10
-    
-    # Availability check
-    echo "Availability Check:"
-    for i in {1..5}; do
-        response=$(curl -s -w "%{http_code}" -o /dev/null "$crn_url/api/v0/messages")
-        echo "Attempt $i: HTTP $response"
-        sleep 2
-    done
-    
-    # Geographic latency
-    echo "Latency Test:"
-    ping -c 3 "${crn_url#https://}" | grep "time="
-    
+echo "=== Available Compute Resource Nodes ==="
+# `aleph instance` deployments resolve CRNs from the network; the node index
+# is also browsable at https://app.aleph.cloud (Console > Compute) and
+# https://docs.aleph.cloud/nodes/compute/ . Prefer the console for capacity,
+# version, and reward/uptime score; use --crn-url / --crn-hash from there.
+
+# When creating an instance you may omit --crn-url to let the CLI auto-select
+# a CRN, or pin one explicitly. For confidential or Pay-As-You-Go instances a
+# CRN is REQUIRED, and you must accept its Terms & Conditions:
+#   aleph instance create ... --crn-url "https://<crn-host>" --crn-auto-tac
+
+# Sanity-check a candidate CRN's compute API (this is the CRN's own
+# /about endpoint — NOT the Aleph message API):
+check_crn() {
+    local crn_url="$1" crn_name="$2"
+    echo "=== $crn_name ($crn_url) ==="
+    echo -n "  Reachable: "
+    if curl -fsS --max-time 8 "$crn_url/about/usage/system" >/dev/null 2>&1; then
+        echo "yes"
+        echo "  Capacity/usage:"
+        curl -fsS --max-time 8 "$crn_url/about/usage/system" \
+            | jq '{cpu: .cpu, mem: .mem, period}' 2>/dev/null || true
+    else
+        echo "NO — skip this CRN"
+        return 1
+    fi
+    # Confidential support advertised under /about/capability on SEV-capable CRNs
+    echo -n "  Confidential (SEV) capable: "
+    curl -fsS --max-time 8 "$crn_url/about/capability" 2>/dev/null \
+        | jq -r '.confidential // "unknown"' 2>/dev/null || echo "unknown"
     echo "------------------------"
 }
 
-# Test major CRNs
-evaluate_crn "https://api2.aleph.im" "Official Aleph.im"
-evaluate_crn "https://api.twentysix.cloud" "TwentySix Cloud"  
-evaluate_crn "https://api.cybernodes.io" "CyberNodes"
-evaluate_crn "https://api.nft.storage" "NFT.Storage"
+# Replace these with real CRN hosts from https://app.aleph.cloud (Console).
+# Do NOT use unrelated services (e.g. storage gateways) as CRNs — they cannot
+# host an Aleph instance and `aleph instance create` will fail against them.
+# check_crn "https://<crn-1-host>" "CRN 1"
+# check_crn "https://<crn-2-host>" "CRN 2"
 
-# Generate recommendation
-echo "=== CRN RECOMMENDATIONS ==="
-echo "Primary (Orchestrator): aleph.im (highest reliability)"
-echo "Workers: Mix of twentysix.cloud + cybernodes.io (cost optimization)"
-echo "Backup: Different provider for redundancy"
+echo "=== SELECTION GUIDANCE ==="
+echo "Primary : highest-uptime CRN with spare capacity and recent node version"
+echo "Workers : 2-3 DISTINCT CRNs/regions for fault isolation"
+echo "Backup  : a CRN on a different operator/region than the primary"
 ```
 
 ---
+
+## Quick Start — tested single-VM happy path
+
+Do this end-to-end first; the fleet machinery below builds on it. Tear-down is included so you never leak a paid VM.
+
+```bash
+# 0. Prereqs (mid-2026): Python 3.10+, jq, an SSH client, and a funded Aleph
+#    account. macOS: `brew install libsecp256k1`; Debian/Ubuntu:
+#    `sudo apt-get install -y libsecp256k1-dev`.
+
+# 1. Install the official CLI in an isolated env (pipx is the documented method)
+python3 -m pip install --user pipx && python3 -m pipx ensurepath   # if needed
+pipx install aleph-client
+aleph --version
+
+# 2. Create or import an account, then check balance
+aleph account create                      # interactive; or import an existing key:
+# aleph account create --private-key "0xYOUR_PRIVATE_KEY"   # or --private-key-file PATH
+aleph account address                      # your public address (fund it on the right chain)
+aleph account balance                      # ALEPH balance / available credits
+
+# 3. Generate an SSH key dedicated to Aleph VMs (ed25519 — modern, small, fast)
+mkdir -p ~/.aleph-deploy/keys
+ssh-keygen -t ed25519 -f ~/.aleph-deploy/keys/aleph_ed25519 -N "" -C "aleph-fleet-$(date +%Y%m%d)"
+
+# 4. See live pricing, then create ONE pay-as-you-go instance (2 vCPU / 4 GiB / 40 GiB)
+aleph pricing instance --payment-type credit
+aleph instance create \
+  --name openclaw-primary \
+  --compute-units 2 \
+  --rootfs-size 40960 \
+  --ssh-pubkey-file ~/.aleph-deploy/keys/aleph_ed25519.pub \
+  --payment-type credit \
+  --payment-chain BASE \
+  --crn-auto-tac
+# The CLI prints the instance item-hash and (for PAYG/confidential) allocates it
+# on a CRN, returning the assigned IPv6/IPv4. Save the item-hash it prints:
+#   ITEM_HASH=<hash from CLI output>
+
+# 5. Find the instance + its IP from authoritative CLI output (no fake `instance get`)
+aleph instance list --json | jq '.[] | {name, item_hash, ipv4: .ipv4, ipv6: .ipv6}'
+VM_IP=$(aleph instance list --json | jq -r '.[] | select(.name=="openclaw-primary") | (.ipv4 // .ipv6)' | head -1)
+
+# 6. Verify SSH (accept-new = trust first key, reject changed keys = MITM protection)
+ssh -i ~/.aleph-deploy/keys/aleph_ed25519 -o StrictHostKeyChecking=accept-new \
+    root@"$VM_IP" "echo 'SSH OK'; cat /etc/os-release | grep PRETTY_NAME"
+# Note: the default cloud user is image-dependent (often `root` on Aleph base
+# images; `ubuntu` on some). Check with the command above and adjust below.
+
+# 7. Tear down when done so you stop paying / release held tokens
+aleph instance delete "$ITEM_HASH"     # irreversible for non-persistent volumes — see guardrails
+```
+
+> **Destructive-operation guardrail.** `aleph instance delete` is irreversible and **destroys non-persistent (rootfs/ephemeral) data**. Before any delete/scale-down/recreate: (1) `aleph instance list` and confirm the exact item-hash, (2) back up persistent data first, (3) require an explicit confirmation in scripts. A reusable confirm helper:
+>
+> ```bash
+> confirm_destructive() {  # usage: confirm_destructive "<action>" "<target>"
+>     echo "About to: $1 -> $2"
+>     read -r -p "Type the target hash to confirm: " ans
+>     [[ "$ans" == "$2" ]] || { echo "Aborted."; return 1; }
+> }
+> ```
 
 ## Single Node Deployment Foundation
 
@@ -124,268 +218,212 @@ echo "Backup: Different provider for redundancy"
 ```bash
 #!/bin/bash
 # setup-aleph-environment.sh
+set -euo pipefail
 
-set -e
+echo "Setting up Aleph Cloud deployment environment..."
 
-echo "🚀 Setting up Aleph Cloud deployment environment..."
-
-# Install aleph CLI
-if ! command -v aleph &> /dev/null; then
-    echo "Installing Aleph CLI..."
-    pip3 install aleph-client
-    # Alternative: npm install -g aleph-js
+# Install the official Aleph CLI in an isolated environment (documented method).
+# https://docs.aleph.cloud/devhub/sdks-and-tools/aleph-cli/
+if ! command -v aleph &>/dev/null; then
+    echo "Installing aleph-client via pipx..."
+    if ! command -v pipx &>/dev/null; then
+        python3 -m pip install --user pipx
+        python3 -m pipx ensurepath
+        echo "Restart your shell, then re-run this script."; exit 1
+    fi
+    # System dep: libsecp256k1 (macOS: brew install libsecp256k1;
+    # Debian/Ubuntu: sudo apt-get install -y libsecp256k1-dev)
+    pipx install aleph-client
 fi
 
-# Verify installation
 aleph --version
 
 # Create deployment directory structure
-mkdir -p ~/.aleph-deploy/{keys,configs,scripts,backups}
+mkdir -p ~/.aleph-deploy/{keys,configs,scripts,backups,logs,reports}
 
-# Generate SSH key pair for VMs
-if [[ ! -f ~/.aleph-deploy/keys/aleph_rsa ]]; then
+# Generate an ed25519 SSH key pair for VMs (preferred over RSA in 2026)
+if [[ ! -f ~/.aleph-deploy/keys/aleph_ed25519 ]]; then
     echo "Generating SSH key pair..."
-    ssh-keygen -t rsa -b 4096 -f ~/.aleph-deploy/keys/aleph_rsa -N "" -C "aleph-fleet-$(date +%Y%m%d)"
+    ssh-keygen -t ed25519 -f ~/.aleph-deploy/keys/aleph_ed25519 -N "" \
+        -C "aleph-fleet-$(date +%Y%m%d)"
 fi
 
-# Create aleph account configuration
-cat > ~/.aleph-deploy/configs/account.json << 'EOF'
-{
-  "private_key": null,
-  "address": null,
-  "mnemonic": null,
-  "created": null
-}
-EOF
-
-echo "✅ Environment setup complete!"
+echo "Environment setup complete."
 echo "Next steps:"
-echo "1. Run: aleph account create"
-echo "2. Fund your account with ALEPH tokens"
-echo "3. Configure your deployment parameters"
+echo "  1. aleph account create        # or import: --private-key / --private-key-file"
+echo "  2. Fund the address shown by 'aleph account address' on your payment chain"
+echo "  3. aleph pricing instance      # check current tiers/prices"
 ```
+
+> **Key type note.** This skill standardizes on **ed25519** keys at `~/.aleph-deploy/keys/aleph_ed25519`. If you are upgrading an older deployment that used `aleph_ed25519`, either re-run the generator above or `export ALEPH_SSH_KEY=~/.aleph-deploy/keys/aleph_ed25519` and substitute it in the `ssh -i` calls; every script below reads the same path, so keep them consistent.
 
 **Account Creation & Funding:**
 ```bash
 #!/bin/bash
 # account-setup.sh
+set -euo pipefail
 
-echo "🔑 Setting up Aleph account..."
+echo "Setting up Aleph account..."
 
-# Create new account or import existing
-read -p "Do you want to (c)reate new account or (i)mport existing? " choice
-
-case $choice in
+read -rp "Do you want to (c)reate new account or (i)mport existing? " choice
+case "$choice" in
     c|C)
         echo "Creating new account..."
-        aleph account create --replace
+        aleph account create               # add --replace only to overwrite an existing default
         ;;
     i|I)
-        echo "Import your private key or mnemonic..."
-        aleph account import-private-key
+        echo "Importing an existing key..."
+        # Documented import path is `account create` with a key source — there is
+        # no `aleph account import-private-key` command.
+        read -rsp "Paste private key (hidden), or leave blank to use a file: " pk; echo
+        if [[ -n "$pk" ]]; then
+            aleph account create --private-key "$pk" --replace
+        else
+            read -rp "Path to private key file: " pkfile
+            aleph account create --private-key-file "$pkfile" --replace
+        fi
         ;;
     *)
-        echo "Invalid choice"
-        exit 1
-        ;;
+        echo "Invalid choice"; exit 1 ;;
 esac
 
-# Display account info
-echo "Account created/imported:"
+echo "Active account:"
 aleph account show
+ADDR=$(aleph account address)
+echo "Address: $ADDR"
 
-# Check balance
-balance=$(aleph balance)
-echo "Current balance: $balance ALEPH"
+# Check balance (correct command is `aleph account balance`, not `aleph balance`)
+echo "Balance / credits:"
+aleph account balance
 
-if (( $(echo "$balance < 100" | bc -l) )); then
-    echo "⚠️  WARNING: Low balance. You need ~165 ALEPH for a 5-node deployment."
-    echo "Fund your account at: https://aleph.im"
-    echo "Your address: $(aleph account show | grep Address | cut -d: -f2 | xargs)"
-fi
-
-echo "✅ Account setup complete!"
+echo
+echo "Funding: send ALEPH (or buy credits) to the address above on your chosen"
+echo "payment chain (ETH / BASE / AVAX / SOL). Manage funds in the console:"
+echo "  https://app.aleph.cloud"
+echo "Budget guidance: run 'aleph pricing instance' for current per-tier USD pricing."
+echo "Account setup complete."
 ```
 
 ### Single VM Deployment
 
+**Why provision over SSH, not `--setup-script`.** The Aleph CLI does **not** take a `--setup-script` flag, and there is no `aleph instance status --wait` / `aleph instance get`. The reliable pattern is: create the instance, poll `aleph instance list` for its IP, then run a provisioning script over SSH. This also keeps the (large) setup logic out of the on-chain message.
+
 **Basic VM Deployment Script:**
 ```bash
 #!/bin/bash
-# deploy-single-vm.sh
-
-set -e
+# deploy-single-vm.sh — create one instance, then provision it over SSH.
+set -euo pipefail
 
 # Configuration
 VM_NAME="${1:-openclaw-primary}"
-CRN_URL="${2:-https://api2.aleph.im}"
-VM_TYPE="${3:-vm-standard-2}"
-DISK_SIZE="${4:-50}"
+COMPUTE_UNITS="${2:-2}"          # 1 CU ~= 1 vCPU + 2 GiB RAM
+ROOTFS_MIB="${3:-40960}"          # 40 GiB in MiB (rootfs-size is in MiB)
+PAYMENT_TYPE="${4:-credit}"       # hold | superfluid | credit | nft
+PAYMENT_CHAIN="${5:-BASE}"        # ETH | BASE | AVAX | SOL
+CRN_URL="${6:-}"                  # optional: pin a CRN you verified; else auto-select
+SSH_KEY="${ALEPH_SSH_KEY:-$HOME/.aleph-deploy/keys/aleph_ed25519}"
+SSH_USER="${ALEPH_SSH_USER:-root}"   # image-dependent (root on Aleph base images)
 
-echo "🚀 Deploying single VM: $VM_NAME"
+echo "Deploying single VM: $VM_NAME ($COMPUTE_UNITS CU, $((ROOTFS_MIB/1024)) GiB)"
 
-# Read SSH public key
-SSH_PUB_KEY=$(cat ~/.aleph-deploy/keys/aleph_rsa.pub)
+# 1. Create the instance with CURRENT flags. (Run `aleph instance create --help`
+#    to confirm flags for your CLI version.)
+create_args=(
+    --name "$VM_NAME"
+    --compute-units "$COMPUTE_UNITS"
+    --rootfs-size "$ROOTFS_MIB"
+    --ssh-pubkey-file "$SSH_KEY.pub"
+    --payment-type "$PAYMENT_TYPE"
+    --payment-chain "$PAYMENT_CHAIN"
+    # Keep agent state on a persistent volume so a VM stop/rebuild doesn't wipe it.
+    # Syntax: name=...,mount=...,size_mib=... (see `aleph instance create --help`).
+    --persistent-volume "name=data,mount=/data,size_mib=20480"
+)
+if [[ -n "$CRN_URL" ]]; then
+    create_args+=(--crn-url "$CRN_URL" --crn-auto-tac)   # auto-accept that CRN's T&C
+fi
 
-# Create VM deployment
-aleph instance create \
-    --name "$VM_NAME" \
-    --image-ref "ubuntu:22.04" \
-    --vcpus 2 \
-    --memory 4096 \
-    --disk-size "$DISK_SIZE" \
-    --ssh-authorized-keys "$SSH_PUB_KEY" \
-    --crn "$CRN_URL" \
-    --volumes '[{"name":"data","mount_path":"/data","size_gb":20,"persistence":true}]' \
-    --environment-variables '{
-        "OPENCLAW_VERSION":"latest",
-        "NODE_ENV":"production",
-        "DEPLOY_TYPE":"aleph-cloud"
-    }' \
-    --setup-script "$(cat << 'SETUP_SCRIPT'
+# Capture output so we can extract the item-hash the CLI prints.
+CREATE_OUT="$(aleph instance create "${create_args[@]}")"
+echo "$CREATE_OUT"
+ITEM_HASH="$(printf '%s\n' "$CREATE_OUT" | grep -oE '[0-9a-f]{64}' | head -1)"
+echo "Instance item-hash: ${ITEM_HASH:-<parse from output above>}"
+
+# 2. Poll `aleph instance list` (the real command) for the assigned IP.
+echo "Waiting for an IP to be assigned..."
+VM_IP=""
+for _ in $(seq 1 30); do
+    VM_IP="$(aleph instance list --json \
+        | jq -r --arg n "$VM_NAME" '.[] | select(.name==$n) | (.ipv4 // .ipv6 // empty)' \
+        | head -1)"
+    [[ -n "$VM_IP" ]] && break
+    sleep 10
+done
+[[ -z "$VM_IP" ]] && { echo "No IP yet; check 'aleph instance list' and CRN allocation."; exit 1; }
+echo "VM IP: $VM_IP"
+
+# 3. Verify SSH (accept-new: trust first host key, reject changed keys = MITM defense).
+echo "Testing SSH connection..."
+ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 \
+    "$SSH_USER@$VM_IP" "echo 'SSH connection successful'"
+
+# 4. Provision over SSH (kept out of the on-chain message; rerun-safe).
+echo "Provisioning $VM_NAME..."
+ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new "$SSH_USER@$VM_IP" \
+    "OPENCLAW_PORT=3000 bash -s" <<'PROVISION'
 #!/bin/bash
-set -e
+set -euo pipefail
+export DEBIAN_FRONTEND=noninteractive
 
-# Update system
-apt-get update && apt-get upgrade -y
+# --- Base packages (modern names; ss replaces netstat; net-tools optional) ---
+apt-get update && apt-get -y upgrade
+apt-get install -y curl wget git htop unzip jq fail2ban ufw ca-certificates \
+                   iproute2   # provides `ss`
 
-# Install essential packages
-apt-get install -y curl wget git htop unzip jq fail2ban ufw nodejs npm
+# --- Docker Engine + Compose v2 plugin (NOT the deprecated docker-compose binary) ---
+# Verify checksums in high-security environments; get-docker.sh is Docker's official script.
+curl -fsSL https://get.docker.com -o /tmp/get-docker.sh
+sh /tmp/get-docker.sh
+SUDO_USER_NAME="${SUDO_USER:-$(logname 2>/dev/null || echo root)}"
+usermod -aG docker "$SUDO_USER_NAME" || true
+docker compose version    # Compose v2 ships as a Docker plugin: `docker compose ...`
 
-# Install Docker
-# Note: In production, verify checksums before running downloaded scripts
-curl -fsSL https://get.docker.com -o get-docker.sh
-sh get-docker.sh
-usermod -aG docker ubuntu
+# --- Node.js 22.x (OpenClaw requires Node >= 22.19; 24 is recommended) ---
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+apt-get install -y nodejs
+node --version
 
-# Install Docker Compose
-curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-chmod +x /usr/local/bin/docker-compose
-
-# Setup firewall
+# --- Firewall: deny inbound by default; HTTP/HTTPS only on the public edge.
+#     The OpenClaw port is NOT opened publicly (see Security section) — reach it
+#     via the Tailscale mesh or behind HAProxy. ---
 ufw default deny incoming
 ufw default allow outgoing
 ufw allow ssh
+ufw limit ssh
 ufw allow 80
 ufw allow 443
 ufw --force enable
 
-# Install OpenClaw
-curl -fsSL https://raw.githubusercontent.com/openclaw/openclaw/main/install.sh | bash
+# --- Install OpenClaw (official installer; handles Node if missing) and onboard ---
+# Docs: https://docs.openclaw.ai/install . The installer sets up a systemd daemon
+# via `--install-daemon`; do not hand-roll an ExecStart=/usr/bin/node server.js unit.
+curl -fsSL https://openclaw.ai/install.sh | bash
+# Onboarding is interactive by design; for headless provisioning configure tokens
+# via env/secret store first, then:
+#   openclaw onboard --install-daemon
+# Verify once installed:
+#   openclaw --version && openclaw doctor && openclaw gateway status
 
-# Configure OpenClaw for production
-mkdir -p /opt/openclaw/config
-cat > /opt/openclaw/config/production.json << 'CONFIG'
-{
-  "server": {
-    "port": 3000,
-    "host": "0.0.0.0",
-    "cluster": true
-  },
-  "logging": {
-    "level": "info",
-    "file": "/var/log/openclaw/app.log"
-  },
-  "aleph": {
-    "node_id": "$HOSTNAME",
-    "deployment_type": "cloud",
-    "auto_restart": true
-  }
-}
-CONFIG
+echo "VM base provisioning complete."
+PROVISION
 
-# Create systemd service
-cat > /etc/systemd/system/openclaw.service << 'SERVICE'
-[Unit]
-Description=OpenClaw Service
-After=network.target
-
-[Service]
-Type=simple
-User=ubuntu
-WorkingDirectory=/opt/openclaw
-Environment=NODE_ENV=production
-ExecStart=/usr/bin/node server.js
-Restart=always
-RestartSec=10
-StandardOutput=syslog
-StandardError=syslog
-SyslogIdentifier=openclaw
-
-[Install]
-WantedBy=multi-user.target
-SERVICE
-
-# Enable and start OpenClaw
-systemctl enable openclaw
-systemctl start openclaw
-
-# Install monitoring agent
-cat > /opt/monitor-node.sh << 'MONITOR'
-#!/bin/bash
-while true; do
-    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    load=$(uptime | awk -F'load average:' '{print $2}')
-    memory=$(free | grep Mem | awk '{printf "%.1f%%", $3/$2 * 100.0}')
-    disk=$(df -h / | awk 'NR==2{printf "%s", $5}')
-    
-    echo "$timestamp - Load:$load Memory:$memory Disk:$disk" >> /var/log/node-stats.log
-    
-    # Health check OpenClaw
-    if ! systemctl is-active --quiet openclaw; then
-        echo "$timestamp - OpenClaw service down, restarting..." >> /var/log/node-stats.log
-        systemctl restart openclaw
-    fi
-    
-    sleep 60
-done
-MONITOR
-
-chmod +x /opt/monitor-node.sh
-
-# Use systemd instead of nohup — nohup processes are unsupervised
-# and won't restart if they crash
-cat > /etc/systemd/system/node-monitor.service << 'MONITOR_SVC'
-[Unit]
-Description=Node health monitor
-After=openclaw.service
-
-[Service]
-Type=simple
-ExecStart=/opt/monitor-node.sh
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-MONITOR_SVC
-systemctl daemon-reload
-systemctl enable node-monitor
-systemctl start node-monitor
-
-echo "✅ VM setup complete!"
-SETUP_SCRIPT
-    )"
-
-echo "✅ VM deployment initiated!"
-echo "Monitoring deployment status..."
-
-# Wait for deployment to complete
-aleph instance status "$VM_NAME" --wait
-
-# Get VM connection details
-VM_INFO=$(aleph instance get "$VM_NAME")
-VM_IP=$(echo "$VM_INFO" | jq -r '.networking.ipv4')
-
-echo "🎉 VM deployed successfully!"
-echo "SSH Connection: ssh -i ~/.aleph-deploy/keys/aleph_rsa ubuntu@$VM_IP"
-echo "OpenClaw URL: http://$VM_IP:3000"
-
-# Test connection
-echo "Testing SSH connection..."
-# Use accept-new instead of no — it accepts first connection but rejects changed host keys (MITM protection)
-ssh -i ~/.aleph-deploy/keys/aleph_rsa -o StrictHostKeyChecking=accept-new ubuntu@"$VM_IP" "echo 'SSH connection successful!'"
+echo "Deployment complete."
+echo "SSH:     ssh -i $SSH_KEY $SSH_USER@$VM_IP"
+echo "OpenClaw: reach it over Tailscale or via HAProxy (NOT a public 3000 port)."
+echo "Tear down: aleph instance delete ${ITEM_HASH:-<item-hash>}"
 ```
+
+> **OpenClaw config note.** OpenClaw is configured through `openclaw onboard` (writing to its own workspace under `~/.openclaw`/the daemon home), **not** by hand-authored `/opt/openclaw/config/production.json` files with keys like `server.cluster` or `aleph.node_id` — those were invented in earlier drafts and OpenClaw does not read them. Treat any per-node "role" we track (primary/worker) as *our* fleet metadata in `fleet.json`, separate from OpenClaw's own config.
 
 ---
 
@@ -394,30 +432,46 @@ ssh -i ~/.aleph-deploy/keys/aleph_rsa -o StrictHostKeyChecking=accept-new ubuntu
 ### Fleet Deployment Orchestrator
 
 **Master Deployment Script:**
+**Before you run this:** generate ONE persistent `FLEET_API_KEY` locally and export it. Both the deploy script and the fleet manager must use the *same* key, and it must survive restarts (the manager must not invent a new random key each boot).
+
+```bash
+# Generate once and store it safely (NOT in git, NOT in shell history files):
+export FLEET_API_KEY="$(openssl rand -hex 32)"
+echo "FLEET_API_KEY=$FLEET_API_KEY" >> ~/.aleph-deploy/configs/fleet.env   # chmod 600 this file
+chmod 600 ~/.aleph-deploy/configs/fleet.env
+```
+
 ```bash
 #!/bin/bash
 # deploy-fleet.sh
-
-set -e
+set -euo pipefail
 
 # Fleet Configuration
 FLEET_NAME="${1:-openclaw-fleet}"
 NODE_COUNT="${2:-5}"
-PRIMARY_CRN="https://api2.aleph.im"
-WORKER_CRNS=("https://api.twentysix.cloud" "https://api.cybernodes.io" "https://api.nft.storage")
+SSH_KEY="${ALEPH_SSH_KEY:-$HOME/.aleph-deploy/keys/aleph_ed25519}"
+SSH_USER="${ALEPH_SSH_USER:-root}"
+: "${FLEET_API_KEY:?Set FLEET_API_KEY (see fleet.env) before deploying}"
 
-echo "🚀 Deploying OpenClaw fleet: $FLEET_NAME with $NODE_COUNT nodes"
+# Pin CRNs you have ACTUALLY verified with crn-discovery.sh. Leave empty to let
+# the CLI auto-select. Never list non-compute services here (a storage gateway
+# or NFT pinning API is NOT a CRN and cannot host an instance).
+PRIMARY_CRN="${PRIMARY_CRN:-}"                 # e.g. https://<verified-crn-host>
+WORKER_CRNS=(${WORKER_CRNS:-})                 # e.g. ("https://<crn-a>" "https://<crn-b>")
 
-# Fleet configuration
+echo "Deploying fleet: $FLEET_NAME with $NODE_COUNT nodes"
+
+# Fleet configuration. worker_nodes entries WILL record ip + item_hash (added at
+# create time) so networking/backup/security scripts can find every worker.
 cat > ~/.aleph-deploy/configs/fleet.json << EOF
 {
   "fleet_name": "$FLEET_NAME",
   "deployment_date": "$(date -Iseconds)",
   "node_count": $NODE_COUNT,
+  "ssh_user": "$SSH_USER",
   "primary_node": null,
   "worker_nodes": [],
   "network": {
-    "tailscale_key": null,
     "ssh_tunnel_port": 2222,
     "load_balancer_port": 8080
   },
@@ -433,17 +487,24 @@ deploy_primary_node() {
     echo "📊 Deploying Primary Node (Orchestrator)..."
     
     local node_name="${FLEET_NAME}-primary"
-    local setup_script=$(cat << 'PRIMARY_SETUP'
+    # The primary setup script is parameterized with the (persistent) fleet key so
+    # the manager and workers share ONE key. We export it into the heredoc env.
+    local setup_script
+    setup_script=$(FLEET_API_KEY="$FLEET_API_KEY" envsubst '$FLEET_API_KEY' << 'PRIMARY_SETUP'
 #!/bin/bash
-set -e
+set -euo pipefail
+export DEBIAN_FRONTEND=noninteractive
 
-# Standard VM setup
-apt-get update && apt-get upgrade -y
-apt-get install -y curl wget git htop jq fail2ban ufw nodejs npm docker.io docker-compose
+# Standard VM setup. Modern package set: Docker Engine + Compose v2 plugin
+# (installed via get.docker.com below), Node 22 via NodeSource, iproute2 for `ss`.
+apt-get update && apt-get -y upgrade
+apt-get install -y curl wget git htop jq fail2ban ufw ca-certificates iproute2 gettext-base
 
-# Create a dedicated non-root user for fleet services
-# Running all services as root is a security risk — a compromise in any
-# service gives full system access. Use a dedicated user for fleet-manager.
+curl -fsSL https://get.docker.com -o /tmp/get-docker.sh && sh /tmp/get-docker.sh
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs
+
+# Create a dedicated non-root user for fleet services. Running all services as
+# root is a security risk — a compromise in any service gives full system access.
 useradd -r -s /usr/sbin/nologin -d /opt/fleet-manager fleetmgr || true
 
 # Install fleet management tools
@@ -453,27 +514,42 @@ cd /opt/fleet-manager
 # Fleet Manager Application
 cat > fleet-manager.js << 'FLEET_MANAGER'
 const express = require('express');
-const { exec } = require('child_process');
 const fs = require('fs');
-const crypto = require('crypto');
 const app = express();
 
 app.use(express.json());
 
-// API key auth middleware — fleet manager should NOT be open to the internet.
-// Bind to Tailscale IP or localhost, and require an API key for all requests.
-const FLEET_API_KEY = process.env.FLEET_API_KEY || crypto.randomBytes(32).toString('hex');
-if (!process.env.FLEET_API_KEY) {
-    console.log(`Generated FLEET_API_KEY: ${FLEET_API_KEY}`);
-    console.log('Set FLEET_API_KEY env var to persist across restarts.');
+// API key auth. The key MUST be provided via the environment (root-owned
+// EnvironmentFile, see below) so it is stable across restarts and is never
+// generated/logged. Fail fast if it is missing rather than minting a random one.
+const FLEET_API_KEY = process.env.FLEET_API_KEY;
+if (!FLEET_API_KEY || FLEET_API_KEY.length < 32) {
+    console.error('FATAL: FLEET_API_KEY env var missing or too short. Refusing to start.');
+    process.exit(1);
+}
+// Constant-time comparison; header-only (never accept keys in the query string —
+// URLs are logged and cached, leaking the secret).
+const crypto = require('crypto');
+function keyMatches(provided) {
+    if (typeof provided !== 'string') return false;
+    const a = Buffer.from(provided);
+    const b = Buffer.from(FLEET_API_KEY);
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 function requireAuth(req, res, next) {
-    const key = req.headers['x-api-key'] || req.query.api_key;
-    if (!key || key !== FLEET_API_KEY) {
+    if (!keyMatches(req.headers['x-api-key'])) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
     next();
 }
+
+// Health check FIRST and UNAUTHENTICATED — HAProxy/`option httpchk` calls this
+// without an API key. Keep it non-sensitive (no node data).
+app.get('/health', (req, res) => {
+    res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
+// Everything below requires the API key.
 app.use(requireAuth);
 
 // Fleet status endpoint
@@ -490,10 +566,8 @@ app.get('/fleet/status', (req, res) => {
     }
 });
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-    res.json({ status: 'healthy', timestamp: new Date().toISOString() });
-});
+// (Health check is defined above, before requireAuth, so HAProxy/httpchk can
+// reach it without an API key. Do not re-add an authenticated /health here.)
 
 // Node registration endpoint
 app.post('/fleet/register', (req, res) => {
@@ -551,10 +625,12 @@ app.get('/fleet/distribute/:task', (req, res) => {
 });
 
 const PORT = process.env.PORT || 8080;
-// Bind to localhost or Tailscale IP — do NOT expose fleet manager to the public internet
+// Bind to the Tailscale interface (or localhost) — NEVER 0.0.0.0. The systemd
+// unit sets BIND_HOST to the node's Tailscale IP so workers on the mesh can
+// register, while the public internet cannot reach the control plane.
 const BIND_HOST = process.env.BIND_HOST || '127.0.0.1';
 app.listen(PORT, BIND_HOST, () => {
-    console.log(`Fleet Manager running on ${BIND_HOST}:${PORT}`);
+    console.log(`Fleet Manager listening on ${BIND_HOST}:${PORT}`);
 });
 FLEET_MANAGER
 
@@ -562,6 +638,17 @@ FLEET_MANAGER
 npm init -y
 npm install express
 chmod +x fleet-manager.js
+
+# Provision the SHARED, PERSISTENT FLEET_API_KEY via a root-owned EnvironmentFile.
+# The key was injected into this setup script by deploy-fleet.sh (envsubst) and is
+# never logged. BIND_HOST is resolved to the Tailscale IP after the mesh is up
+# (a drop-in updates it; until then it stays on localhost).
+install -o root -g root -m 600 /dev/null /etc/fleet-manager.env
+{
+  echo "FLEET_API_KEY=${FLEET_API_KEY}"
+  echo "PORT=8080"
+  echo "BIND_HOST=127.0.0.1"
+} > /etc/fleet-manager.env
 
 # Create systemd service
 cat > /etc/systemd/system/fleet-manager.service << 'SERVICE'
@@ -573,10 +660,14 @@ After=network.target
 Type=simple
 User=fleetmgr
 WorkingDirectory=/opt/fleet-manager
+EnvironmentFile=/etc/fleet-manager.env
 ExecStart=/usr/bin/node fleet-manager.js
 Restart=always
 RestartSec=10
-Environment=PORT=8080
+# Harden: no new privileges, read-only system except its own dir.
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/fleet-manager
 
 [Install]
 WantedBy=multi-user.target
@@ -591,313 +682,401 @@ chown -R fleetmgr:fleetmgr /opt/fleet-manager
 echo '{"nodes": []}' > /opt/fleet-manager/nodes.json
 chown fleetmgr:fleetmgr /opt/fleet-manager/nodes.json
 
+systemctl daemon-reload
 systemctl enable fleet-manager
 systemctl start fleet-manager
 
-# Install OpenClaw
-curl -fsSL https://raw.githubusercontent.com/openclaw/openclaw/main/install.sh | bash
+# Install OpenClaw on the primary (official installer + onboarding daemon).
+# Docs: https://docs.openclaw.ai/install . Requires Node >= 22.19 (installed above).
+curl -fsSL https://openclaw.ai/install.sh | bash
+# `openclaw onboard --install-daemon` is interactive; run it manually (or with a
+# pre-seeded config/secret store) to create the systemd daemon. Do NOT hand-write
+# /opt/openclaw/config/*.json — OpenClaw manages its own config via onboard.
 
-# Configure as primary node
-mkdir -p /opt/openclaw/config
-cat > /opt/openclaw/config/primary.json << 'CONFIG'
-{
-  "role": "primary",
-  "fleet_manager": "http://localhost:8080",
-  "node_discovery": true,
-  "load_balancing": true
-}
-CONFIG
-
-echo "✅ Primary node setup complete!"
+echo "Primary node base setup complete (fleet-manager active on Tailscale)."
 PRIMARY_SETUP
     )
-    
-    aleph instance create \
-        --name "$node_name" \
-        --image-ref "ubuntu:22.04" \
-        --vcpus 4 \
-        --memory 8192 \
-        --disk-size 100 \
-        --ssh-authorized-keys "$(cat ~/.aleph-deploy/keys/aleph_rsa.pub)" \
-        --crn "$PRIMARY_CRN" \
-        --setup-script "$setup_script"
-    
-    # Wait for deployment and get IP
-    aleph instance status "$node_name" --wait
-    local primary_ip=$(aleph instance get "$node_name" | jq -r '.networking.ipv4')
-    
-    # Update fleet config
-    # Use mktemp to avoid race conditions with predictable tmp.json filenames
-    local tmpfile=$(mktemp)
-    jq '.primary_node = {"name": "'$node_name'", "ip": "'$primary_ip'"}' ~/.aleph-deploy/configs/fleet.json > "$tmpfile"
+
+    # Create the instance with CURRENT flags, then provision over SSH (the CLI has
+    # no --setup-script / --image-ref / --disk-size / --crn). See `... create --help`.
+    local create_args=(
+        --name "$node_name"
+        --compute-units 4 --memory 8192
+        --rootfs-size 81920
+        --ssh-pubkey-file "$SSH_KEY.pub"
+        --payment-type credit --payment-chain BASE
+        --persistent-volume "name=fleet,mount=/opt/fleet-manager,size_mib=10240"
+    )
+    [[ -n "$PRIMARY_CRN" ]] && create_args+=(--crn-url "$PRIMARY_CRN" --crn-auto-tac)
+
+    local out item_hash primary_ip
+    out="$(aleph instance create "${create_args[@]}")"
+    echo "$out"
+    item_hash="$(printf '%s\n' "$out" | grep -oE '[0-9a-f]{64}' | head -1)"
+    primary_ip="$(wait_for_ip "$node_name")" || { echo "Primary got no IP"; return 1; }
+
+    # Provision over SSH using the injected, persistent FLEET_API_KEY.
+    ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new "$SSH_USER@$primary_ip" \
+        "FLEET_API_KEY='$FLEET_API_KEY' bash -s" <<< "$setup_script"
+
+    # Record name, IP, and item_hash so every later script can reach/destroy it.
+    local tmpfile; tmpfile="$(mktemp)"
+    jq --arg n "$node_name" --arg ip "$primary_ip" --arg h "$item_hash" \
+       '.primary_node = {name:$n, ip:$ip, item_hash:$h}' \
+       ~/.aleph-deploy/configs/fleet.json > "$tmpfile"
     mv "$tmpfile" ~/.aleph-deploy/configs/fleet.json
-    
-    echo "✅ Primary node deployed: $primary_ip"
+
+    echo "Primary node deployed: $primary_ip ($item_hash)"
     return 0
 }
 
-deploy_worker_node() {
-    local node_id=$1
-    local crn_url=$2
-    local primary_ip=$3
-    
-    local node_name="${FLEET_NAME}-worker-${node_id}"
-    
-    echo "👷 Deploying Worker Node $node_id..."
-    
-    local setup_script=$(cat << WORKER_SETUP
-#!/bin/bash
-set -e
-
-# Standard setup
-apt-get update && apt-get upgrade -y
-apt-get install -y curl wget git htop jq nodejs npm docker.io
-
-# Install OpenClaw
-curl -fsSL https://raw.githubusercontent.com/openclaw/openclaw/main/install.sh | bash
-
-# Configure as worker node
-mkdir -p /opt/openclaw/config
-cat > /opt/openclaw/config/worker.json << 'CONFIG'
-{
-  "role": "worker",
-  "primary_node": "$primary_ip",
-  "node_id": "$node_name",
-  "auto_register": true,
-  "heartbeat_interval": 30
+# Poll the REAL `aleph instance list` for a named instance's IP (no fake commands).
+wait_for_ip() {
+    local name="$1" ip=""
+    for _ in $(seq 1 30); do
+        ip="$(aleph instance list --json \
+            | jq -r --arg n "$name" '.[] | select(.name==$n) | (.ipv4 // .ipv6 // empty)' \
+            | head -1)"
+        [[ -n "$ip" ]] && { echo "$ip"; return 0; }
+        sleep 10
+    done
+    return 1
 }
-CONFIG
 
-# Worker registration script
-cat > /opt/register-worker.sh << 'REGISTER'
+deploy_worker_node() {
+    local node_id="$1" crn_url="$2" primary_ip="$3"
+    local node_name="${FLEET_NAME}-worker-${node_id}"
+    echo "Deploying worker node $node_id ($node_name)..."
+
+    # Worker provisioning script. The worker registers with the primary over the
+    # TAILSCALE mesh (primary_tailscale_ip), authenticating with the shared key.
+    # We pass primary's Tailscale IP + the key in as env vars at SSH time.
+    local setup_script
+    setup_script=$(cat <<'WORKER_SETUP'
 #!/bin/bash
-NODE_ID="$node_name"
-PRIMARY_IP="$primary_ip"
-LOCAL_IP=\$(curl -s http://checkip.amazonaws.com || hostname -I | awk '{print \$1}')
+set -euo pipefail
+export DEBIAN_FRONTEND=noninteractive
 
-curl -X POST http://\$PRIMARY_IP:8080/fleet/register \
+apt-get update && apt-get -y upgrade
+apt-get install -y curl wget git htop jq ca-certificates iproute2
+curl -fsSL https://get.docker.com -o /tmp/get-docker.sh && sh /tmp/get-docker.sh
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs
+
+# Install OpenClaw (official installer; Node already present).
+curl -fsSL https://openclaw.ai/install.sh | bash
+# Run `openclaw onboard --install-daemon` to set up the daemon (see docs).
+
+# Registration: POST to the primary over Tailscale, key from EnvironmentFile.
+# NODE_ID / PRIMARY_TS_IP / FLEET_API_KEY are provided via /etc/worker.env.
+install -o root -g root -m 600 /dev/null /etc/worker.env
+cat > /etc/worker.env <<ENVF
+NODE_ID=${NODE_ID}
+PRIMARY_TS_IP=${PRIMARY_TS_IP}
+FLEET_API_KEY=${FLEET_API_KEY}
+ENVF
+
+cat > /opt/register-worker.sh <<'REGISTER'
+#!/bin/bash
+set -euo pipefail
+set -a; . /etc/worker.env; set +a
+# Use the Tailscale IP as our reachable address (public ports are firewalled).
+LOCAL_IP="$(tailscale ip -4 2>/dev/null || hostname -I | awk '{print $1}')"
+curl -fsS -X POST "http://${PRIMARY_TS_IP}:8080/fleet/register" \
   -H "Content-Type: application/json" \
-  -H "x-api-key: \$FLEET_API_KEY" \
-  -d "{
-    \"node_id\": \"\$NODE_ID\",
-    \"ip_address\": \"\$LOCAL_IP\",
-    \"capabilities\": [\"compute\", \"storage\", \"openclaw\"]
-  }"
+  -H "x-api-key: ${FLEET_API_KEY}" \
+  -d "{\"node_id\":\"${NODE_ID}\",\"ip_address\":\"${LOCAL_IP}\",\"capabilities\":[\"compute\",\"openclaw\"]}"
 REGISTER
-
 chmod +x /opt/register-worker.sh
 
-# Register with primary node
-sleep 30
-/opt/register-worker.sh
-
-# Setup heartbeat
-cat > /opt/heartbeat.sh << 'HEARTBEAT'
-#!/bin/bash
-while true; do
-    /opt/register-worker.sh
-    sleep 30
-done
-HEARTBEAT
-
-chmod +x /opt/heartbeat.sh
-
-# Use systemd instead of nohup for supervised process management
-cat > /etc/systemd/system/heartbeat.service << 'HB_SVC'
+# Heartbeat as a supervised systemd timer (re-registers every 30s; updates last_seen).
+cat > /etc/systemd/system/heartbeat.service <<'HB_SVC'
 [Unit]
 Description=Worker node heartbeat
-After=network-online.target
-
+After=network-online.target tailscaled.service
 [Service]
-Type=simple
-ExecStart=/opt/heartbeat.sh
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
+Type=oneshot
+EnvironmentFile=/etc/worker.env
+ExecStart=/opt/register-worker.sh
 HB_SVC
+cat > /etc/systemd/system/heartbeat.timer <<'HB_TIMER'
+[Unit]
+Description=Run worker heartbeat every 30s
+[Timer]
+OnBootSec=30
+OnUnitActiveSec=30
+[Install]
+WantedBy=timers.target
+HB_TIMER
 systemctl daemon-reload
-systemctl enable heartbeat
-systemctl start heartbeat
+systemctl enable --now heartbeat.timer
 
-echo "✅ Worker node $node_id setup complete!"
+echo "Worker node setup complete."
 WORKER_SETUP
     )
-    
-    aleph instance create \
-        --name "$node_name" \
-        --image-ref "ubuntu:22.04" \
-        --vcpus 2 \
-        --memory 4096 \
-        --disk-size 50 \
-        --ssh-authorized-keys "$(cat ~/.aleph-deploy/keys/aleph_rsa.pub)" \
-        --crn "$crn_url" \
-        --setup-script "$setup_script"
-    
-    # Update fleet config
-    local worker_info='{"name": "'$node_name'", "id": '$node_id', "crn": "'$crn_url'"}'
-    local tmpfile=$(mktemp)
-    jq '.worker_nodes += ['$worker_info']' ~/.aleph-deploy/configs/fleet.json > "$tmpfile"
+
+    local create_args=(
+        --name "$node_name"
+        --compute-units 2 --memory 4096
+        --rootfs-size 40960
+        --ssh-pubkey-file "$SSH_KEY.pub"
+        --payment-type credit --payment-chain BASE
+    )
+    [[ -n "$crn_url" ]] && create_args+=(--crn-url "$crn_url" --crn-auto-tac)
+
+    local out item_hash worker_ip
+    out="$(aleph instance create "${create_args[@]}")"
+    echo "$out"
+    item_hash="$(printf '%s\n' "$out" | grep -oE '[0-9a-f]{64}' | head -1)"
+    worker_ip="$(wait_for_ip "$node_name")" || { echo "Worker $node_id got no IP"; return 1; }
+
+    # primary_ip here is the primary's TAILSCALE IP (resolved by the caller after
+    # the mesh is up). Provision over SSH with NODE_ID/PRIMARY_TS_IP/FLEET_API_KEY.
+    ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new "$SSH_USER@$worker_ip" \
+        "NODE_ID='$node_name' PRIMARY_TS_IP='$primary_ip' FLEET_API_KEY='$FLEET_API_KEY' bash -s" \
+        <<< "$setup_script"
+
+    # Record name, id, crn, IP, and item_hash. IP is REQUIRED by Tailscale/backup/
+    # security scripts — never omit it.
+    local worker_info tmpfile
+    worker_info="$(jq -n --arg n "$node_name" --argjson id "$node_id" \
+        --arg crn "$crn_url" --arg ip "$worker_ip" --arg h "$item_hash" \
+        '{name:$n, id:$id, crn:$crn, ip:$ip, item_hash:$h}')"
+    tmpfile="$(mktemp)"
+    jq --argjson w "$worker_info" '.worker_nodes += [$w]' \
+        ~/.aleph-deploy/configs/fleet.json > "$tmpfile"
     mv "$tmpfile" ~/.aleph-deploy/configs/fleet.json
-    
-    echo "✅ Worker node $node_id deployed on $crn_url"
+
+    echo "Worker node $node_id deployed on ${crn_url:-auto-selected CRN}: $worker_ip"
 }
 
 # Main deployment sequence
-echo "📋 Starting fleet deployment sequence..."
+echo "Starting fleet deployment sequence..."
 
-# Deploy primary node first
+# 1. Deploy + provision the primary (installs the fleet manager on its Tailscale IP).
 deploy_primary_node
-primary_ip=$(jq -r '.primary_node.ip' ~/.aleph-deploy/configs/fleet.json)
+primary_public_ip="$(jq -r '.primary_node.ip' ~/.aleph-deploy/configs/fleet.json)"
 
-# Wait for primary node to be ready
-echo "⏳ Waiting for primary node to initialize..."
-sleep 60
+# 2. Bring the primary onto Tailscale and capture its mesh IP. Workers register
+#    against THIS address (the control plane is never reachable on the public IP).
+#    Requires TAILSCALE_AUTH_KEY in the environment (see "Tailscale Mesh" section).
+: "${TAILSCALE_AUTH_KEY:?Set TAILSCALE_AUTH_KEY before deploying the fleet}"
+ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new "$SSH_USER@$primary_public_ip" \
+    "TAILSCALE_AUTH_KEY='$TAILSCALE_AUTH_KEY' bash -s" <<'TS_BOOT'
+set -euo pipefail
+curl -fsSL https://tailscale.com/install.sh | sh        # official, OS-detecting installer
+printf '%s' "$TAILSCALE_AUTH_KEY" > /tmp/ts && chmod 600 /tmp/ts
+tailscale up --auth-key="file:/tmp/ts" --hostname="$(hostname)"
+rm -f /tmp/ts
+# Re-point the fleet manager at the Tailscale interface and restart it.
+TS_IP="$(tailscale ip -4)"
+sed -i "s/^BIND_HOST=.*/BIND_HOST=${TS_IP}/" /etc/fleet-manager.env
+systemctl restart fleet-manager
+echo "PRIMARY_TS_IP=${TS_IP}"
+TS_BOOT
 
-# Deploy worker nodes
-for i in $(seq 1 $((NODE_COUNT-1))); do
-    crn_index=$((($i - 1) % ${#WORKER_CRNS[@]}))
-    crn_url=${WORKER_CRNS[$crn_index]}
-    
-    deploy_worker_node "$i" "$crn_url" "$primary_ip" &
-    
-    # Stagger deployments to avoid overwhelming CRNs
-    sleep 30
+primary_ts_ip="$(ssh -i "$SSH_KEY" "$SSH_USER@$primary_public_ip" "tailscale ip -4")"
+jq --arg ip "$primary_ts_ip" '.primary_node.tailscale_ip=$ip' \
+    ~/.aleph-deploy/configs/fleet.json > /tmp/fleet.$$ && \
+    mv /tmp/fleet.$$ ~/.aleph-deploy/configs/fleet.json
+echo "Primary Tailscale IP: $primary_ts_ip"
+
+# 3. Deploy workers, registering each against the primary's Tailscale IP.
+#    Each worker also joins Tailscale during provisioning (its setup script
+#    installs Tailscale via setup-tailscale-mesh.sh, run right after).
+worker_total=$((NODE_COUNT - 1))
+for i in $(seq 1 "$worker_total"); do
+    if (( ${#WORKER_CRNS[@]} > 0 )); then
+        crn_url="${WORKER_CRNS[$(((i - 1) % ${#WORKER_CRNS[@]}))]}"
+    else
+        crn_url=""   # let the CLI auto-select a CRN
+    fi
+    deploy_worker_node "$i" "$crn_url" "$primary_ts_ip" &
+    sleep 30   # stagger to avoid overwhelming CRNs
 done
-
-# Wait for all deployments to complete
 wait
 
-echo "🎉 Fleet deployment complete!"
-echo "Primary Node: http://$primary_ip:8080"
-echo "Fleet Status: curl http://$primary_ip:8080/fleet/status"
-
-# Display fleet summary
-cat ~/.aleph-deploy/configs/fleet.json | jq .
+echo "Fleet deployment complete."
+echo "Fleet manager (PRIVATE, Tailscale only): http://$primary_ts_ip:8080"
+echo "Status: curl -H \"x-api-key: \$FLEET_API_KEY\" http://$primary_ts_ip:8080/fleet/status"
+echo "Next: run setup-tailscale-mesh.sh to verify the mesh, then setup-load-balancer.sh."
+jq . ~/.aleph-deploy/configs/fleet.json
 ```
+
+> **Ordering note.** Workers reach the fleet manager over Tailscale, so the primary joins the mesh *before* workers are provisioned (step 2). Each worker joins Tailscale as part of its own provisioning — run `setup-tailscale-mesh.sh` (next section) to add Tailscale to any node that still needs it and to verify connectivity. The public IPs are used only for the initial SSH provisioning hop.
+
+> **Primary needs the fleet SSH key (one-time).** Several primary-resident services (replication, backups, node monitor, key rotation) SSH from the primary to workers, so the primary must hold the **private** key. Copy it once, locked down, after the primary is up — prefer Tailscale for the hop:
+>
+> ```bash
+> PRIMARY_TS_IP="$(jq -r '.primary_node.tailscale_ip' ~/.aleph-deploy/configs/fleet.json)"
+> scp -i "$SSH_KEY" "$SSH_KEY" "$SSH_USER@$PRIMARY_TS_IP:/root/.ssh/aleph_ed25519"
+> ssh -i "$SSH_KEY" "$SSH_USER@$PRIMARY_TS_IP" "chmod 600 /root/.ssh/aleph_ed25519"
+> ```
+>
+> Primary-side scripts read `ALEPH_SSH_KEY` (default `/root/.ssh/aleph_ed25519`). Treat this key as sensitive: it grants root on every worker. Rotate it (see the rotation tool) if the primary is ever compromised, and never bake the private key into an instance setup message.
 
 ### Fleet Management Commands
 
-**Fleet Control Script:**
+**Fleet Control Script.** Run this from a machine that is **on the tailnet** (the control plane lives on the primary's Tailscale IP). It reads SSH user/key and the manager host from config/env.
+
 ```bash
 #!/bin/bash
 # fleet-control.sh
+set -euo pipefail
 
 FLEET_CONFIG="$HOME/.aleph-deploy/configs/fleet.json"
-# All fleet manager endpoints require x-api-key authentication.
-# Set FLEET_API_KEY in your environment or .env file.
-FLEET_API_KEY="${FLEET_API_KEY:?FLEET_API_KEY env var is required}"
+SSH_KEY="${ALEPH_SSH_KEY:-$HOME/.aleph-deploy/keys/aleph_ed25519}"
+SSH_USER="$(jq -r '.ssh_user // "root"' "$FLEET_CONFIG" 2>/dev/null || echo root)"
+SSH_OPTS=(-i "$SSH_KEY" -o StrictHostKeyChecking=accept-new)
+# All fleet manager endpoints require x-api-key auth. Keep the key in fleet.env
+# (chmod 600), source it before running, or export it; never hardcode it.
+FLEET_API_KEY="${FLEET_API_KEY:?FLEET_API_KEY env var is required (see fleet.env)}"
 
-get_primary_ip() {
-    jq -r '.primary_node.ip' "$FLEET_CONFIG"
+# Control-plane base URL = primary's TAILSCALE IP:8080 (NOT the public IP).
+MGR_HOST="$(jq -r '.primary_node.tailscale_ip // .primary_node.ip' "$FLEET_CONFIG")"
+mgr() {  # mgr <path> [curl args...]
+    curl -fsS -H "x-api-key: $FLEET_API_KEY" "http://$MGR_HOST:8080$1" "${@:2}"
 }
 
 fleet_status() {
-    local primary_ip=$(get_primary_ip)
-    echo "🔍 Fleet Status Check..."
-
-    curl -s -H "x-api-key: $FLEET_API_KEY" "http://$primary_ip:8080/fleet/status" | jq '.' || {
-        echo "❌ Unable to reach fleet manager"
-        return 1
-    }
+    echo "Fleet status:"
+    mgr /fleet/status | jq '.' || { echo "Unable to reach fleet manager (on tailnet?)"; return 1; }
 }
 
 fleet_health() {
-    echo "🏥 Fleet Health Check..."
-    
-    local primary_ip=$(get_primary_ip)
-    local nodes=$(curl -s -H "x-api-key: $FLEET_API_KEY" "http://$primary_ip:8080/fleet/status" | jq -r '.nodes[].ip_address')
-
+    echo "Fleet health check:"
+    local nodes; nodes="$(mgr /fleet/status | jq -r '.nodes[].ip_address')"
     for node_ip in $nodes; do
         echo "Checking node: $node_ip"
-
-        if ssh -i ~/.aleph-deploy/keys/aleph_rsa -o ConnectTimeout=5 ubuntu@"$node_ip" "systemctl is-active openclaw" &>/dev/null; then
-            echo "  ✅ $node_ip - OpenClaw running"
+        if ssh "${SSH_OPTS[@]}" -o ConnectTimeout=5 "$SSH_USER@$node_ip" \
+               "systemctl is-active openclaw" &>/dev/null; then
+            echo "  OK   $node_ip - OpenClaw running"
         else
-            echo "  ❌ $node_ip - OpenClaw not responding"
+            echo "  DOWN $node_ip - OpenClaw not responding"
         fi
     done
 }
 
 fleet_restart() {
     local service_name=$1
-
-    # Validate service_name to prevent command injection via SSH
-    if [[ ! "$service_name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
-        echo "❌ Invalid service name: $service_name"
-        return 1
-    fi
-
-    echo "🔄 Restarting $service_name on all nodes..."
-
-    local primary_ip=$(get_primary_ip)
-    local nodes=$(curl -s -H "x-api-key: $FLEET_API_KEY" "http://$primary_ip:8080/fleet/status" | jq -r '.nodes[].ip_address')
-
-    for node_ip in $nodes; do
-        echo "Restarting $service_name on $node_ip..."
-        ssh -i ~/.aleph-deploy/keys/aleph_rsa ubuntu@"$node_ip" "sudo systemctl restart $service_name"
+    [[ "$service_name" =~ ^[a-zA-Z0-9_.-]+$ ]] || { echo "Invalid service: $service_name"; return 1; }
+    echo "Restarting $service_name on all nodes..."
+    for node_ip in $(mgr /fleet/status | jq -r '.nodes[].ip_address'); do
+        echo "  $node_ip"
+        ssh "${SSH_OPTS[@]}" "$SSH_USER@$node_ip" "sudo systemctl restart $service_name"
     done
 }
 
 fleet_deploy() {
     local script_path=$1
-    echo "📤 Deploying script to all nodes: $script_path"
-    
-    if [[ ! -f "$script_path" ]]; then
-        echo "❌ Script file not found: $script_path"
-        return 1
-    fi
-    
-    local primary_ip=$(get_primary_ip)
-    local nodes=$(curl -s -H "x-api-key: $FLEET_API_KEY" "http://$primary_ip:8080/fleet/status" | jq -r '.nodes[].ip_address')
-
-    for node_ip in $nodes; do
-        echo "Deploying to $node_ip..."
-        scp -i ~/.aleph-deploy/keys/aleph_rsa "$script_path" ubuntu@"$node_ip":/tmp/deploy-script.sh
-        ssh -i ~/.aleph-deploy/keys/aleph_rsa ubuntu@"$node_ip" "chmod +x /tmp/deploy-script.sh && sudo /tmp/deploy-script.sh"
+    echo "Deploying script to all nodes: $script_path"
+    [[ -f "$script_path" ]] || { echo "Script not found: $script_path"; return 1; }
+    for node_ip in $(mgr /fleet/status | jq -r '.nodes[].ip_address'); do
+        echo "  $node_ip"
+        scp "${SSH_OPTS[@]}" "$script_path" "$SSH_USER@$node_ip":/tmp/deploy-script.sh
+        ssh "${SSH_OPTS[@]}" "$SSH_USER@$node_ip" "chmod +x /tmp/deploy-script.sh && sudo /tmp/deploy-script.sh"
     done
 }
 
+# Real scale operation. Up: create+provision new workers, register them, let
+# haproxy-fleet-sync pick them up. Down: drain HAProxy backend, deregister, then
+# DELETE the Aleph instance (irreversible for non-persistent volumes — confirmed).
+# Requires FLEET_API_KEY, TAILSCALE_AUTH_KEY, and the deploy/worker helpers; the
+# simplest robust approach is to re-invoke deploy-fleet.sh's worker function. Here
+# we implement it inline so fleet-control.sh is self-contained.
 fleet_scale() {
-    local target_nodes=$1
-    local current_nodes=$(jq '.node_count' "$FLEET_CONFIG")
-    
-    echo "📊 Scaling fleet from $current_nodes to $target_nodes nodes..."
-    
-    if (( target_nodes > current_nodes )); then
-        echo "🔺 Scaling up: adding $((target_nodes - current_nodes)) nodes"
-        # Add scale-up logic
-    elif (( target_nodes < current_nodes )); then
-        echo "🔻 Scaling down: removing $((current_nodes - target_nodes)) nodes"
-        # Add scale-down logic
+    local target=$1
+    [[ "$target" =~ ^[0-9]+$ ]] || { echo "Target must be an integer"; return 1; }
+    local cur; cur="$(jq '.worker_nodes | length' "$FLEET_CONFIG")"   # worker count
+    local want=$((target - 1))                                        # minus the primary
+    (( want < 0 )) && { echo "Target must be >= 1 (includes primary)"; return 1; }
+    echo "Scaling workers from $cur to $want (fleet total $((cur+1)) -> $target)..."
+
+    local primary_ts; primary_ts="$(jq -r '.primary_node.tailscale_ip' "$FLEET_CONFIG")"
+    local fleet_name; fleet_name="$(jq -r '.fleet_name' "$FLEET_CONFIG")"
+
+    if (( want > cur )); then
+        : "${TAILSCALE_AUTH_KEY:?TAILSCALE_AUTH_KEY required to add workers}"
+        command -v aleph >/dev/null || { echo "aleph CLI required on this host to add workers"; return 1; }
+        for ((i=cur+1; i<=want; i++)); do
+            local wname="${fleet_name}-worker-${i}" wout whash wip
+            echo "Adding worker $i ($wname)..."
+            # Real create (current flags), then poll the REAL `aleph instance list`.
+            wout="$(aleph instance create --name "$wname" --compute-units 2 --rootfs-size 40960 \
+                    --ssh-pubkey-file "$SSH_KEY.pub" --payment-type credit --payment-chain BASE 2>&1)"
+            echo "$wout"
+            whash="$(printf '%s\n' "$wout" | grep -oE '[0-9a-f]{64}' | head -1)"
+            wip=""
+            for _ in $(seq 1 30); do
+                wip="$(aleph instance list --json \
+                    | jq -r --arg n "$wname" '.[]|select(.name==$n)|(.ipv4//.ipv6//empty)' | head -1)"
+                [[ -n "$wip" ]] && break; sleep 10
+            done
+            [[ -z "$wip" ]] && { echo "  $wname got no IP — skipping"; continue; }
+            # Provision over SSH: Tailscale join + register with the primary over the mesh.
+            ssh "${SSH_OPTS[@]}" "$SSH_USER@$wip" \
+                "NODE_ID='$wname' PRIMARY_TS_IP='$primary_ts' FLEET_API_KEY='$FLEET_API_KEY' \
+                 TAILSCALE_AUTH_KEY='$TAILSCALE_AUTH_KEY' bash -s" <<'REPROV'
+set -euo pipefail; export DEBIAN_FRONTEND=noninteractive
+apt-get update && apt-get install -y curl jq iproute2
+curl -fsSL https://get.docker.com | sh
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs
+curl -fsSL https://tailscale.com/install.sh | sh
+[[ -n "${TAILSCALE_AUTH_KEY:-}" ]] && tailscale up --auth-key="$TAILSCALE_AUTH_KEY" --hostname="$NODE_ID"
+curl -fsSL https://openclaw.ai/install.sh | bash
+TS_IP="$(tailscale ip -4 2>/dev/null || hostname -I | awk '{print $1}')"
+curl -fsS -X POST "http://$PRIMARY_TS_IP:8080/fleet/register" -H "x-api-key: $FLEET_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d "{\"node_id\":\"$NODE_ID\",\"ip_address\":\"$TS_IP\",\"capabilities\":[\"compute\",\"openclaw\"]}"
+REPROV
+            # Append {name,id,ip,item_hash} to fleet.json atomically.
+            local wtmp; wtmp="$(mktemp)"
+            jq --arg n "$wname" --argjson id "$i" --arg ip "$wip" --arg h "$whash" \
+               '.worker_nodes += [{name:$n, id:$id, crn:"", ip:$ip, item_hash:$h}]' \
+               "$FLEET_CONFIG" > "$wtmp" && mv "$wtmp" "$FLEET_CONFIG"
+            echo "  Added $wname ($wip)."
+        done
+        echo "New workers register automatically; haproxy-fleet-sync adds them within 60s."
+    elif (( want < cur )); then
+        local n=$((cur - want))
+        echo "Removing $n least-recently-active worker(s)..."
+        # Pick workers to remove (last in the list = most recently added).
+        local victims; victims="$(jq -r '.worker_nodes[-'"$n"':][] | .name + " " + .ip + " " + .item_hash' "$FLEET_CONFIG")"
+        while read -r name ip hash; do
+            [[ -z "$name" ]] && continue
+            echo "Draining $name ($ip)..."
+            # 1. Drain in HAProxy so no new requests go to it, then deregister.
+            ssh "${SSH_OPTS[@]}" "$SSH_USER@$primary_ts" \
+                "sudo /opt/manage-haproxy-backends.sh remove '$name' || true"
+            # 2. Confirm before the irreversible delete.
+            echo "About to DELETE Aleph instance $name ($hash). Non-persistent data is lost."
+            read -r -p "Type the item-hash to confirm: " ans
+            if [[ "$ans" == "$hash" ]]; then
+                aleph instance delete "$hash"
+                # 3. Atomically drop it from fleet.json.
+                local tmp; tmp="$(mktemp)"
+                jq --arg n "$name" '.worker_nodes |= map(select(.name != $n))' \
+                    "$FLEET_CONFIG" > "$tmp" && mv "$tmp" "$FLEET_CONFIG"
+                echo "Removed $name."
+            else
+                echo "Skipped $name (hash mismatch)."
+            fi
+        done <<< "$victims"
     else
-        echo "✅ Fleet already at target size"
+        echo "Fleet already at target size."
     fi
+    # Keep node_count in sync with reality.
+    local tmp; tmp="$(mktemp)"
+    jq --argjson c "$target" '.node_count=$c' "$FLEET_CONFIG" > "$tmp" && mv "$tmp" "$FLEET_CONFIG"
 }
 
 fleet_logs() {
-    local service_name="${1:-openclaw}"
-    local lines="${2:-50}"
-
-    # Validate inputs to prevent command injection via SSH
-    if [[ ! "$service_name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
-        echo "❌ Invalid service name: $service_name"
-        return 1
-    fi
-    if [[ ! "$lines" =~ ^[0-9]+$ ]]; then
-        echo "❌ Invalid line count: $lines"
-        return 1
-    fi
-
-    echo "📋 Collecting logs from all nodes..."
-
-    local primary_ip=$(get_primary_ip)
-    local nodes=$(curl -s -H "x-api-key: $FLEET_API_KEY" "http://$primary_ip:8080/fleet/status" | jq -r '.nodes[].ip_address')
-
-    for node_ip in $nodes; do
-        echo "=== Logs from $node_ip ==="
-        ssh -i ~/.aleph-deploy/keys/aleph_rsa ubuntu@"$node_ip" "sudo journalctl -u $service_name -n $lines --no-pager"
+    local service_name="${1:-openclaw}" lines="${2:-50}"
+    [[ "$service_name" =~ ^[a-zA-Z0-9_.-]+$ ]] || { echo "Invalid service: $service_name"; return 1; }
+    [[ "$lines" =~ ^[0-9]+$ ]] || { echo "Invalid line count: $lines"; return 1; }
+    echo "Collecting logs from all nodes..."
+    for node_ip in $(mgr /fleet/status | jq -r '.nodes[].ip_address'); do
+        echo "=== $node_ip ==="
+        ssh "${SSH_OPTS[@]}" "$SSH_USER@$node_ip" "sudo journalctl -u $service_name -n $lines --no-pager"
         echo ""
     done
 }
@@ -944,19 +1123,31 @@ esac
 ### Agent Continuity System
 
 **Auto-Provisioning Framework:**
+> **What this is.** An OPTIONAL OpenClaw-specific "agent continuity" layer that
+> replicates an agent's workspace (`SOUL.md`/`AGENTS.md`/`MEMORY.md`/skills) from the
+> primary to workers, so a worker can take over the agent's state. It is independent
+> of OpenClaw's own config and only meaningful if you run OpenClaw with such a
+> workspace. Skip this whole section if you just need plain VMs. This script runs
+> **on the primary node** (it is installed there by `setup_continuous_replication`).
+
 ```bash
 #!/bin/bash
-# auto-provisioning-protocol.sh
-
-set -e
+# auto-provisioning-protocol.sh  — runs ON the primary node.
+set -euo pipefail
 
 # SRP Configuration
 SRP_VERSION="2.0.0"
 REPLICATION_DIR="/opt/openclaw/replication"
+FLEET_CONFIG="${FLEET_CONFIG:-/opt/fleet-manager/fleet.json}"   # node-local copy if present
 BACKUP_RETENTION_DAYS=30
-SYNC_INTERVAL=300  # 5 minutes
 
-echo "🧬 Auto-Provisioning Protocol v$SRP_VERSION"
+# Control-plane access for replicate_to_fleet(): the fleet manager listens on this
+# node's Tailscale IP and needs the shared key. Both come from the root-owned
+# EnvironmentFile that the fleet manager itself uses.
+[[ -f /etc/fleet-manager.env ]] && { set -a; . /etc/fleet-manager.env; set +a; }
+FLEET_MGR_HOST="${BIND_HOST:-127.0.0.1}"
+
+echo "Auto-Provisioning Protocol v$SRP_VERSION"
 
 initialize_srp() {
     echo "🔬 Initializing Auto-Provisioning Protocol..."
@@ -1050,11 +1241,11 @@ collect_replication_data() {
         echo "✅ Skills directory synchronized"
     fi
     
-    # Memory files (daily logs)
+    # Memory files (daily logs) — last 30 days. -print0/xargs -0 is space-safe.
     if [[ -d "$workspace_root/memory" ]]; then
-        # Only sync recent memory files (last 30 days)
-        find "$workspace_root/memory" -name "*.md" -mtime -30 -exec cp {} "$REPLICATION_DIR/memory/" \;
-        echo "✅ Recent memory files collected"
+        find "$workspace_root/memory" -type f -name "*.md" -mtime -30 -print0 \
+            | xargs -0 -I{} cp {} "$REPLICATION_DIR/memory/"
+        echo "Recent memory files collected"
     fi
     
     # Configuration backups
@@ -1064,34 +1255,56 @@ collect_replication_data() {
     update_integrity_hashes
 }
 
+# Stable content hash of a directory: hashes per-file (filename + bytes), sorted,
+# then hashes that list. NUL-delimited so spaces/newlines in names are safe.
+# Always EXCLUDES manifest.json so verification is repeatable (the manifest itself
+# is mutated by this very function and must not feed back into the hash).
+hash_tree() {
+    local dir="$1"
+    [[ -d "$dir" ]] || { echo "MISSING"; return; }
+    find "$dir" -type f ! -name 'manifest.json' -print0 \
+        | sort -z \
+        | xargs -0 -r sha256sum \
+        | sha256sum | cut -d' ' -f1
+}
+
 update_integrity_hashes() {
-    echo "🔐 Calculating integrity hashes..."
-    
-    local manifest_file="$REPLICATION_DIR/manifest.json"
-    
-    # Update component hashes
+    echo "Calculating integrity hashes..."
+    local manifest_file="$REPLICATION_DIR/manifest.json" tmpfile
+
+    # Per-component hashes
     for component in soul agents memory skills; do
         local path="$REPLICATION_DIR/$component"
         if [[ -d "$path" ]]; then
-            local hash=$(find "$path" -type f -exec sha256sum {} \; | sort | sha256sum | cut -d' ' -f1)
-            local tmpfile=$(mktemp)
-            jq --arg comp "$component" --arg hash "$hash" '.components[$comp].hash = $hash' "$manifest_file" > "$tmpfile"
+            local hash; hash="$(hash_tree "$path")"
+            tmpfile="$(mktemp)"
+            jq --arg comp "$component" --arg hash "$hash" \
+                '.components[$comp].hash = $hash' "$manifest_file" > "$tmpfile"
             mv "$tmpfile" "$manifest_file"
         fi
     done
 
-    # Calculate overall integrity hash
-    local overall_hash=$(find "$REPLICATION_DIR" -name "*.md" -o -name "*.json" | sort | xargs cat | sha256sum | cut -d' ' -f1)
-    local tmpfile=$(mktemp)
-    jq --arg hash "$overall_hash" '.integrity_hash = $hash' "$manifest_file" > "$tmpfile"
+    # Overall hash over the whole replication set, EXCLUDING the mutable manifest.
+    local overall_hash; overall_hash="$(hash_tree "$REPLICATION_DIR")"
+    tmpfile="$(mktemp)"
+    jq --arg hash "$overall_hash" '.integrity_hash = $hash | .last_replication = now' \
+        "$manifest_file" > "$tmpfile"
     mv "$tmpfile" "$manifest_file"
+    echo "Integrity hashes updated (overall: ${overall_hash:0:12}...)"
+}
 
-    # Update timestamp
-    tmpfile=$(mktemp)
-    jq '.last_replication = now' "$manifest_file" > "$tmpfile"
-    mv "$tmpfile" "$manifest_file"
-    
-    echo "✅ Integrity hashes updated"
+# Verify a replicated set on the receiving node: recompute the overall hash
+# (excluding manifest.json) and compare to manifest.integrity_hash.
+verify_integrity() {
+    local dir="${1:-$REPLICATION_DIR}"
+    local expected actual
+    expected="$(jq -r '.integrity_hash' "$dir/manifest.json")"
+    actual="$(hash_tree "$dir")"
+    if [[ "$expected" == "$actual" ]]; then
+        echo "Integrity OK ($actual)"; return 0
+    else
+        echo "Integrity MISMATCH: expected $expected, got $actual"; return 1
+    fi
 }
 
 replicate_to_node() {
@@ -1106,135 +1319,112 @@ replicate_to_node() {
     
     cd "$REPLICATION_DIR"
     tar -czf "$package_path" .
-    
+
+    local ssh_user; ssh_user="$(jq -r '.ssh_user // "root"' "$FLEET_CONFIG" 2>/dev/null || echo root)"
+    # SSH key on the primary: provisioning copies it here (see "key distribution" note).
+    local ssh_key="${ALEPH_SSH_KEY:-/root/.ssh/aleph_ed25519}"
     # Transfer package to target node
-    scp -i ~/.aleph-deploy/keys/aleph_rsa "$package_path" "ubuntu@$target_ip:/tmp/"
-    
-    # Execute replication on target node
-    ssh -i ~/.aleph-deploy/keys/aleph_rsa "ubuntu@$target_ip" << REMOTE_SCRIPT
+    scp -i "$ssh_key" -o StrictHostKeyChecking=accept-new \
+        "$package_path" "$ssh_user@$target_ip:/tmp/"
+
+    # Execute replication on target node. We pass the package name + the SAME
+    # hash_tree() implementation so the receiver can VERIFY BEFORE INSTALLING.
+    ssh -i "$ssh_key" -o StrictHostKeyChecking=accept-new \
+        "$ssh_user@$target_ip" "PKG='$package_name' bash -s" << 'REMOTE_SCRIPT'
 #!/bin/bash
-set -e
+set -euo pipefail
 
-echo "📥 Receiving replication package..."
+echo "Receiving replication package..."
+WORK="$(mktemp -d /tmp/repl.XXXXXX)"   # unique dir — no collisions between runs
+trap 'rm -rf "$WORK"' EXIT
+tar -xzf "/tmp/$PKG" -C "$WORK"
+cd "$WORK"
 
-# Extract package
-cd /tmp
-tar -xzf "$package_name"
+# Same stable, manifest-excluding hash used on the sender.
+hash_tree() {
+    find "$1" -type f ! -name 'manifest.json' -print0 | sort -z \
+        | xargs -0 -r sha256sum | sha256sum | cut -d' ' -f1
+}
 
-# Prepare target directories
-sudo mkdir -p /opt/openclaw/workspace/{memory,skills}
-sudo chown -R ubuntu:ubuntu /opt/openclaw/workspace
-
-# Install replicated components
-# Files are extracted into subdirectories matching the replication structure:
-# soul/SOUL.md, agents/AGENTS.md, memory/MEMORY.md, etc.
-if [[ -f soul/SOUL.md ]]; then
-    cp soul/SOUL.md /opt/openclaw/workspace/
-    echo "✅ SOUL.md installed"
-fi
-
-if [[ -f agents/AGENTS.md ]]; then
-    cp agents/AGENTS.md /opt/openclaw/workspace/
-    echo "✅ AGENTS.md installed"
-fi
-
-if [[ -f memory/MEMORY.md ]]; then
-    cp memory/MEMORY.md /opt/openclaw/workspace/
-    echo "✅ MEMORY.md installed"
-fi
-
-if [[ -f USER.md ]]; then
-    cp USER.md /opt/openclaw/workspace/
-    echo "✅ USER.md installed"
-fi
-
-# Install skills
-if [[ -d skills ]]; then
-    rsync -av skills/ /opt/openclaw/workspace/skills/
-    echo "✅ Skills installed"
-fi
-
-# Install memory files
-if [[ -d memory ]]; then
-    mkdir -p /opt/openclaw/workspace/memory
-    cp memory/*.md /opt/openclaw/workspace/memory/ 2>/dev/null || true
-    echo "✅ Memory files installed"
-fi
-
-# Verify integrity
+# VERIFY BEFORE INSTALLING — abort if the package is corrupt/tampered.
 if [[ -f manifest.json ]]; then
-    echo "🔐 Verifying integrity..."
-    # Add integrity verification logic here
-    echo "✅ Integrity verified"
+    expected="$(jq -r '.integrity_hash' manifest.json)"
+    actual="$(hash_tree "$WORK")"
+    if [[ "$expected" != "$actual" ]]; then
+        echo "Integrity MISMATCH (expected $expected, got $actual) — NOT installing."
+        exit 1
+    fi
+    echo "Integrity OK ($actual)"
 fi
 
-# Restart OpenClaw to load new configuration
-sudo systemctl restart openclaw
+# Install atomically-ish into the workspace, owned by the login user.
+LOGIN_USER="$(logname 2>/dev/null || echo "${SUDO_USER:-$USER}")"
+sudo mkdir -p /opt/openclaw/workspace/{memory,skills}
+sudo chown -R "$LOGIN_USER":"$LOGIN_USER" /opt/openclaw/workspace
+[[ -f soul/SOUL.md ]]     && cp soul/SOUL.md     /opt/openclaw/workspace/
+[[ -f agents/AGENTS.md ]] && cp agents/AGENTS.md /opt/openclaw/workspace/
+[[ -f memory/MEMORY.md ]] && cp memory/MEMORY.md /opt/openclaw/workspace/
+[[ -f USER.md ]]          && cp USER.md          /opt/openclaw/workspace/
+[[ -d skills ]] && rsync -a skills/ /opt/openclaw/workspace/skills/
+[[ -d memory ]] && cp memory/*.md /opt/openclaw/workspace/memory/ 2>/dev/null || true
 
-# Cleanup
-rm -f "$package_name"
-
-echo "🎉 Replication complete on \$HOSTNAME"
+# Reload OpenClaw to pick up new workspace state (daemon-managed).
+sudo systemctl restart openclaw || true
+rm -f "/tmp/$PKG"
+echo "Replication complete on $(hostname)"
 REMOTE_SCRIPT
-    
-    # Cleanup local package
+
     rm -f "$package_path"
-    
-    echo "✅ Replication to $target_node completed"
+    echo "Replication to $target_node completed"
 }
 
 replicate_to_fleet() {
-    echo "🌐 Initiating fleet-wide replication..."
-    
-    # Collect latest data
+    echo "Initiating fleet-wide replication..."
     collect_replication_data
-    
-    # Get fleet node list
-    local primary_ip=$(get_primary_ip)
-    local nodes=$(curl -s -H "x-api-key: $FLEET_API_KEY" "http://$primary_ip:8080/fleet/status" | jq -r '.nodes[] | select(.node_id != env.HOSTNAME) | .ip_address')
-    
-    # Replicate to each node in parallel
+
+    # Ask the local fleet manager (Tailscale) for the worker list, authenticated.
+    : "${FLEET_API_KEY:?FLEET_API_KEY not found in /etc/fleet-manager.env}"
+    local nodes
+    nodes="$(curl -fsS -H "x-api-key: $FLEET_API_KEY" "http://$FLEET_MGR_HOST:8080/fleet/status" \
+        | jq -r --arg me "$(hostname)" '.nodes[] | select(.node_id != $me) | .ip_address')"
+
     for node_ip in $nodes; do
         replicate_to_node "worker" "$node_ip" &
     done
-    
-    # Wait for all replications to complete
     wait
-    
-    echo "🎉 Fleet replication complete!"
-    
-    # Update replication count
-    local tmpfile=$(mktemp)
+    echo "Fleet replication complete."
+
+    local tmpfile; tmpfile="$(mktemp)"
     jq '.replication_count += 1' "$REPLICATION_DIR/manifest.json" > "$tmpfile"
     mv "$tmpfile" "$REPLICATION_DIR/manifest.json"
 }
 
 setup_continuous_replication() {
-    echo "⏰ Setting up continuous replication..."
-    
-    # Create replication cron job
+    echo "Setting up continuous replication..."
+
+    # Install THIS script at a stable path so the cron job can call it. We copy the
+    # currently-running file rather than assuming it already exists there.
+    install -D -m 755 "$(readlink -f "$0")" /opt/openclaw/replication/auto-provisioning-protocol.sh
+
+    # Cron wrapper INVOKES the script's subcommand (does NOT `source` it — sourcing
+    # would run the command dispatcher at the bottom with no args and execute
+    # `initialize_srp`, clobbering the manifest as a side effect).
     cat > /opt/openclaw/replication-cron.sh << 'CRON_SCRIPT'
 #!/bin/bash
 export PATH="/usr/local/bin:/usr/bin:/bin"
-
-# Source SRP functions
-source /opt/openclaw/replication/auto-provisioning-protocol.sh
-
-# Check if we're the primary node
+SRP=/opt/openclaw/replication/auto-provisioning-protocol.sh
+# Only the primary (the node running fleet-manager) drives fleet replication.
 if [[ -f /opt/fleet-manager/fleet-manager.js ]]; then
-    echo "$(date): Running scheduled replication from primary node"
-    replicate_to_fleet
+    echo "$(date -Iseconds): scheduled replication from primary"
+    "$SRP" replicate
 else
-    echo "$(date): Worker node - skipping scheduled replication"
+    echo "$(date -Iseconds): worker node — skipping"
 fi
 CRON_SCRIPT
-    
     chmod +x /opt/openclaw/replication-cron.sh
-    
-    # Add to crontab (every 5 minutes)
+
     (crontab -l 2>/dev/null; echo "*/5 * * * * /opt/openclaw/replication-cron.sh >> /var/log/replication.log 2>&1") | crontab -
-    
-    echo "✅ Continuous replication configured"
+    echo "Continuous replication configured (every 5 min, primary only)"
 }
 
 # Emergency replication trigger
@@ -1290,6 +1480,8 @@ set -e
 
 TAILSCALE_AUTH_KEY="${1:-}"
 FLEET_CONFIG="$HOME/.aleph-deploy/configs/fleet.json"
+SSH_KEY="${ALEPH_SSH_KEY:-$HOME/.aleph-deploy/keys/aleph_ed25519}"
+SSH_USER="$(jq -r '.ssh_user // "root"' "$FLEET_CONFIG" 2>/dev/null || echo root)"
 
 if [[ -z "$TAILSCALE_AUTH_KEY" ]]; then
     echo "❌ Error: Tailscale auth key required"
@@ -1301,22 +1493,20 @@ fi
 setup_tailscale_node() {
     local node_ip=$1
     local node_name=$2
-    
-    echo "🔗 Setting up Tailscale on $node_name ($node_ip)..."
-    
-    ssh -i ~/.aleph-deploy/keys/aleph_rsa ubuntu@"$node_ip" << TAILSCALE_SETUP
+    local ssh_user="${SSH_USER:-$(jq -r '.ssh_user // "root"' "$FLEET_CONFIG")}"
+
+    echo "Setting up Tailscale on $node_name ($node_ip)..."
+
+    ssh -i ~/.aleph-deploy/keys/aleph_ed25519 -o StrictHostKeyChecking=accept-new \
+        "$ssh_user@$node_ip" << TAILSCALE_SETUP
 #!/bin/bash
-set -e
+set -euo pipefail
 
-echo "📦 Installing Tailscale..."
+echo "Installing Tailscale..."
 
-# Add Tailscale repository
-curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/jammy.noarmor.gpg | sudo tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null
-curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/jammy.tailscale-keyring.list | sudo tee /etc/apt/sources.list.d/tailscale.list
-
-# Install Tailscale
-sudo apt-get update
-sudo apt-get install -y tailscale
+# Use the official OS-detecting installer instead of pinning the Ubuntu 22.04
+# ("jammy") apt repo — this works on Ubuntu 24.04 and other distros without edits.
+curl -fsSL https://tailscale.com/install.sh | sh
 
 # Connect to Tailscale network
 # WARNING: Passing --auth-key on the command line exposes it in the process list.
@@ -1378,7 +1568,7 @@ configure_mesh_network() {
     
     # Verify mesh connectivity
     echo "🔍 Verifying mesh connectivity..."
-    ssh -i ~/.aleph-deploy/keys/aleph_rsa ubuntu@"$primary_ip" << 'VERIFY'
+    ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new "$SSH_USER"@"$primary_ip" << 'VERIFY'
 #!/bin/bash
 echo "Testing Tailscale mesh connectivity..."
 
@@ -1421,65 +1611,67 @@ TUNNEL_CONFIG
     # Setup tunnel management script
     cat > ~/.aleph-deploy/scripts/manage-tunnels.sh << 'TUNNEL_SCRIPT'
 #!/bin/bash
+# manage-tunnels.sh — SSH tunnels as a BACKUP path when Tailscale is unavailable.
+# Prefer the Tailscale mesh; use this only as fallback. Tracks its own PIDs so
+# `stop` never kills unrelated SSH sessions belonging to the same user.
+set -euo pipefail
 
 TUNNEL_CONFIG="$HOME/.aleph-deploy/configs/ssh-tunnels.conf"
-SSH_KEY="$HOME/.aleph-deploy/keys/aleph_rsa"
 FLEET_CONFIG="$HOME/.aleph-deploy/configs/fleet.json"
+SSH_KEY="${ALEPH_SSH_KEY:-$HOME/.aleph-deploy/keys/aleph_ed25519}"
+SSH_USER="$(jq -r '.ssh_user // "root"' "$FLEET_CONFIG" 2>/dev/null || echo root)"
+PID_DIR="$HOME/.aleph-deploy/run/tunnels"
+mkdir -p "$PID_DIR"
 
 start_tunnels() {
-    local target_ip=$1
-    local target_name=$2
-    
-    echo "🚇 Starting SSH tunnels to $target_name ($target_ip)..."
-    
+    local target_ip="$1" target_name="$2"
+    echo "Starting SSH tunnels to $target_name ($target_ip)..."
+    local last_octet; last_octet="$(echo "$target_ip" | awk -F. '{print $NF+0}')"
     while IFS=':' read -r local_port remote_host remote_port; do
-        # Skip comments and empty lines
-        [[ "$local_port" =~ ^#.*$ ]] && continue
-        [[ -z "$local_port" ]] && continue
-        
-        # Calculate unique local port to avoid conflicts
-        local unique_port=$((local_port + $(echo "$target_ip" | cut -d. -f4)))
-        
-        # Start SSH tunnel
-        ssh -i "$SSH_KEY" \
-            -f -N -L "$unique_port:$remote_host:$remote_port" \
-            -o StrictHostKeyChecking=accept-new \
-            -o ServerAliveInterval=60 \
-            ubuntu@"$target_ip"
-        
-        echo "  ✅ Tunnel: localhost:$unique_port -> $target_name:$remote_port"
+        [[ "$local_port" =~ ^#.*$ || -z "$local_port" ]] && continue
+        local unique_port=$((local_port + last_octet))
+        # -f backgrounds AFTER auth; capture the resulting PID via a control socket
+        # so we can stop exactly this tunnel later (no broad pkill).
+        local ctl="$PID_DIR/${target_name}-${unique_port}.ctl"
+        ssh -i "$SSH_KEY" -f -N -L "$unique_port:$remote_host:$remote_port" \
+            -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=60 \
+            -o ControlMaster=yes -o ControlPath="$ctl" \
+            "$SSH_USER@$target_ip"
+        echo "  Tunnel: localhost:$unique_port -> $target_name:$remote_port (ctl: $ctl)"
     done < "$TUNNEL_CONFIG"
 }
 
 stop_tunnels() {
-    echo "🛑 Stopping all SSH tunnels..."
-    pkill -f "ssh.*-L.*ubuntu@"
-    echo "✅ SSH tunnels stopped"
+    echo "Stopping SSH tunnels started by this tool..."
+    shopt -s nullglob
+    for ctl in "$PID_DIR"/*.ctl; do
+        # Address the exact control socket; -O exit cleanly closes only that tunnel.
+        local host; host="$(basename "$ctl")"
+        ssh -O exit -o ControlPath="$ctl" placeholder 2>/dev/null || true
+        rm -f "$ctl"
+        echo "  closed $host"
+    done
 }
 
 list_tunnels() {
-    echo "📋 Active SSH tunnels:"
-    ps aux | grep "ssh.*-L.*ubuntu@" | grep -v grep
+    echo "Active tunnels (control sockets in $PID_DIR):"
+    shopt -s nullglob
+    for ctl in "$PID_DIR"/*.ctl; do
+        echo -n "  $(basename "$ctl"): "
+        ssh -O check -o ControlPath="$ctl" placeholder 2>&1 || echo "stale"
+    done
 }
 
 case "${1:-start}" in
     "start")
-        # Start tunnels to all fleet nodes
-        jq -r '.worker_nodes[] | .name + " " + (.ip // "unknown")' "$FLEET_CONFIG" | while IFS=' ' read -r name ip; do
+        jq -r '.worker_nodes[] | .name + " " + (.ip // "unknown")' "$FLEET_CONFIG" \
+        | while IFS=' ' read -r name ip; do
             [[ "$ip" != "unknown" ]] && start_tunnels "$ip" "$name"
         done
         ;;
-    "stop")
-        stop_tunnels
-        ;;
-    "list")
-        list_tunnels
-        ;;
-    "restart")
-        stop_tunnels
-        sleep 5
-        $0 start
-        ;;
+    "stop")    stop_tunnels ;;
+    "list")    list_tunnels ;;
+    "restart") stop_tunnels; sleep 2; "$0" start ;;
     *)
         echo "Usage: $0 {start|stop|list|restart}"
         exit 1
@@ -1522,27 +1714,41 @@ esac
 ```bash
 #!/bin/bash
 # setup-load-balancer.sh
-
-set -e
+set -euo pipefail
 
 FLEET_CONFIG="$HOME/.aleph-deploy/configs/fleet.json"
-PRIMARY_IP=$(jq -r '.primary_node.ip' "$FLEET_CONFIG")
+SSH_KEY="${ALEPH_SSH_KEY:-$HOME/.aleph-deploy/keys/aleph_ed25519}"
+SSH_USER="$(jq -r '.ssh_user // "root"' "$FLEET_CONFIG" 2>/dev/null || echo root)"
+PRIMARY_IP=$(jq -r '.primary_node.ip' "$FLEET_CONFIG")          # public IP (SSH hop only)
+PRIMARY_TS_IP=$(jq -r '.primary_node.tailscale_ip' "$FLEET_CONFIG")
 
-echo "⚖️ Setting up HAProxy load balancer..."
+# Stats credentials: generate a random password (never a static one) and store it
+# locally so you can look it up. The stats page is bound to Tailscale only.
+STATS_USER="${STATS_USER:-admin}"
+STATS_PASS="${STATS_PASS:-$(openssl rand -hex 16)}"
+echo "HAProxy stats login: $STATS_USER / $STATS_PASS"
+echo "STATS_USER=$STATS_USER"$'\n'"STATS_PASS=$STATS_PASS" > ~/.aleph-deploy/configs/haproxy-stats.env
+chmod 600 ~/.aleph-deploy/configs/haproxy-stats.env
 
-# Install HAProxy on primary node
-ssh -i ~/.aleph-deploy/keys/aleph_rsa ubuntu@"$PRIMARY_IP" << 'HAPROXY_SETUP'
+echo "Setting up HAProxy load balancer..."
+
+# Install HAProxy on primary node. Unquoted heredoc so STATS_* and PRIMARY_TS_IP
+# expand HERE into the remote script.
+ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new "$SSH_USER@$PRIMARY_IP" << HAPROXY_SETUP
 #!/bin/bash
-set -e
+set -euo pipefail
 
-echo "📦 Installing HAProxy..."
+echo "Installing HAProxy..."
 sudo apt-get update
 sudo apt-get install -y haproxy
 
-# Backup original configuration
 sudo cp /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.backup
 
-# Create HAProxy configuration
+# Resolve this node's Tailscale IP for the (private) stats listener.
+TS_IP="\$(tailscale ip -4 2>/dev/null || echo '${PRIMARY_TS_IP}')"
+
+# Create HAProxy configuration. Single-quoted inner heredoc keeps HAProxy's own
+# \$-free syntax literal; we inject TS_IP / creds via sed right after.
 cat > /tmp/haproxy.cfg << 'HAPROXY_CONFIG'
 global
     daemon
@@ -1563,23 +1769,24 @@ defaults
     option redispatch
     retries 3
 
-# Statistics interface — must be inside a listen/frontend block, not at top level
+# Statistics interface — bound to the TAILSCALE IP only (never *:9090), with a
+# randomly generated password. Reachable only over the private mesh.
 listen stats
-    bind *:9090
+    bind __TS_IP__:9090
     stats enable
     stats uri /haproxy-stats
     stats realm HAProxy\ Statistics
-    stats auth admin:openclaw-fleet-stats
+    stats auth __STATS_USER__:__STATS_PASS__
 
-# Frontend - Main entry point
+# Frontend - public entry point (HTTP/HTTPS). TLS termination should be added
+# here (bind :443 ssl crt /etc/haproxy/certs/site.pem) for production.
 frontend openclaw_frontend
     bind *:80
     bind *:443
     
-    # Health check endpoint
+    # Health check endpoint (matches the fleet manager's UNAUTHENTICATED /health)
     monitor-uri /health
     
-    # Route to backend based on path or other criteria
     default_backend openclaw_nodes
 
 # Backend - OpenClaw nodes
@@ -1596,26 +1803,38 @@ backend openclaw_nodes
     # Worker nodes will be added dynamically
 HAPROXY_CONFIG
 
-# Move configuration to final location
-sudo mv /tmp/haproxy.cfg /etc/haproxy/haproxy.cfg
+# Inject the Tailscale IP and stats credentials (use | as the sed delimiter
+# since values contain no pipes; credentials were generated, not hardcoded).
+sed -i "s|__TS_IP__|\${TS_IP}|; s|__STATS_USER__|${STATS_USER}|; s|__STATS_PASS__|${STATS_PASS}|" /tmp/haproxy.cfg
 
-# Enable and start HAProxy
-sudo systemctl enable haproxy
-sudo systemctl restart haproxy
-
-echo "✅ HAProxy installed and configured"
+# Validate the config BEFORE replacing the live one (avoids a broken restart).
+if sudo haproxy -c -f /tmp/haproxy.cfg; then
+    sudo mv /tmp/haproxy.cfg /etc/haproxy/haproxy.cfg
+    sudo systemctl enable haproxy
+    sudo systemctl restart haproxy
+    echo "HAProxy installed and configured (stats on \${TS_IP}:9090, Tailscale only)"
+else
+    echo "HAProxy config invalid — not applying."; exit 1
+fi
 HAPROXY_SETUP
 
-echo "🔧 Configuring dynamic backend management..."
+echo "Configuring dynamic backend management..."
 
 # Create backend management script
-ssh -i ~/.aleph-deploy/keys/aleph_rsa ubuntu@"$PRIMARY_IP" << 'BACKEND_SCRIPT'
+ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new "$SSH_USER@$PRIMARY_IP" << 'BACKEND_SCRIPT'
 #!/bin/bash
 
 cat > /opt/manage-haproxy-backends.sh << 'MANAGE_BACKENDS'
 #!/bin/bash
 
 HAPROXY_STATS_SOCKET="/run/haproxy/admin.sock"
+
+# Control-plane access: the fleet manager listens on the node's Tailscale IP and
+# requires the shared API key. Both come from the root-owned EnvironmentFile that
+# the fleet manager also uses (FLEET_API_KEY, BIND_HOST).
+[[ -f /etc/fleet-manager.env ]] && { set -a; . /etc/fleet-manager.env; set +a; }
+FLEET_MGR_HOST="${BIND_HOST:-127.0.0.1}"
+: "${FLEET_API_KEY:?FLEET_API_KEY not found in /etc/fleet-manager.env}"
 
 add_backend_server() {
     local server_name=$1
@@ -1662,8 +1881,8 @@ update_server_weight() {
 sync_with_fleet() {
     echo "🔄 Syncing backends with fleet registry..."
     
-    # Get current fleet status
-    local fleet_nodes=$(curl -s -H "x-api-key: $FLEET_API_KEY" http://localhost:8080/fleet/status | jq -r '.nodes[] | .node_id + "," + .ip_address + "," + .status')
+    # Get current fleet status (over Tailscale, authenticated)
+    local fleet_nodes=$(curl -fsS -H "x-api-key: $FLEET_API_KEY" "http://$FLEET_MGR_HOST:8080/fleet/status" | jq -r '.nodes[] | .node_id + "," + .ip_address + "," + .status')
     
     # Get current HAProxy backends
     local current_backends=$(echo "show servers state openclaw_nodes" | sudo socat stdio "$HAPROXY_STATS_SOCKET" | awk '{print $4}' | grep -v "#" | sort)
@@ -1748,6 +1967,7 @@ After=haproxy.service fleet-manager.service
 [Service]
 Type=simple
 User=root
+EnvironmentFile=/etc/fleet-manager.env
 ExecStart=/opt/manage-haproxy-backends.sh auto
 Restart=always
 RestartSec=30
@@ -1756,15 +1976,17 @@ RestartSec=30
 WantedBy=multi-user.target
 SYNC_SERVICE
 
+sudo systemctl daemon-reload
 sudo systemctl enable haproxy-fleet-sync
 sudo systemctl start haproxy-fleet-sync
 
-echo "✅ HAProxy backend management configured"
+echo "HAProxy backend management configured"
 BACKEND_SCRIPT
 
-echo "🎉 Load balancer setup complete!"
-echo "Load Balancer URL: http://$PRIMARY_IP"
-echo "HAProxy Stats: http://$PRIMARY_IP/haproxy-stats (admin/openclaw-fleet-stats)"
+echo "Load balancer setup complete."
+echo "Public load balancer: http://$PRIMARY_IP  (and https:// once TLS is configured)"
+echo "HAProxy stats (Tailscale only): http://$PRIMARY_TS_IP:9090/haproxy-stats"
+echo "Stats login is in ~/.aleph-deploy/configs/haproxy-stats.env"
 ```
 
 ### Request Distribution Strategies
@@ -1775,16 +1997,19 @@ echo "HAProxy Stats: http://$PRIMARY_IP/haproxy-stats (admin/openclaw-fleet-stat
 # intelligent-load-distribution.sh
 
 FLEET_CONFIG="$HOME/.aleph-deploy/configs/fleet.json"
+SSH_KEY="${ALEPH_SSH_KEY:-$HOME/.aleph-deploy/keys/aleph_ed25519}"
+SSH_USER="$(jq -r '.ssh_user // "root"' "$FLEET_CONFIG" 2>/dev/null || echo root)"
 PRIMARY_IP=$(jq -r '.primary_node.ip' "$FLEET_CONFIG")
 
 setup_intelligent_distribution() {
     echo "🧠 Setting up intelligent load distribution..."
     
-    ssh -i ~/.aleph-deploy/keys/aleph_rsa ubuntu@"$PRIMARY_IP" << 'DISTRIBUTION_SETUP'
+    ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new "$SSH_USER@$PRIMARY_IP" << 'DISTRIBUTION_SETUP'
 #!/bin/bash
+set -euo pipefail
 
-# Install Node.js for advanced distribution logic
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+# Node.js 22.x (OpenClaw and our tooling require Node >= 22.19)
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
 # Create intelligent distribution service
@@ -1794,10 +2019,16 @@ cd /opt/load-distributor
 cat > intelligent-distributor.js << 'DISTRIBUTOR_JS'
 const express = require('express');
 const axios = require('axios');
-const fs = require('fs').promises;
 
 const app = express();
 app.use(express.json());
+
+// Fleet manager URL + API key come from the environment (set by the systemd unit
+// via /etc/fleet-manager.env). All control-plane calls MUST send x-api-key.
+const FLEET_API_KEY = process.env.FLEET_API_KEY;
+const FLEET_MGR_URL = `http://${process.env.BIND_HOST || '127.0.0.1'}:8080`;
+if (!FLEET_API_KEY) { console.error('FATAL: FLEET_API_KEY missing'); process.exit(1); }
+const fleet = axios.create({ baseURL: FLEET_MGR_URL, headers: { 'x-api-key': FLEET_API_KEY }, timeout: 5000 });
 
 class IntelligentDistributor {
     constructor() {
@@ -1820,8 +2051,8 @@ class IntelligentDistributor {
     
     async updateMetrics() {
         try {
-            // Get fleet status
-            const fleetResponse = await axios.get('http://localhost:8080/fleet/status');
+            // Get fleet status (authenticated, over Tailscale)
+            const fleetResponse = await fleet.get('/fleet/status');
             const nodes = fleetResponse.data.nodes || [];
             
             // Update node metrics
@@ -1944,8 +2175,8 @@ class IntelligentDistributor {
     
     async selectNode(requestInfo = {}) {
         try {
-            // Get available nodes
-            const fleetResponse = await axios.get('http://localhost:8080/fleet/status');
+            // Get available nodes (authenticated)
+            const fleetResponse = await fleet.get('/fleet/status');
             const availableNodes = fleetResponse.data.nodes.filter(n => n.status === 'active');
             
             if (availableNodes.length === 0) {
@@ -2024,8 +2255,10 @@ app.post('/distribute/strategy', (req, res) => {
 });
 
 const PORT = 8081;
-app.listen(PORT, () => {
-    console.log(`Intelligent Load Distributor running on port ${PORT}`);
+// Bind to localhost only — this is an internal control API consumed by the
+// primary's own routing logic, not a public endpoint.
+app.listen(PORT, '127.0.0.1', () => {
+    console.log(`Intelligent Load Distributor on 127.0.0.1:${PORT}`);
 });
 DISTRIBUTOR_JS
 
@@ -2043,6 +2276,7 @@ After=network.target fleet-manager.service
 Type=simple
 User=root
 WorkingDirectory=/opt/load-distributor
+EnvironmentFile=/etc/fleet-manager.env
 ExecStart=/usr/bin/node intelligent-distributor.js
 Restart=always
 RestartSec=10
@@ -2052,17 +2286,19 @@ Environment=NODE_ENV=production
 WantedBy=multi-user.target
 DISTRIBUTOR_SERVICE
 
+sudo systemctl daemon-reload
 sudo systemctl enable load-distributor
 sudo systemctl start load-distributor
 
-echo "✅ Intelligent load distributor configured"
+echo "Intelligent load distributor configured (localhost:8081, internal only)"
 DISTRIBUTION_SETUP
 
-echo "🎉 Intelligent load distribution setup complete!"
-echo "Distribution API: http://$PRIMARY_IP:8081"
-echo "Get node: curl http://$PRIMARY_IP:8081/distribute/node"
-echo "View metrics: curl http://$PRIMARY_IP:8081/distribute/metrics"
+echo "Intelligent load distribution setup complete."
+echo "Distribution API is internal (localhost:8081 on the primary)."
+echo "From the primary: curl http://127.0.0.1:8081/distribute/node"
 }
+
+> **Metrics note.** `collectNodeMetrics()` below returns **randomized placeholder values** so the strategy code is runnable out of the box. For real distribution, replace it with actual per-node metrics — e.g. scrape `node_exporter`/cAdvisor over the Tailscale mesh, or have each worker POST CPU/mem/conn counts to the fleet manager. See the sibling `monitoring-observability` skill for a production metrics pipeline.
 
 # Execute setup
 setup_intelligent_distribution
@@ -2082,6 +2318,8 @@ setup_intelligent_distribution
 set -e
 
 FLEET_CONFIG="$HOME/.aleph-deploy/configs/fleet.json"
+SSH_KEY="${ALEPH_SSH_KEY:-$HOME/.aleph-deploy/keys/aleph_ed25519}"
+SSH_USER="$(jq -r '.ssh_user // "root"' "$FLEET_CONFIG" 2>/dev/null || echo root)"
 BACKUP_RETENTION_DAYS=30
 BACKUP_STORAGE_PATH="/opt/openclaw/backups"
 
@@ -2092,13 +2330,16 @@ setup_backup_infrastructure() {
     
     echo "📦 Setting up backup infrastructure..."
     
-    ssh -i ~/.aleph-deploy/keys/aleph_rsa ubuntu@"$primary_ip" << 'BACKUP_SETUP'
+    ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new "$SSH_USER"@"$primary_ip" << 'BACKUP_SETUP'
 #!/bin/bash
 set -e
 
-# Create backup directories
+# Create backup directories. Own them by the ACTUAL login user (root on Aleph
+# base images, ubuntu on some) — never hardcode "ubuntu", which does not exist on
+# root-only images and would abort this script under `set -e`.
+LOGIN_USER="$(logname 2>/dev/null || echo "${SUDO_USER:-root}")"
 sudo mkdir -p /opt/openclaw/backups/{fleet,nodes,data,logs}
-sudo chown -R ubuntu:ubuntu /opt/openclaw/backups
+sudo chown -R "$LOGIN_USER":"$LOGIN_USER" /opt/openclaw/backups
 
 # Install backup tools
 sudo apt-get update
@@ -2107,10 +2348,14 @@ sudo apt-get install -y rsync rclone jq awscli
 # Create comprehensive backup script
 cat > /opt/openclaw/backup-system.sh << 'BACKUP_SCRIPT'
 #!/bin/bash
+set -uo pipefail
 
 BACKUP_BASE="/opt/openclaw/backups"
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 RETENTION_DAYS=30
+# SSH login user for reaching workers (image-dependent; Aleph base images use root).
+REMOTE_USER="${REMOTE_USER:-root}"
+SSH_KEY="/root/.ssh/aleph_ed25519"
 
 log_message() {
     echo "$(date -Iseconds): $1" | tee -a "$BACKUP_BASE/backup.log"
@@ -2149,22 +2394,22 @@ backup_node_data() {
     
     # Backup OpenClaw workspace
     rsync -av --compress --delete \
-        -e "ssh -i /home/ubuntu/.aleph-deploy/keys/aleph_rsa -o StrictHostKeyChecking=accept-new" \
-        "ubuntu@$node_ip:/opt/openclaw/workspace/" \
+        -e "ssh -i $SSH_KEY -o StrictHostKeyChecking=accept-new" \
+        "$REMOTE_USER@$node_ip:/opt/openclaw/workspace/" \
         "$backup_dir/workspace/" 2>/dev/null || true
     
     # Backup configurations
     rsync -av --compress \
-        -e "ssh -i /home/ubuntu/.aleph-deploy/keys/aleph_rsa -o StrictHostKeyChecking=accept-new" \
-        "ubuntu@$node_ip:/opt/openclaw/config/" \
+        -e "ssh -i $SSH_KEY -o StrictHostKeyChecking=accept-new" \
+        "$REMOTE_USER@$node_ip:/opt/openclaw/config/" \
         "$backup_dir/config/" 2>/dev/null || true
     
     # Backup logs (last 7 days only)
-    ssh -i /home/ubuntu/.aleph-deploy/keys/aleph_rsa ubuntu@"$node_ip" \
+    ssh -i "$SSH_KEY" "$REMOTE_USER@$node_ip" \
         "find /var/log -name '*.log' -mtime -7 -exec tar -czf /tmp/logs-$node_name.tar.gz {} +" 2>/dev/null || true
     
-    scp -i /home/ubuntu/.aleph-deploy/keys/aleph_rsa \
-        ubuntu@"$node_ip":/tmp/logs-$node_name.tar.gz \
+    scp -i "$SSH_KEY" \
+        "$REMOTE_USER@$node_ip":/tmp/logs-$node_name.tar.gz \
         "$backup_dir/" 2>/dev/null || true
     
     log_message "✅ Node data backed up for $node_name"
@@ -2272,7 +2517,7 @@ setup_node_monitoring() {
     
     local primary_ip=$(jq -r '.primary_node.ip' "$FLEET_CONFIG")
     
-    ssh -i ~/.aleph-deploy/keys/aleph_rsa ubuntu@"$primary_ip" << 'MONITORING_SETUP'
+    ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new "$SSH_USER"@"$primary_ip" << 'MONITORING_SETUP'
 #!/bin/bash
 
 # Create node monitoring service
@@ -2291,16 +2536,18 @@ check_node_health() {
     local node_id=$1
     local node_ip=$2
     
+    # SSH login user is image-dependent (root on Aleph base images).
+    local ru="${REMOTE_USER:-root}"
     # Check SSH connectivity
-    if ! ssh -i /home/ubuntu/.aleph-deploy/keys/aleph_rsa \
+    if ! ssh -i /root/.ssh/aleph_ed25519 \
             -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new \
-            ubuntu@"$node_ip" "echo 'alive'" &>/dev/null; then
+            "$ru@$node_ip" "echo 'alive'" &>/dev/null; then
         return 1
     fi
     
     # Check OpenClaw service
-    if ! ssh -i /home/ubuntu/.aleph-deploy/keys/aleph_rsa \
-            ubuntu@"$node_ip" "systemctl is-active openclaw" &>/dev/null; then
+    if ! ssh -i /root/.ssh/aleph_ed25519 \
+            "$ru@$node_ip" "systemctl is-active openclaw" &>/dev/null; then
         return 2
     fi
     
@@ -2326,26 +2573,68 @@ mark_node_unhealthy() {
     mv "$tmpfile" "$FLEET_CONFIG"
 }
 
+# Recreate a dead worker. REQUIREMENTS on the primary: the aleph-client CLI must be
+# installed and a funded account configured (so `aleph instance create` can run
+# unattended), plus the fleet SSH private key at /root/.ssh/aleph_ed25519 and the
+# fleet API key in /etc/fleet-manager.env. Without these, recreation is skipped
+# with a clear log line rather than silently "succeeding".
 auto_recreate_node() {
-    local node_id=$1
-    
-    log_message "🚀 Auto-recreating failed node: $node_id"
-    
-    # Get node configuration from backup
-    local node_config=$(jq -r --arg node "$node_id" '.nodes[] | select(.node_id == $node)' "$FLEET_CONFIG")
-    
-    if [[ -z "$node_config" || "$node_config" == "null" ]]; then
-        log_message "❌ No configuration found for node $node_id"
-        return 1
+    local node_id="$1"
+    log_message "Auto-recreating failed node: $node_id"
+
+    local node_config; node_config="$(jq -c --arg n "$node_id" '.nodes[] | select(.node_id==$n)' "$FLEET_CONFIG")"
+    [[ -z "$node_config" || "$node_config" == "null" ]] && { log_message "No config for $node_id"; return 1; }
+
+    command -v aleph >/dev/null || { log_message "aleph CLI not on primary — cannot recreate; alerting operator."; return 1; }
+    [[ -f /root/.ssh/aleph_ed25519 ]] || { log_message "Fleet SSH key missing on primary — cannot provision replacement."; return 1; }
+    : "${FLEET_API_KEY:?}"; : "${PRIMARY_TS_IP:?PRIMARY_TS_IP must be set in the unit env}"
+
+    # 1. Delete the dead instance if we have its item-hash (frees PAYG billing / held tokens).
+    local old_hash; old_hash="$(jq -r '.item_hash // empty' <<< "$node_config")"
+    if [[ -n "$old_hash" ]]; then
+        log_message "Deleting dead instance $old_hash"
+        aleph instance delete "$old_hash" || log_message "WARN: delete failed (already gone?)"
     fi
-    
-    # Trigger node recreation (simplified - would need full aleph deployment)
-    log_message "🔄 Recreating node $node_id with original configuration..."
-    
-    # This would call the actual Aleph deployment script
-    # /opt/deploy-replacement-node.sh "$node_id" "$node_config"
-    
-    log_message "✅ Node recreation initiated for $node_id"
+
+    # 2. Create a like-for-like replacement (2 CU / 40 GiB worker).
+    local out new_hash new_ip
+    out="$(aleph instance create --name "$node_id" --compute-units 2 --rootfs-size 40960 \
+            --ssh-pubkey-file /root/.ssh/aleph_ed25519.pub \
+            --payment-type credit --payment-chain BASE 2>&1)"
+    log_message "create: $out"
+    new_hash="$(printf '%s\n' "$out" | grep -oE '[0-9a-f]{64}' | head -1)"
+
+    # 3. Wait for an IP via the REAL `aleph instance list`.
+    for _ in $(seq 1 30); do
+        new_ip="$(aleph instance list --json | jq -r --arg n "$node_id" '.[] | select(.name==$n) | (.ipv4 // .ipv6 // empty)' | head -1)"
+        [[ -n "$new_ip" ]] && break; sleep 10
+    done
+    [[ -z "$new_ip" ]] && { log_message "Replacement $node_id got no IP"; return 1; }
+
+    # 4. Re-provision over SSH: install OpenClaw + Tailscale, re-register with the primary.
+    ssh -i /root/.ssh/aleph_ed25519 -o StrictHostKeyChecking=accept-new "root@$new_ip" \
+        "NODE_ID='$node_id' PRIMARY_TS_IP='$PRIMARY_TS_IP' FLEET_API_KEY='$FLEET_API_KEY' \
+         TAILSCALE_AUTH_KEY='${TAILSCALE_AUTH_KEY:-}' bash -s" <<'REPROV'
+set -euo pipefail
+export DEBIAN_FRONTEND=noninteractive
+apt-get update && apt-get install -y curl jq iproute2
+curl -fsSL https://get.docker.com | sh
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs
+curl -fsSL https://tailscale.com/install.sh | sh
+[[ -n "${TAILSCALE_AUTH_KEY:-}" ]] && tailscale up --auth-key="$TAILSCALE_AUTH_KEY" --hostname="$NODE_ID"
+curl -fsSL https://openclaw.ai/install.sh | bash
+TS_IP="$(tailscale ip -4 2>/dev/null || hostname -I | awk '{print $1}')"
+curl -fsS -X POST "http://$PRIMARY_TS_IP:8080/fleet/register" -H "x-api-key: $FLEET_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d "{\"node_id\":\"$NODE_ID\",\"ip_address\":\"$TS_IP\",\"capabilities\":[\"compute\",\"openclaw\"]}"
+REPROV
+
+    # 5. Update fleet state atomically: new hash/ip, status active, reset failures.
+    local tmp; tmp="$(mktemp)"
+    jq --arg n "$node_id" --arg h "$new_hash" --arg ip "$new_ip" \
+       '.nodes = (.nodes | map(if .node_id==$n then (.item_hash=$h | .ip_address=$ip | .status="active" | .failure_count=0) else . end))' \
+       "$FLEET_CONFIG" > "$tmp" && mv "$tmp" "$FLEET_CONFIG"
+    log_message "Node $node_id recreated: $new_ip ($new_hash)"
 }
 
 monitor_fleet() {
@@ -2405,7 +2694,11 @@ MONITOR_SCRIPT
 
 chmod +x /opt/node-monitor.sh
 
-# Create systemd service for monitoring
+# Create systemd service for monitoring. AUTO_RECREATE defaults to FALSE — it
+# deletes+recreates paid instances and needs the aleph CLI, a funded account,
+# TAILSCALE_AUTH_KEY, and PRIMARY_TS_IP. Turn it on deliberately once those are
+# in /etc/fleet-manager.env. With it off, the monitor only marks nodes unhealthy
+# and logs, so an operator can decide.
 cat > /etc/systemd/system/node-monitor.service << 'MONITOR_SERVICE'
 [Unit]
 Description=Fleet Node Monitor
@@ -2414,22 +2707,25 @@ After=network.target fleet-manager.service
 [Service]
 Type=simple
 User=root
+EnvironmentFile=/etc/fleet-manager.env
 ExecStart=/opt/node-monitor.sh
 Restart=always
 RestartSec=30
-Environment=AUTO_RECREATE=true
+# Set AUTO_RECREATE=true in /etc/fleet-manager.env to enable destructive recreation.
+Environment=AUTO_RECREATE=false
 
 [Install]
 WantedBy=multi-user.target
 MONITOR_SERVICE
 
+sudo systemctl daemon-reload
 sudo systemctl enable node-monitor
 sudo systemctl start node-monitor
 
-echo "✅ Node monitoring service configured"
+echo "Node monitoring service configured (AUTO_RECREATE off by default)"
 MONITORING_SETUP
 
-echo "✅ Node monitoring and auto-recreation configured"
+echo "Node monitoring and auto-recreation configured"
 }
 
 create_disaster_recovery_runbook() {
@@ -2448,15 +2744,18 @@ create_disaster_recovery_runbook() {
 - Cannot access fleet status API
 
 **Recovery Steps:**
-1. Check node status: `aleph instance get openclaw-fleet-primary`
-2. If node is down, recreate from backup:
+1. Check instance status: `aleph instance list` (find the primary by name; note its item-hash/IP).
+2. If the instance is gone, recreate the primary and restore its state from your
+   off-node backups (the backup target on a different CRN, or local pulls):
    ```bash
    cd ~/.aleph-deploy
-   ./deploy-fleet.sh openclaw-fleet 1  # Deploy new primary
-   ./restore-from-backup.sh primary
+   ./deploy-fleet.sh openclaw-fleet 1     # deploy a fresh primary
+   # Restore /opt/fleet-manager and /opt/openclaw/config from the latest backup
+   # under ~/.aleph-deploy/backups (or the backup node), e.g.:
+   rsync -a ~/.aleph-deploy/backups/fleet/<latest>/  "$SSH_USER@<new_primary_ip>:/tmp/restore/"
    ```
-3. Update DNS/routing to new primary IP
-4. Restart worker node registration
+3. Update DNS/routing to the new primary IP.
+4. Workers re-register automatically once the fleet manager is back on the mesh.
 
 ### 2. Multiple Worker Node Failures
 
@@ -2466,13 +2765,13 @@ create_disaster_recovery_runbook() {
 - High response times
 
 **Recovery Steps:**
-1. Check fleet status: `curl http://PRIMARY_IP:8080/fleet/status`
-2. Identify failed nodes
-3. Auto-recreation should trigger, but manual override:
+1. Check fleet status: `./fleet-control.sh status` (uses the authenticated mgr helper).
+2. Identify failed nodes.
+3. If AUTO_RECREATE is enabled it triggers automatically; otherwise restore capacity:
    ```bash
-   ./fleet-control.sh scale 5  # Restore to original capacity
+   ./fleet-control.sh scale 5   # recreate workers up to the target (confirms deletes)
    ```
-4. Monitor recovery progress
+4. Monitor recovery progress.
 
 ### 3. Complete Fleet Failure
 
@@ -2481,38 +2780,31 @@ create_disaster_recovery_runbook() {
 - Complete service outage
 
 **Recovery Steps:**
-1. Deploy new primary node:
+1. Confirm what still exists: `aleph instance list`.
+2. Deploy a fresh primary, then workers:
    ```bash
    ./deploy-single-vm.sh openclaw-recovery-primary
-   ```
-2. Restore from latest backup:
-   ```bash
-   ./restore-from-backup.sh full
-   ```
-3. Redeploy worker nodes:
-   ```bash
    ./deploy-fleet.sh openclaw-recovery 5
    ```
-4. Update external DNS/routing
+3. Restore fleet/config/workspace from your latest off-node backup (see case 1).
+4. Update external DNS/routing.
 
 ### 4. Data Loss Recovery
 
 **Symptoms:**
 - Missing user data
 - Corrupted configurations
-- Lost agent personalities
+- Lost agent workspace state
 
 **Recovery Steps:**
-1. Access latest backup:
+1. List available backups: `ls -la ~/.aleph-deploy/backups/  /opt/openclaw/backups/`
+2. Verify a backup's integrity, then restore the needed components (rsync the relevant
+   `nodes/<ts>/<node>/workspace` or `fleet/<ts>` directory back to the node).
+3. If using the OpenClaw replication layer, re-run a verified replication:
    ```bash
-   ls -la /opt/openclaw/backups/
+   ssh "$SSH_USER@<primary_ts_ip>" '/opt/openclaw/replication/auto-provisioning-protocol.sh replicate'
    ```
-2. Restore specific components:
-   ```bash
-   ./auto-provisioning-protocol.sh emergency data_loss
-   ```
-3. Verify data integrity
-4. Restart affected services
+4. Verify data integrity and restart affected services.
 
 ## Backup Verification
 
@@ -2531,12 +2823,12 @@ create_disaster_recovery_runbook() {
 **Emergency Contacts:**
 - Primary Admin: [Your contact info]
 - Backup Admin: [Backup contact info]
-- Aleph Support: support@aleph.im
+- Aleph Cloud support / community: https://docs.aleph.cloud and the Aleph Cloud Telegram/Discord (see the docs site footer)
 
 **Service URLs:**
-- Fleet Manager: http://PRIMARY_IP:8080
-- Load Balancer: http://PRIMARY_IP
-- Monitoring: http://PRIMARY_IP:9090
+- Fleet Manager (Tailscale only): http://<PRIMARY_TAILSCALE_IP>:8080
+- Load Balancer (public): http://<PRIMARY_PUBLIC_IP>
+- HAProxy stats (Tailscale only): http://<PRIMARY_TAILSCALE_IP>:9090/haproxy-stats
 
 ## Post-Incident Procedures
 
@@ -2562,8 +2854,8 @@ echo "- Node health monitoring every 60 seconds"
 echo "- Auto-recreation of failed nodes (configurable)"
 echo "- Comprehensive recovery runbook"
 echo ""
-echo "View backup logs: ssh ubuntu@PRIMARY_IP tail -f /var/log/backup.log"
-echo "View monitoring logs: ssh ubuntu@PRIMARY_IP tail -f /var/log/node-monitor.log"
+echo "View backup logs: ssh root@PRIMARY_IP tail -f /var/log/backup.log"
+echo "View monitoring logs: ssh root@PRIMARY_IP tail -f /var/log/node-monitor.log"
 ```
 
 ---
@@ -2580,55 +2872,55 @@ echo "View monitoring logs: ssh ubuntu@PRIMARY_IP tail -f /var/log/node-monitor.
 set -e
 
 FLEET_CONFIG="$HOME/.aleph-deploy/configs/fleet.json"
+SSH_KEY="${ALEPH_SSH_KEY:-$HOME/.aleph-deploy/keys/aleph_ed25519}"
+SSH_USER="$(jq -r '.ssh_user // "root"' "$FLEET_CONFIG" 2>/dev/null || echo root)"
 
 echo "💰 Setting up cost optimization strategies..."
 
 analyze_costs() {
-    echo "📊 Analyzing current fleet costs..."
-    
-    # Calculate current monthly costs
-    local total_cost=0
-    local primary_cost=50  # Primary node estimated cost
-    local worker_count=$(jq '.worker_nodes | length' "$FLEET_CONFIG")
-    local worker_cost=$((worker_count * 25))  # Worker nodes @ 25 ALEPH each
-    
-    total_cost=$((primary_cost + worker_cost))
-    
+    echo "Analyzing current fleet costs from LIVE pricing..."
+    local worker_count; worker_count="$(jq '.worker_nodes | length' "$FLEET_CONFIG")"
+
+    # Pull real per-hour USD pricing from the CLI rather than hardcoding ALEPH/mo.
+    # Tier 3 ~= the 4 CU primary; Tier 2 ~= the 2 CU workers (adjust to your tiers).
+    local primary_hr worker_hr
+    primary_hr="$(aleph pricing instance --tier 3 --payment-type credit --json 2>/dev/null \
+        | jq -r '.price_per_hour // .usd_per_hour // empty' 2>/dev/null || true)"
+    worker_hr="$(aleph pricing instance --tier 2 --payment-type credit --json 2>/dev/null \
+        | jq -r '.price_per_hour // .usd_per_hour // empty' 2>/dev/null || true)"
+    : "${primary_hr:=0.0132}"   # dated fallback (~Jun 2026); verify with `aleph pricing instance`
+    : "${worker_hr:=0.0066}"
+
+    local hours=730  # ~1 month
+    local monthly; monthly="$(echo "($primary_hr + $worker_count * $worker_hr) * $hours" | bc -l)"
+
     cat > ~/.aleph-deploy/cost-analysis.json << COST_ANALYSIS
 {
   "analysis_date": "$(date -Iseconds)",
-  "current_costs": {
-    "primary_node": $primary_cost,
-    "worker_nodes": $worker_cost,
-    "total_monthly": $total_cost
-  },
+  "pricing_source": "aleph pricing instance (USD/hour, PAYG)",
+  "rates_usd_per_hour": { "primary": $primary_hr, "worker": $worker_hr },
   "node_breakdown": [
-    {
-      "type": "primary",
-      "count": 1,
-      "cost_per_node": $primary_cost,
-      "specs": "4 vCPU, 8GB RAM, 100GB SSD"
-    },
-    {
-      "type": "worker", 
-      "count": $worker_count,
-      "cost_per_node": 25,
-      "specs": "2 vCPU, 4GB RAM, 50GB SSD"
-    }
+    { "type": "primary", "count": 1, "usd_per_hour": $primary_hr, "specs": "4 vCPU / 8 GiB / 80 GiB" },
+    { "type": "worker",  "count": $worker_count, "usd_per_hour": $worker_hr, "specs": "2 vCPU / 4 GiB / 40 GiB" }
   ],
-  "optimization_opportunities": []
+  "estimated_total_monthly_usd": $(printf '%.2f' "$monthly")
 }
 COST_ANALYSIS
 
-    echo "💲 Current estimated monthly cost: $total_cost ALEPH"
-    echo "📋 Cost breakdown saved to cost-analysis.json"
+    printf 'Estimated monthly cost: $%.2f USD (1 primary + %s workers, PAYG)\n' "$monthly" "$worker_count"
+    echo "Source rates from 'aleph pricing instance'. Saved to cost-analysis.json."
+    echo "NOTE: 'hold' payment locks ALEPH instead of streaming USD — see the pricing note at the top."
 }
 
 setup_cost_tiers() {
-    echo "🏗️ Setting up cost optimization tiers..."
-    
+    echo "Setting up cost optimization tiers..."
+
+    # estimated_monthly_usd uses the dated Jun-2026 PAYG example rates
+    # (primary ~$10/mo, worker ~$5/mo). These are ESTIMATES — confirm with
+    # `aleph pricing instance`. They are NOT ALEPH-token amounts.
     cat > ~/.aleph-deploy/cost-tiers.json << 'COST_TIERS'
 {
+  "_note": "estimated_monthly_usd are dated (~Jun 2026) PAYG examples; verify with 'aleph pricing instance'.",
   "tiers": {
     "minimal": {
       "description": "Single node for development/testing",
@@ -2636,7 +2928,7 @@ setup_cost_tiers() {
         "primary": 1,
         "workers": 0
       },
-      "estimated_cost": 25,
+      "estimated_monthly_usd": 10,
       "use_cases": ["Development", "Testing", "Personal projects"]
     },
     "balanced": {
@@ -2645,7 +2937,7 @@ setup_cost_tiers() {
         "primary": 1,
         "workers": 2
       },
-      "estimated_cost": 75,
+      "estimated_monthly_usd": 20,
       "use_cases": ["Small production", "Side projects", "Limited budget"]
     },
     "standard": {
@@ -2654,7 +2946,7 @@ setup_cost_tiers() {
         "primary": 1,
         "workers": 4
       },
-      "estimated_cost": 125,
+      "estimated_monthly_usd": 30,
       "use_cases": ["Production workloads", "Medium traffic", "Business use"]
     },
     "high_availability": {
@@ -2664,7 +2956,7 @@ setup_cost_tiers() {
         "workers": 6,
         "backup": 1
       },
-      "estimated_cost": 200,
+      "estimated_monthly_usd": 45,
       "use_cases": ["Critical applications", "High traffic", "Enterprise"]
     }
   },
@@ -2701,7 +2993,7 @@ setup_auto_scaling() {
     
     local primary_ip=$(jq -r '.primary_node.ip' "$FLEET_CONFIG")
     
-    ssh -i ~/.aleph-deploy/keys/aleph_rsa ubuntu@"$primary_ip" << 'AUTOSCALE_SETUP'
+    ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new "$SSH_USER"@"$primary_ip" << 'AUTOSCALE_SETUP'
 #!/bin/bash
 
 # Create auto-scaling service
@@ -2727,8 +3019,8 @@ get_average_cpu_usage() {
     # A pipe runs `while` in a subshell, so variable updates to
     # total_cpu and node_count are lost when the subshell exits.
     while read -r ip; do
-        local cpu_usage=$(ssh -i /home/ubuntu/.aleph-deploy/keys/aleph_rsa \
-                             -o ConnectTimeout=5 ubuntu@"$ip" \
+        local cpu_usage=$(ssh -i /root/.ssh/aleph_ed25519 \
+                             -o ConnectTimeout=5 "${REMOTE_USER:-root}@$ip" \
                              "top -bn1 | grep 'Cpu(s)' | awk '{print \$2}' | cut -d'%' -f1" 2>/dev/null || echo "0")
 
         if [[ "$cpu_usage" =~ ^[0-9.]+$ ]]; then
@@ -2744,48 +3036,63 @@ get_average_cpu_usage() {
     fi
 }
 
+# Real scale-up: create + provision a new worker via the aleph CLI, then let it
+# register. Requires the aleph CLI + funded account + key + env on the primary.
 scale_up() {
-    local current_workers=$(jq '.nodes | map(select(.status == "active" and .node_id != "primary")) | length' "$FLEET_CONFIG")
-    
-    if (( current_workers >= MAX_WORKERS )); then
-        log_message "⚠️ Already at maximum worker capacity ($MAX_WORKERS)"
-        return 1
-    fi
-    
-    log_message "📈 Scaling up: deploying additional worker node..."
-    
-    # This would trigger actual node deployment
-    # /opt/deploy-worker-node.sh "auto-worker-$(date +%s)"
-    
-    log_message "✅ Scale-up initiated"
+    local current_workers; current_workers="$(jq '[.nodes[] | select(.status=="active" and .node_id!="primary")] | length' "$FLEET_CONFIG")"
+    (( current_workers >= MAX_WORKERS )) && { log_message "At MAX_WORKERS ($MAX_WORKERS)"; return 1; }
+    command -v aleph >/dev/null || { log_message "aleph CLI absent on primary — cannot scale up."; return 1; }
+    : "${FLEET_API_KEY:?}"; : "${PRIMARY_TS_IP:?}"
+
+    local name="auto-worker-$(date +%s)" out hash ip
+    log_message "Scaling up: creating $name"
+    out="$(aleph instance create --name "$name" --compute-units 2 --rootfs-size 40960 \
+            --ssh-pubkey-file /root/.ssh/aleph_ed25519.pub --payment-type credit --payment-chain BASE 2>&1)"
+    hash="$(printf '%s\n' "$out" | grep -oE '[0-9a-f]{64}' | head -1)"
+    for _ in $(seq 1 30); do
+        ip="$(aleph instance list --json | jq -r --arg n "$name" '.[]|select(.name==$n)|(.ipv4//.ipv6//empty)' | head -1)"
+        [[ -n "$ip" ]] && break; sleep 10
+    done
+    [[ -z "$ip" ]] && { log_message "Scale-up: $name got no IP"; return 1; }
+    ssh -i /root/.ssh/aleph_ed25519 -o StrictHostKeyChecking=accept-new "root@$ip" \
+        "NODE_ID='$name' PRIMARY_TS_IP='$PRIMARY_TS_IP' FLEET_API_KEY='$FLEET_API_KEY' TAILSCALE_AUTH_KEY='${TAILSCALE_AUTH_KEY:-}' bash -s" <<'REPROV'
+set -euo pipefail; export DEBIAN_FRONTEND=noninteractive
+apt-get update && apt-get install -y curl jq iproute2
+curl -fsSL https://get.docker.com | sh
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs
+curl -fsSL https://tailscale.com/install.sh | sh
+[[ -n "${TAILSCALE_AUTH_KEY:-}" ]] && tailscale up --auth-key="$TAILSCALE_AUTH_KEY" --hostname="$NODE_ID"
+curl -fsSL https://openclaw.ai/install.sh | bash
+TS_IP="$(tailscale ip -4 2>/dev/null || hostname -I | awk '{print $1}')"
+curl -fsS -X POST "http://$PRIMARY_TS_IP:8080/fleet/register" -H "x-api-key: $FLEET_API_KEY" \
+  -H 'Content-Type: application/json' -d "{\"node_id\":\"$NODE_ID\",\"ip_address\":\"$TS_IP\",\"capabilities\":[\"compute\",\"openclaw\"]}"
+REPROV
+    log_message "Scale-up complete: $name ($ip). haproxy-fleet-sync will add it within 60s."
     echo "$(date +%s)" > /tmp/last-scale-action
 }
 
+# Real scale-down: drain in HAProxy, deregister, then DELETE the Aleph instance.
 scale_down() {
-    local current_workers=$(jq '.nodes | map(select(.status == "active" and .node_id != "primary")) | length' "$FLEET_CONFIG")
-    
-    if (( current_workers <= MIN_WORKERS )); then
-        log_message "⚠️ Already at minimum worker capacity ($MIN_WORKERS)"
-        return 1
+    local current_workers; current_workers="$(jq '[.nodes[]|select(.status=="active" and .node_id!="primary")]|length' "$FLEET_CONFIG")"
+    (( current_workers <= MIN_WORKERS )) && { log_message "At MIN_WORKERS ($MIN_WORKERS)"; return 1; }
+    command -v aleph >/dev/null || { log_message "aleph CLI absent on primary — cannot scale down."; return 1; }
+
+    local victim; victim="$(jq -r '[.nodes[]|select(.status=="active" and .node_id!="primary")]|sort_by(.cpu_usage // 0)|first|.node_id' "$FLEET_CONFIG")"
+    [[ -z "$victim" || "$victim" == "null" ]] && return 0
+    local hash; hash="$(jq -r --arg n "$victim" '.nodes[]|select(.node_id==$n)|.item_hash // empty' "$FLEET_CONFIG")"
+    log_message "Scaling down: draining $victim"
+    # 1. Mark draining; 2. remove from HAProxy; 3. delete instance; 4. drop from state.
+    local tmpfile; tmpfile="$(mktemp)"
+    jq --arg n "$victim" '.nodes = (.nodes | map(if .node_id==$n then .status="draining" else . end))' "$FLEET_CONFIG" > "$tmpfile" && mv "$tmpfile" "$FLEET_CONFIG"
+    /opt/manage-haproxy-backends.sh remove "$victim" 2>/dev/null || true
+    sleep 10   # let in-flight requests finish
+    if [[ -n "$hash" ]]; then
+        aleph instance delete "$hash" && log_message "Deleted instance $hash ($victim)"
     fi
-    
-    log_message "📉 Scaling down: removing least utilized worker node..."
-    
-    # Find least utilized node and remove it
-    local least_utilized=$(jq -r '.nodes | map(select(.status == "active" and .node_id != "primary")) | sort_by(.cpu_usage // 0) | first | .node_id' "$FLEET_CONFIG")
-    
-    if [[ -n "$least_utilized" && "$least_utilized" != "null" ]]; then
-        # Mark node for removal
-        local tmpfile=$(mktemp)
-        jq --arg node "$least_utilized" '.nodes = (.nodes | map(if .node_id == $node then .status = "draining" else . end))' "$FLEET_CONFIG" > "$tmpfile"
-        mv "$tmpfile" "$FLEET_CONFIG"
-        
-        # This would trigger actual node termination
-        # /opt/terminate-worker-node.sh "$least_utilized"
-        
-        log_message "✅ Scale-down initiated for node: $least_utilized"
-        echo "$(date +%s)" > /tmp/last-scale-action
-    fi
+    tmpfile="$(mktemp)"
+    jq --arg n "$victim" '.nodes |= map(select(.node_id != $n))' "$FLEET_CONFIG" > "$tmpfile" && mv "$tmpfile" "$FLEET_CONFIG"
+    log_message "Scale-down complete: removed $victim"
+    echo "$(date +%s)" > /tmp/last-scale-action
 }
 
 check_scaling_needed() {
@@ -2817,11 +3124,15 @@ check_scaling_needed() {
     fi
 }
 
-# Auto-scaling loop
-while true; do
-    check_scaling_needed
-    sleep 60  # Check every minute
-done
+# Dispatcher: `daemon` runs the loop (used by systemd); the others let the
+# scheduled-scaler (and operators) invoke a single action.
+case "${1:-daemon}" in
+    daemon)     while true; do check_scaling_needed; sleep 60; done ;;
+    once)       check_scaling_needed ;;
+    scale-up)   scale_up ;;
+    scale-down) scale_down ;;
+    *) echo "Usage: $0 {daemon|once|scale-up|scale-down}"; exit 1 ;;
+esac
 AUTOSCALER
 
 chmod +x /opt/auto-scaler.sh
@@ -2835,6 +3146,7 @@ After=network.target fleet-manager.service
 [Service]
 Type=simple
 User=root
+EnvironmentFile=/etc/fleet-manager.env
 ExecStart=/opt/auto-scaler.sh
 Restart=always
 RestartSec=30
@@ -2844,9 +3156,11 @@ Environment=AUTO_SCALING_ENABLED=false
 WantedBy=multi-user.target
 SCALER_SERVICE
 
-# Note: Service created but not enabled by default
-echo "✅ Auto-scaler configured (disabled by default)"
-echo "To enable: systemctl enable auto-scaler && systemctl start auto-scaler"
+# Disabled by default. Auto-scaling CREATES and DELETES paid instances, so enable
+# it only after confirming the aleph CLI, a funded account, the fleet SSH key, and
+# FLEET_API_KEY/PRIMARY_TS_IP/TAILSCALE_AUTH_KEY are present in /etc/fleet-manager.env.
+echo "Auto-scaler configured (disabled by default)"
+echo "To enable: systemctl enable --now auto-scaler"
 AUTOSCALE_SETUP
 
 echo "✅ Auto-scaling configured on primary node"
@@ -2857,12 +3171,17 @@ setup_scheduled_scaling() {
     
     local primary_ip=$(jq -r '.primary_node.ip' "$FLEET_CONFIG")
     
-    ssh -i ~/.aleph-deploy/keys/aleph_rsa ubuntu@"$primary_ip" << 'SCHEDULED_SETUP'
+    ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new "$SSH_USER"@"$primary_ip" << 'SCHEDULED_SETUP'
 #!/bin/bash
 
 # Create scheduled scaling script
 cat > /opt/scheduled-scaler.sh << 'SCHEDULER'
 #!/bin/bash
+set -euo pipefail
+
+# cron has a bare environment — load the shared key/host so the delegated
+# auto-scaler actions (which call the aleph CLI over the mesh) have what they need.
+[[ -f /etc/fleet-manager.env ]] && { set -a; . /etc/fleet-manager.env; set +a; }
 
 FLEET_CONFIG="/opt/fleet-manager/nodes.json"
 
@@ -2870,27 +3189,24 @@ log_message() {
     echo "$(date -Iseconds): $1" | tee -a "/var/log/scheduled-scaler.log"
 }
 
+# Drive worker count to a target by invoking the auto-scaler's single-step actions
+# (which perform real aleph create/delete). One step per loop, with a short pause.
 scale_to_count() {
-    local target_count=$1
-    local reason=$2
-    
-    log_message "🎯 Scaling to $target_count workers: $reason"
-    
-    local current_count=$(jq '.nodes | map(select(.status == "active" and .node_id != "primary")) | length' "$FLEET_CONFIG")
-    
+    local target_count="$1" reason="$2"
+    log_message "Scaling to $target_count workers: $reason"
+    local current_count; current_count="$(jq '[.nodes[]|select(.status=="active" and .node_id!="primary")]|length' "$FLEET_CONFIG")"
+
     if (( target_count == current_count )); then
-        log_message "✅ Already at target capacity ($target_count)"
-        return 0
+        log_message "Already at target capacity ($target_count)"; return 0
     fi
-    
     if (( target_count > current_count )); then
-        local scale_up=$((target_count - current_count))
-        log_message "📈 Scaling up by $scale_up nodes"
-        # Implement scale-up logic
+        local n=$((target_count - current_count))
+        log_message "Adding $n worker(s) via auto-scaler"
+        for ((i=0; i<n; i++)); do /opt/auto-scaler.sh scale-up || break; sleep 15; done
     else
-        local scale_down=$((current_count - target_count))
-        log_message "📉 Scaling down by $scale_down nodes"
-        # Implement scale-down logic
+        local n=$((current_count - target_count))
+        log_message "Removing $n worker(s) via auto-scaler"
+        for ((i=0; i<n; i++)); do /opt/auto-scaler.sh scale-down || break; sleep 5; done
     fi
 }
 
@@ -2932,78 +3248,53 @@ create_cost_monitoring() {
     
     cat > ~/.aleph-deploy/scripts/cost-monitor.sh << 'COST_MONITOR'
 #!/bin/bash
+# cost-monitor.sh — fleet cost report from LIVE `aleph pricing` (USD, PAYG).
+# Run from a machine on the tailnet (queries the fleet manager over Tailscale).
+set -euo pipefail
 
 FLEET_CONFIG="$HOME/.aleph-deploy/configs/fleet.json"
+SSH_KEY="${ALEPH_SSH_KEY:-$HOME/.aleph-deploy/keys/aleph_ed25519}"
+SSH_USER="$(jq -r '.ssh_user // "root"' "$FLEET_CONFIG" 2>/dev/null || echo root)"
+: "${FLEET_API_KEY:?Set FLEET_API_KEY (see fleet.env)}"
+MGR_HOST="$(jq -r '.primary_node.tailscale_ip // .primary_node.ip' "$FLEET_CONFIG")"
+mkdir -p ~/.aleph-deploy/reports
+
+# Live USD/hour rates (tier 3 ~ primary, tier 2 ~ worker). Dated fallbacks if the
+# CLI is unavailable; ALWAYS verify with `aleph pricing instance`.
+rate() { aleph pricing instance --tier "$1" --payment-type credit --json 2>/dev/null \
+    | jq -r '.price_per_hour // .usd_per_hour // empty' 2>/dev/null || true; }
 
 generate_cost_report() {
-    echo "💰 Generating cost report..."
-    
-    local report_date=$(date +%Y-%m-%d)
-    local primary_ip=$(jq -r '.primary_node.ip' "$FLEET_CONFIG")
-    
-    # Get current fleet status
-    local fleet_status=$(curl -s -H "x-api-key: $FLEET_API_KEY" "http://$primary_ip:8080/fleet/status" 2>/dev/null || echo '{"nodes":[]}')
-    local active_workers=$(echo "$fleet_status" | jq '.nodes | map(select(.status == "active" and .node_id != "primary")) | length')
-    
-    # Calculate costs
-    local primary_cost=50
-    local worker_cost=$((active_workers * 25))
-    local total_daily_cost=$(echo "scale=2; ($primary_cost + $worker_cost) / 30" | bc -l)
-    local total_monthly_cost=$((primary_cost + worker_cost))
-    
-    # Generate report
+    local report_date; report_date="$(date +%Y-%m-%d)"
+    local fleet_status active_workers
+    fleet_status="$(curl -fsS -H "x-api-key: $FLEET_API_KEY" "http://$MGR_HOST:8080/fleet/status" 2>/dev/null || echo '{"nodes":[]}')"
+    active_workers="$(echo "$fleet_status" | jq '[.nodes[]|select(.status=="active" and .node_id!="primary")]|length')"
+
+    local p_hr w_hr; p_hr="$(rate 3)"; w_hr="$(rate 2)"
+    : "${p_hr:=0.0132}"; : "${w_hr:=0.0066}"     # ~Jun 2026 fallback — verify!
+    local monthly daily
+    monthly="$(echo "($p_hr + $active_workers * $w_hr) * 730" | bc -l)"
+    daily="$(echo "$monthly / 30" | bc -l)"
+
     cat > ~/.aleph-deploy/reports/cost-report-$report_date.json << REPORT
 {
   "report_date": "$report_date",
-  "fleet_status": {
-    "primary_nodes": 1,
-    "worker_nodes": $active_workers,
-    "total_nodes": $((active_workers + 1))
-  },
-  "cost_breakdown": {
-    "primary_node_monthly": $primary_cost,
-    "worker_nodes_monthly": $worker_cost,
-    "total_monthly": $total_monthly_cost,
-    "daily_average": $total_daily_cost
-  },
-  "usage_optimization": {
-    "potential_savings": "25-50% with scheduled scaling",
-    "current_utilization": "$(curl -s http://$primary_ip:8081/distribute/metrics 2>/dev/null | jq -r 'map(.cpu_usage) | add / length' || echo 'unknown')%",
-    "recommendations": [
-      "Enable scheduled scaling for off-hours",
-      "Consider spot instances for development",
-      "Monitor and adjust worker count based on demand"
-    ]
-  }
+  "pricing_source": "aleph pricing instance (USD/hour, PAYG)",
+  "rates_usd_per_hour": { "primary": $p_hr, "worker": $w_hr },
+  "fleet": { "primary_nodes": 1, "worker_nodes": $active_workers, "total_nodes": $((active_workers + 1)) },
+  "estimated_monthly_usd": $(printf '%.2f' "$monthly"),
+  "estimated_daily_usd": $(printf '%.2f' "$daily"),
+  "recommendations": ["Enable scheduled scaling for off-hours", "Right-size worker count to real load"]
 }
 REPORT
 
-    echo "✅ Cost report generated: cost-report-$report_date.json"
-    
-    # Display summary
-    echo ""
-    echo "📊 COST SUMMARY"
-    echo "==============="
-    echo "Active Nodes: $((active_workers + 1)) (1 primary + $active_workers workers)"
-    echo "Monthly Cost: $total_monthly_cost ALEPH (~$15-25 USD)"
-    echo "Daily Cost: $total_daily_cost ALEPH"
-    echo ""
-    
-    # Optimization suggestions
-    if (( active_workers > 2 )); then
-        echo "💡 OPTIMIZATION SUGGESTIONS:"
-        echo "- Consider enabling scheduled scaling to reduce off-hours costs"
-        echo "- Monitor actual usage patterns to right-size your fleet"
-    fi
+    echo "COST SUMMARY ($report_date)"
+    echo "Active nodes: $((active_workers + 1)) (1 primary + $active_workers workers)"
+    printf 'Estimated monthly: $%.2f USD   daily: $%.2f USD (PAYG)\n' "$monthly" "$daily"
+    echo "Rates from 'aleph pricing instance'. Report: ~/.aleph-deploy/reports/cost-report-$report_date.json"
 }
 
-# Create reports directory
-mkdir -p ~/.aleph-deploy/reports
-
-# Generate report
 generate_cost_report
-
-# Setup daily cost reporting
 (crontab -l 2>/dev/null; echo "0 8 * * * $HOME/.aleph-deploy/scripts/cost-monitor.sh >> /var/log/cost-monitor.log 2>&1") | crontab -
 COST_MONITOR
 
@@ -3027,7 +3318,7 @@ echo "- Scheduled scaling for off-hours savings"
 echo "- Daily cost reporting and monitoring"
 echo "- Multiple deployment tiers (minimal to high-availability)"
 echo ""
-echo "Enable auto-scaling: ssh ubuntu@PRIMARY_IP 'sudo systemctl enable auto-scaler && sudo systemctl start auto-scaler'"
+echo "Enable auto-scaling: ssh root@PRIMARY_IP 'sudo systemctl enable auto-scaler && sudo systemctl start auto-scaler'"
 echo "View cost reports: ls ~/.aleph-deploy/reports/"
 echo "Monitor costs: ~/.aleph-deploy/scripts/cost-monitor.sh"
 ```
@@ -3046,59 +3337,51 @@ echo "Monitor costs: ~/.aleph-deploy/scripts/cost-monitor.sh"
 set -e
 
 FLEET_CONFIG="$HOME/.aleph-deploy/configs/fleet.json"
+SSH_KEY="${ALEPH_SSH_KEY:-$HOME/.aleph-deploy/keys/aleph_ed25519}"
+SSH_USER="$(jq -r '.ssh_user // "root"' "$FLEET_CONFIG" 2>/dev/null || echo root)"
 
 echo "🔒 Implementing comprehensive security hardening..."
 
 setup_firewall_rules() {
     local node_ip=$1
     local node_type=$2
-    
-    echo "🛡️ Configuring UFW firewall on $node_type ($node_ip)..."
-    
-    ssh -i ~/.aleph-deploy/keys/aleph_rsa ubuntu@"$node_ip" << FIREWALL_SETUP
+    local ssh_user="${SSH_USER:-$(jq -r '.ssh_user // "root"' "$FLEET_CONFIG")}"
+    local ssh_key="${ALEPH_SSH_KEY:-$HOME/.aleph-deploy/keys/aleph_ed25519}"
+
+    echo "Configuring UFW firewall on $node_type ($node_ip)..."
+
+    # Unquoted heredoc so $node_type expands HERE (operator side) into the remote
+    # script. Tailscale's CGNAT range is 100.64.0.0/10; the mesh interface is
+    # tailscale0. The OpenClaw agent runtime port is NEVER opened to the internet.
+    ssh -i "$ssh_key" -o StrictHostKeyChecking=accept-new "$ssh_user@$node_ip" << FIREWALL_SETUP
 #!/bin/bash
-set -e
+set -euo pipefail
 
-echo "🔧 Configuring UFW firewall rules..."
-
-# Reset UFW to defaults
+echo "Configuring UFW firewall rules..."
 sudo ufw --force reset
-
-# Default policies
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
-
-# Essential services
 sudo ufw allow ssh
-sudo ufw limit ssh  # Rate limiting for SSH
+sudo ufw limit ssh   # rate-limit SSH brute force
 
-# Node-specific rules
+# Allow all traffic on the Tailscale mesh interface (private, authenticated mesh).
+sudo ufw allow in on tailscale0
+sudo ufw allow 41641/udp   # Tailscale direct connections
+
 if [[ "$node_type" == "primary" ]]; then
-    # Primary node services
-    sudo ufw allow 80    # HTTP (load balancer)
-    sudo ufw allow 443   # HTTPS (load balancer)
-    # Fleet Manager (8080) and Load Distributor (8081) bind to 127.0.0.1
-    # and are accessed via Tailscale — do NOT expose them to the internet.
-    # If you need remote access, allow only from Tailscale subnet:
-    # sudo ufw allow from 100.64.0.0/10 to any port 8080
-    # sudo ufw allow from 100.64.0.0/10 to any port 8081
-    
-    # Tailscale
-    sudo ufw allow 41641/udp
-    
-    echo "✅ Primary node firewall rules applied"
+    # Public edge: only the load balancer's HTTP/HTTPS.
+    sudo ufw allow 80
+    sudo ufw allow 443
+    # Fleet Manager (8080), Load Distributor (8081), HAProxy stats (9090) bind to
+    # the Tailscale IP and are reachable ONLY over the mesh (allowed above by the
+    # 'in on tailscale0' rule). Do NOT open them publicly.
+    echo "Primary node firewall rules applied"
 else
-    # Worker node services
-    sudo ufw allow 3000  # OpenClaw
-    
-    # Tailscale
-    sudo ufw allow 41641/udp
-    
-    # Allow access from primary node only
-    PRIMARY_IP="\$(curl -s http://checkip.amazonaws.com)"  # Simplified
-    sudo ufw allow from \$PRIMARY_IP
-    
-    echo "✅ Worker node firewall rules applied"
+    # Worker: NO public OpenClaw port. The agent runtime (3000) is reachable ONLY
+    # over Tailscale (handled by 'allow in on tailscale0'); HAProxy on the primary
+    # also reaches workers over the mesh. Public 3000 on an agent that can execute
+    # actions is a critical exposure — never do it.
+    echo "Worker node firewall rules applied (OpenClaw private to mesh)"
 fi
 
 # Security hardening rules
@@ -3124,7 +3407,7 @@ setup_ssh_hardening() {
     
     echo "🔑 Hardening SSH configuration on $node_ip..."
     
-    ssh -i ~/.aleph-deploy/keys/aleph_rsa ubuntu@"$node_ip" << 'SSH_HARDENING'
+    ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new "$SSH_USER"@"$node_ip" << 'SSH_HARDENING'
 #!/bin/bash
 set -e
 
@@ -3152,8 +3435,9 @@ PermitEmptyPasswords no
 ChallengeResponseAuthentication no
 UsePAM yes
 
-# Security restrictions
-PermitRootLogin no
+# Security restrictions. NOTE: PermitRootLogin is set dynamically below based on
+# the actual login user — on Aleph base images the only user is root, so we use
+# `prohibit-password` (key-only root) there rather than `no`, which would lock you out.
 MaxAuthTries 3
 MaxSessions 2
 MaxStartups 2:30:10
@@ -3165,10 +3449,6 @@ AllowTcpForwarding no
 GatewayPorts no
 PermitTunnel no
 AllowAgentForwarding no
-
-# User restrictions
-AllowUsers ubuntu
-DenyGroups root
 
 # Network settings
 AddressFamily inet
@@ -3189,190 +3469,158 @@ UseDNS no
 
 # Subsystem
 Subsystem sftp /usr/lib/openssh/sftp-server -l INFO
-
-# Re-enable TCP forwarding for the ubuntu user only.
-# This is needed for SSH tunnels (Section 5) and Tailscale.
-Match User ubuntu
-    AllowTcpForwarding yes
 SSHD_CONFIG
 
-# Test configuration
-sudo sshd -t
+# Restrict logins and re-enable TCP forwarding for OUR login user only (the user
+# is image-dependent — root on Aleph base images, ubuntu on some — so derive it
+# at runtime rather than hardcoding "ubuntu". TCP forwarding is needed for SSH
+# tunnels (Section 5) and is harmless for Tailscale, which doesn't use sshd.)
+LOGIN_USER="$(logname 2>/dev/null || echo "${SUDO_USER:-$USER}")"
+if [[ "$LOGIN_USER" == "root" ]]; then ROOT_POLICY="prohibit-password"; else ROOT_POLICY="no"; fi
+{
+  echo ""
+  echo "PermitRootLogin ${ROOT_POLICY}"
+  echo "AllowUsers ${LOGIN_USER}"
+  echo "Match User ${LOGIN_USER}"
+  echo "    AllowTcpForwarding yes"
+} | sudo tee -a /etc/ssh/sshd_config >/dev/null
 
-# Restart SSH service
-sudo systemctl reload ssh
-
-echo "✅ SSH hardening complete"
+# Validate BEFORE reloading; if invalid, restore the backup so we keep access.
+if sudo sshd -t; then
+    sudo systemctl reload ssh
+    echo "SSH hardening complete (login user: ${LOGIN_USER})"
+else
+    echo "sshd config invalid — restoring backup, NOT reloading."
+    sudo cp /etc/ssh/sshd_config.backup /etc/ssh/sshd_config
+    exit 1
+fi
 SSH_HARDENING
     
-    echo "✅ SSH hardened on node: $node_ip"
+    echo "SSH hardened on node: $node_ip"
 }
 
 setup_key_rotation() {
-    echo "🔄 Setting up SSH key rotation system..."
-    
-    # Create key rotation script
+    echo "Installing SSH key rotation tool..."
+
+    # ── scripts/rotate-ssh-keys.sh ───────────────────────────────────────────
+    # Correct, verify-before-activate rotation. Key invariants:
+    #  - generates an ed25519 key into aleph_ed25519-new (matches the key TYPE);
+    #  - tests the NEW key against EVERY node BEFORE activating it (rollback-safe);
+    #  - the OLD key stays authorized until the new key is proven, so you can never
+    #    lock yourself out; cleanup removes the old key by EXACT LINE (grep -Fvx).
     cat > ~/.aleph-deploy/scripts/rotate-ssh-keys.sh << 'KEY_ROTATION'
 #!/bin/bash
+set -euo pipefail
 
 FLEET_CONFIG="$HOME/.aleph-deploy/configs/fleet.json"
+SSH_KEY="${ALEPH_SSH_KEY:-$HOME/.aleph-deploy/keys/aleph_ed25519}"
+SSH_USER="$(jq -r '.ssh_user // "root"' "$FLEET_CONFIG" 2>/dev/null || echo root)"
 KEY_DIR="$HOME/.aleph-deploy/keys"
 BACKUP_DIR="$HOME/.aleph-deploy/key-backups"
+mkdir -p "$BACKUP_DIR" "$HOME/.aleph-deploy/logs"
 
-log_message() {
-    echo "$(date -Iseconds): $1" | tee -a "$HOME/.aleph-deploy/logs/key-rotation.log"
+log() { echo "$(date -Iseconds): $1" | tee -a "$HOME/.aleph-deploy/logs/key-rotation.log"; }
+
+# All node IPs (primary + every worker). Workers without an IP are skipped with a warning.
+all_node_ips() {
+    jq -r '[.primary_node.ip] + [.worker_nodes[].ip] | .[] | select(. != null and . != "")' "$FLEET_CONFIG"
 }
 
 generate_new_keys() {
-    local key_date=$(date +%Y%m%d-%H%M%S)
-    
-    log_message "🔑 Generating new SSH key pair..."
-    
-    # Create backup of current keys
-    mkdir -p "$BACKUP_DIR"
-    if [[ -f "$KEY_DIR/aleph_rsa" ]]; then
-        cp "$KEY_DIR/aleph_rsa" "$BACKUP_DIR/aleph_rsa-$key_date"
-        cp "$KEY_DIR/aleph_rsa.pub" "$BACKUP_DIR/aleph_rsa.pub-$key_date"
-        log_message "✅ Current keys backed up"
-    fi
-    
-    # Generate new key pair
-    ssh-keygen -t rsa -b 4096 -f "$KEY_DIR/aleph_rsa-new" -N "" -C "aleph-fleet-$key_date"
-    
-    log_message "✅ New SSH key pair generated"
+    local d; d="$(date +%Y%m%d-%H%M%S)"
+    log "Backing up current key and generating a new ed25519 pair..."
+    [[ -f "$KEY_DIR/aleph_ed25519" ]] && {
+        cp "$KEY_DIR/aleph_ed25519"     "$BACKUP_DIR/aleph_ed25519-$d"
+        cp "$KEY_DIR/aleph_ed25519.pub" "$BACKUP_DIR/aleph_ed25519.pub-$d"
+    }
+    # ed25519 (not RSA) — matches the active key type and the file name.
+    ssh-keygen -t ed25519 -f "$KEY_DIR/aleph_ed25519-new" -N "" -C "aleph-fleet-$d"
 }
 
 deploy_new_keys() {
-    log_message "📤 Deploying new keys to all fleet nodes..."
-    
-    local new_public_key=$(cat "$KEY_DIR/aleph_rsa-new.pub")
-    local primary_ip=$(jq -r '.primary_node.ip' "$FLEET_CONFIG")
-    
-    # Get all node IPs
-    local all_ips=("$primary_ip")
-    mapfile -t worker_ips < <(jq -r '.worker_nodes[] | .ip // empty' "$FLEET_CONFIG")
-    all_ips+=("${worker_ips[@]}")
-    
-    for node_ip in "${all_ips[@]}"; do
-        [[ -z "$node_ip" || "$node_ip" == "null" ]] && continue
-        
-        log_message "🔧 Deploying new key to $node_ip..."
-        
-        # Add new key to authorized_keys
-        ssh -i "$KEY_DIR/aleph_rsa" ubuntu@"$node_ip" << NEW_KEY_SETUP
-echo "$new_public_key" >> ~/.ssh/authorized_keys
-# Remove duplicates
-sort ~/.ssh/authorized_keys | uniq > ~/.ssh/authorized_keys.tmp
-mv ~/.ssh/authorized_keys.tmp ~/.ssh/authorized_keys
-chmod 600 ~/.ssh/authorized_keys
-NEW_KEY_SETUP
-        
-        log_message "✅ New key deployed to $node_ip"
-    done
+    log "Appending NEW public key to authorized_keys on all nodes (old key stays valid)..."
+    local newpub; newpub="$(cat "$KEY_DIR/aleph_ed25519-new.pub")"
+    while read -r ip; do
+        log "  -> $ip"
+        # Still authenticate with the CURRENT (old) key; just append the new one.
+        ssh -i "$KEY_DIR/aleph_ed25519" -o StrictHostKeyChecking=accept-new "$SSH_USER@$ip" \
+            "mkdir -p ~/.ssh && touch ~/.ssh/authorized_keys && \
+             grep -qxF '$newpub' ~/.ssh/authorized_keys || echo '$newpub' >> ~/.ssh/authorized_keys && \
+             chmod 600 ~/.ssh/authorized_keys"
+    done < <(all_node_ips)
+}
+
+# Verify the NEW key works against EVERY node BEFORE we activate it.
+test_new_keys() {
+    log "Verifying NEW key connectivity on all nodes..."
+    local ok=0 fail=0
+    while read -r ip; do
+        if ssh -i "$KEY_DIR/aleph_ed25519-new" -o ConnectTimeout=10 \
+               -o StrictHostKeyChecking=accept-new "$SSH_USER@$ip" "true" &>/dev/null; then
+            ok=$((ok+1))
+        else
+            log "  FAILED on $ip"; fail=$((fail+1))
+        fi
+    done < <(all_node_ips)
+    log "New-key check: $ok ok, $fail failed"
+    (( fail == 0 ))
 }
 
 activate_new_keys() {
-    log_message "🔄 Activating new keys..."
-    
-    # Move new keys to active position
-    mv "$KEY_DIR/aleph_rsa" "$KEY_DIR/aleph_rsa-old" 2>/dev/null || true
-    mv "$KEY_DIR/aleph_rsa.pub" "$KEY_DIR/aleph_rsa.pub-old" 2>/dev/null || true
-    
-    mv "$KEY_DIR/aleph_rsa-new" "$KEY_DIR/aleph_rsa"
-    mv "$KEY_DIR/aleph_rsa-new.pub" "$KEY_DIR/aleph_rsa.pub"
-    
-    chmod 600 "$KEY_DIR/aleph_rsa"
-    chmod 644 "$KEY_DIR/aleph_rsa.pub"
-    
-    log_message "✅ New keys activated"
+    log "Promoting NEW key to active (old key archived for rollback)..."
+    mv "$KEY_DIR/aleph_ed25519"     "$KEY_DIR/aleph_ed25519-old"
+    mv "$KEY_DIR/aleph_ed25519.pub" "$KEY_DIR/aleph_ed25519.pub-old"
+    mv "$KEY_DIR/aleph_ed25519-new"     "$KEY_DIR/aleph_ed25519"
+    mv "$KEY_DIR/aleph_ed25519-new.pub" "$KEY_DIR/aleph_ed25519.pub"
+    chmod 600 "$KEY_DIR/aleph_ed25519"; chmod 644 "$KEY_DIR/aleph_ed25519.pub"
 }
 
 cleanup_old_keys() {
-    log_message "🧹 Cleaning up old keys from nodes..."
-    
-    local old_public_key=$(cat "$KEY_DIR/aleph_rsa.pub-old" 2>/dev/null || echo "")
-    
-    if [[ -n "$old_public_key" ]]; then
-        local primary_ip=$(jq -r '.primary_node.ip' "$FLEET_CONFIG")
-        local all_ips=("$primary_ip")
-        mapfile -t worker_ips < <(jq -r '.worker_nodes[] | .ip // empty' "$FLEET_CONFIG")
-        all_ips+=("${worker_ips[@]}")
-        
-        for node_ip in "${all_ips[@]}"; do
-            [[ -z "$node_ip" || "$node_ip" == "null" ]] && continue
-            
-            # Remove old key from authorized_keys
-            ssh -i "$KEY_DIR/aleph_rsa" ubuntu@"$node_ip" << OLD_KEY_CLEANUP
-grep -v "$old_public_key" ~/.ssh/authorized_keys > ~/.ssh/authorized_keys.tmp || true
-mv ~/.ssh/authorized_keys.tmp ~/.ssh/authorized_keys
-chmod 600 ~/.ssh/authorized_keys
-OLD_KEY_CLEANUP
-        done
-        
-        # Remove old local key files
-        rm -f "$KEY_DIR/aleph_rsa-old" "$KEY_DIR/aleph_rsa.pub-old"
-        
-        log_message "✅ Old keys cleaned up"
-    fi
+    local oldpub; oldpub="$(cat "$KEY_DIR/aleph_ed25519.pub-old" 2>/dev/null || true)"
+    [[ -z "$oldpub" ]] && return 0
+    log "Removing OLD key from all nodes (exact-line match)..."
+    while read -r ip; do
+        # grep -Fvx: fixed-string, whole-LINE, inverted — removes ONLY the exact old
+        # key line, never a substring or an unrelated key. Connect with the new key.
+        ssh -i "$KEY_DIR/aleph_ed25519" "$SSH_USER@$ip" \
+            "grep -Fvx '$oldpub' ~/.ssh/authorized_keys > ~/.ssh/ak.tmp && \
+             mv ~/.ssh/ak.tmp ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys" \
+            || log "  WARN: could not clean $ip (left old key in place)"
+    done < <(all_node_ips)
+    rm -f "$KEY_DIR/aleph_ed25519-old" "$KEY_DIR/aleph_ed25519.pub-old"
 }
 
-test_new_keys() {
-    log_message "🧪 Testing new key connectivity..."
-    
-    local primary_ip=$(jq -r '.primary_node.ip' "$FLEET_CONFIG")
-    
-    if ssh -i "$KEY_DIR/aleph_rsa" -o ConnectTimeout=10 ubuntu@"$primary_ip" "echo 'Key test successful'" &>/dev/null; then
-        log_message "✅ New key connectivity verified"
-        return 0
-    else
-        log_message "❌ New key connectivity test failed"
-        return 1
-    fi
-}
-
-# Key rotation process
 rotate_keys() {
-    log_message "🔄 Starting SSH key rotation process..."
-    
+    log "Starting SSH key rotation..."
     generate_new_keys
     deploy_new_keys
-    
-    # Wait for propagation
-    sleep 30
-    
-    if test_new_keys; then
+    sleep 5
+    if test_new_keys; then          # MUST pass on every node before we switch over
         activate_new_keys
-        sleep 30
-        cleanup_old_keys
-        log_message "🎉 SSH key rotation completed successfully"
+        cleanup_old_keys            # old key only removed AFTER new key is active+proven
+        log "SSH key rotation completed successfully."
     else
-        log_message "❌ Key rotation failed - reverting changes"
-        rm -f "$KEY_DIR/aleph_rsa-new" "$KEY_DIR/aleph_rsa-new.pub"
+        log "New key failed on at least one node — NOT activating. Old key still works."
+        rm -f "$KEY_DIR/aleph_ed25519-new" "$KEY_DIR/aleph_ed25519-new.pub"
         return 1
     fi
 }
 
-# Command dispatcher
 case "${1:-rotate}" in
-    "rotate")
-        rotate_keys
-        ;;
-    "test")
-        test_new_keys
-        ;;
-    *)
-        echo "Usage: $0 {rotate|test}"
-        exit 1
-        ;;
+    rotate) rotate_keys ;;
+    test)   test_new_keys ;;
+    *)      echo "Usage: $0 {rotate|test}"; exit 1 ;;
 esac
 KEY_ROTATION
 
-chmod +x ~/.aleph-deploy/scripts/rotate-ssh-keys.sh
+    chmod +x ~/.aleph-deploy/scripts/rotate-ssh-keys.sh
 
-# Setup monthly key rotation
-(crontab -l 2>/dev/null; echo "0 3 1 * * $HOME/.aleph-deploy/scripts/rotate-ssh-keys.sh rotate >> $HOME/.aleph-deploy/logs/key-rotation.log 2>&1") | crontab -
-
-echo "✅ SSH key rotation system configured (monthly rotation)"
+    # Rotate ON DEMAND, not on a forced monthly schedule. Automatic forced rotation
+    # of SSH keys provides little security benefit and risks lock-out if a node is
+    # unreachable when the cron fires. Rotate when a key may be compromised or when
+    # an operator leaves. To opt into scheduled rotation, uncomment:
+    # (crontab -l 2>/dev/null; echo "0 3 1 * * $HOME/.aleph-deploy/scripts/rotate-ssh-keys.sh rotate >> $HOME/.aleph-deploy/logs/key-rotation.log 2>&1") | crontab -
+    echo "SSH key rotation tool installed: ~/.aleph-deploy/scripts/rotate-ssh-keys.sh rotate"
 }
 
 setup_intrusion_detection() {
@@ -3380,7 +3628,7 @@ setup_intrusion_detection() {
     
     local primary_ip=$(jq -r '.primary_node.ip' "$FLEET_CONFIG")
     
-    ssh -i ~/.aleph-deploy/keys/aleph_rsa ubuntu@"$primary_ip" << 'IDS_SETUP'
+    ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new "$SSH_USER"@"$primary_ip" << 'IDS_SETUP'
 #!/bin/bash
 set -e
 
@@ -3499,7 +3747,8 @@ check_unusual_processes() {
 
 check_network_connections() {
     # Check for unusual network connections
-    local external_connections=$(netstat -tn | grep ESTABLISHED | grep -v "127.0.0.1\|10.\|172.16\|192.168" | wc -l)
+    # `ss` is the default on modern Ubuntu (netstat needs the net-tools package).
+    local external_connections=$(ss -tn state established | tail -n +2 | grep -v "127.0.0.1\|10.\|172.16\|192.168" | wc -l)
     
     if (( external_connections > 50 )); then
         log_security_event "HIGH_EXTERNAL_CONNECTIONS" "Detected $external_connections external connections"
@@ -3535,7 +3784,7 @@ setup_log_monitoring() {
     local primary_ip=$(jq -r '.primary_node.ip' "$FLEET_CONFIG")
     
     # Setup log aggregation on primary node
-    ssh -i ~/.aleph-deploy/keys/aleph_rsa ubuntu@"$primary_ip" << 'LOG_SETUP'
+    ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new "$SSH_USER"@"$primary_ip" << 'LOG_SETUP'
 #!/bin/bash
 set -e
 
@@ -3658,9 +3907,8 @@ generate_performance_report() {
         ps aux --sort=-%mem | head -6
         echo ""
         
-        echo "Network Connections:"
-        netstat -tn | grep ESTABLISHED | wc -l
-        echo "Established connections count"
+        echo "Network Connections (established):"
+        ss -tn state established | tail -n +2 | wc -l
         
     } > "$report_file"
     
@@ -3716,6 +3964,8 @@ create_security_checker() {
 #!/bin/bash
 
 FLEET_CONFIG="$HOME/.aleph-deploy/configs/fleet.json"
+SSH_KEY="${ALEPH_SSH_KEY:-$HOME/.aleph-deploy/keys/aleph_ed25519}"
+SSH_USER="$(jq -r '.ssh_user // "root"' "$FLEET_CONFIG" 2>/dev/null || echo root)"
 
 check_node_security() {
     local node_ip=$1
@@ -3725,7 +3975,7 @@ check_node_security() {
     
     # Check UFW status
     echo -n "  Firewall: "
-    if ssh -i ~/.aleph-deploy/keys/aleph_rsa ubuntu@"$node_ip" "sudo ufw status" | grep -q "Status: active"; then
+    if ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new "$SSH_USER"@"$node_ip" "sudo ufw status" | grep -q "Status: active"; then
         echo "✅ Active"
     else
         echo "❌ Inactive"
@@ -3734,13 +3984,14 @@ check_node_security() {
     # Check SSH configuration
     echo -n "  SSH Security: "
     local ssh_score=0
-    if ssh -i ~/.aleph-deploy/keys/aleph_rsa ubuntu@"$node_ip" "grep -q 'PasswordAuthentication no' /etc/ssh/sshd_config"; then
+    if ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new "$SSH_USER"@"$node_ip" "grep -q 'PasswordAuthentication no' /etc/ssh/sshd_config"; then
         ssh_score=$((ssh_score + 1))
     fi
-    if ssh -i ~/.aleph-deploy/keys/aleph_rsa ubuntu@"$node_ip" "grep -q 'PermitRootLogin no' /etc/ssh/sshd_config"; then
+    # Accept either 'no' or 'prohibit-password' (the latter is used on root-only images).
+    if ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new "$SSH_USER"@"$node_ip" "grep -Eq 'PermitRootLogin (no|prohibit-password)' /etc/ssh/sshd_config"; then
         ssh_score=$((ssh_score + 1))
     fi
-    if ssh -i ~/.aleph-deploy/keys/aleph_rsa ubuntu@"$node_ip" "grep -q 'MaxAuthTries 3' /etc/ssh/sshd_config"; then
+    if ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new "$SSH_USER"@"$node_ip" "grep -q 'MaxAuthTries 3' /etc/ssh/sshd_config"; then
         ssh_score=$((ssh_score + 1))
     fi
     
@@ -3753,7 +4004,7 @@ check_node_security() {
     # Check fail2ban (primary node only)
     if [[ "$node_type" == "primary" ]]; then
         echo -n "  Intrusion Detection: "
-        if ssh -i ~/.aleph-deploy/keys/aleph_rsa ubuntu@"$node_ip" "systemctl is-active fail2ban" &>/dev/null; then
+        if ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new "$SSH_USER"@"$node_ip" "systemctl is-active fail2ban" &>/dev/null; then
             echo "✅ Active"
         else
             echo "❌ Inactive"
@@ -3762,7 +4013,7 @@ check_node_security() {
     
     # Check system updates
     echo -n "  System Updates: "
-    local updates=$(ssh -i ~/.aleph-deploy/keys/aleph_rsa ubuntu@"$node_ip" "apt list --upgradable 2>/dev/null | grep -c upgradable || echo 0")
+    local updates=$(ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new "$SSH_USER"@"$node_ip" "apt list --upgradable 2>/dev/null | grep -c upgradable || echo 0")
     if (( updates == 0 )); then
         echo "✅ Up to date"
     else
@@ -3808,8 +4059,8 @@ echo "🔒 Security hardening complete!"
 echo ""
 echo "Security components:"
 echo "- UFW firewall configured on all nodes"
-echo "- SSH hardened (key-only, no root)"
-echo "- Monthly SSH key rotation"
+echo "- SSH hardened (key-only; root login set to prohibit-password on root-only images)"
+echo "- On-demand SSH key rotation (verify-before-activate; not a forced schedule)"
 echo "- Fail2ban intrusion detection"
 echo "- Centralized logging"
 echo ""
@@ -3832,11 +4083,13 @@ echo "Check security status: ~/.aleph-deploy/scripts/security-status.sh"
 - Check node health: `./fleet-control.sh health`
 - Verify backup integrity: run a test restore on staging
 
-**Monthly:**
-- SSH key rotation (automated via cron)
+**Monthly / as needed:**
 - Update system packages: `./fleet-control.sh deploy update-packages.sh`
-- Review and rotate FLEET_API_KEY
-- Check CRN pricing and availability
+- Re-check CRN pricing and availability: `aleph pricing instance`
+- Rotate `FLEET_API_KEY` if a node/operator may be compromised (regenerate, update `/etc/fleet-manager.env` on the primary, restart fleet-manager/sync/distributor)
+
+**On a security event (not on a fixed schedule):**
+- Rotate SSH keys: `~/.aleph-deploy/scripts/rotate-ssh-keys.sh rotate` (verify-before-activate; old key kept until new one is proven)
 
 ### Quick Reference Commands
 
@@ -3848,8 +4101,8 @@ echo "Check security status: ~/.aleph-deploy/scripts/security-status.sh"
 ./fleet-control.sh logs openclaw 100 # Collect last 100 log lines
 
 # Backup & Recovery
-ssh ubuntu@PRIMARY_IP '/opt/openclaw/backup-system.sh full'
-ssh ubuntu@PRIMARY_IP '/opt/openclaw/backup-system.sh snapshot'
+ssh root@PRIMARY_IP '/opt/openclaw/backup-system.sh full'
+ssh root@PRIMARY_IP '/opt/openclaw/backup-system.sh snapshot'
 
 # Security
 ~/.aleph-deploy/scripts/security-status.sh
@@ -3859,15 +4112,15 @@ ssh ubuntu@PRIMARY_IP '/opt/openclaw/backup-system.sh snapshot'
 ~/.aleph-deploy/scripts/cost-monitor.sh
 
 # Auto-scaling (enable/disable)
-ssh ubuntu@PRIMARY_IP 'sudo systemctl enable auto-scaler && sudo systemctl start auto-scaler'
-ssh ubuntu@PRIMARY_IP 'sudo systemctl stop auto-scaler && sudo systemctl disable auto-scaler'
+ssh root@PRIMARY_IP 'sudo systemctl enable auto-scaler && sudo systemctl start auto-scaler'
+ssh root@PRIMARY_IP 'sudo systemctl stop auto-scaler && sudo systemctl disable auto-scaler'
 
 # Replication
-ssh ubuntu@PRIMARY_IP '/opt/openclaw/replication/auto-provisioning-protocol.sh replicate'
-ssh ubuntu@PRIMARY_IP '/opt/openclaw/replication/auto-provisioning-protocol.sh emergency manual'
+ssh root@PRIMARY_IP '/opt/openclaw/replication/auto-provisioning-protocol.sh replicate'
+ssh root@PRIMARY_IP '/opt/openclaw/replication/auto-provisioning-protocol.sh emergency manual'
 
 # Tailscale mesh
-ssh ubuntu@PRIMARY_IP 'tailscale status'
+ssh root@PRIMARY_IP 'tailscale status'
 ```
 
 ### Troubleshooting
@@ -3878,7 +4131,7 @@ ssh ubuntu@PRIMARY_IP 'tailscale status'
 | Worker can't register | Fleet manager not reachable | Check Tailscale connectivity and UFW rules |
 | nodes.json ENOENT | File not created before service start | Create `echo '{"nodes":[]}' > /opt/fleet-manager/nodes.json` and restart |
 | HAProxy backend stale | Fleet sync not running | Check `systemctl status haproxy-fleet-sync` |
-| SSH key rotation fails | New key not propagated | Manually deploy key: `ssh-copy-id -i KEY ubuntu@NODE` |
+| SSH key rotation fails | New key not propagated | Old key still works (rotation is verify-before-activate); re-run `rotate-ssh-keys.sh rotate`, or manually append: `ssh-copy-id -i KEY "$SSH_USER@NODE"` |
 | Auto-scaler variables lost | Pipe subshell scoping | Use `while read ... done < <(cmd)` process substitution |
 | Replication files missing | Wrong extract paths | Files are under `soul/`, `agents/`, `memory/` subdirectories |
 | High CPU but no scale-up | Cooldown period active | Wait 5 minutes or reset `/tmp/last-scale-action` |
