@@ -15,7 +15,6 @@ export default defineConfig([
     "next-env.d.ts",
     // Content directories — skills are markdown payload, not source
     "skills/**",
-    "skills-data/**",
     "public/**",
     // Generated catalogs + audit notes + tooling scripts
     "skills.json",
