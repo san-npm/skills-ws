@@ -1,6 +1,6 @@
 ---
 name: ai-agent-building
-description: "Production AI agent development — LangGraph, CrewAI, tool design, memory, RAG pipelines, multi-agent patterns, evaluation, and safety."
+description: "Build production AI agents — LangGraph state machines, CrewAI teams, tool design, memory, RAG, MCP, multi-agent orchestration, evals, cost control, and safety. Use when building LangGraph/CrewAI agents, designing or validating tools, wiring RAG or MCP, adding human-in-the-loop, or running agent evals and safety reviews."
 ---
 
 # AI Agent Building
@@ -80,64 +80,90 @@ result = app.invoke({
 })
 ```
 
-### Human-in-the-Loop with Checkpointing
+### Human-in-the-Loop with `interrupt()` and Checkpointing
+
+The modern pattern (LangGraph 0.2.x+) uses the `interrupt()` function to pause *inside* a node and `Command(resume=...)` to feed a decision back. The value passed to `Command(resume=...)` becomes the return value of `interrupt()`, so you must **actually check it** before executing the side-effecting tool — never blindly continue into the tool node. Requires a checkpointer and a stable `thread_id`.
 
 ```python
-from langgraph.checkpoint.sqlite import SqliteSaver
+from typing import Annotated, TypedDict
 from langgraph.graph import StateGraph, START, END
+from langgraph.graph.message import add_messages
+from langgraph.prebuilt import ToolNode
+from langgraph.types import interrupt, Command
+from langgraph.checkpoint.sqlite import SqliteSaver  # pip install langgraph-checkpoint-sqlite
+# For pure in-memory dev use: from langgraph.checkpoint.memory import InMemorySaver
 
 class AgentState(TypedDict):
     messages: Annotated[list, add_messages]
-    pending_approval: bool
 
 def agent(state: AgentState) -> AgentState:
-    response = model.invoke(state["messages"])
-    return {"messages": [response]}
+    return {"messages": [model.invoke(state["messages"])]}
 
-def check_approval_needed(state: AgentState) -> str:
+def route_after_agent(state: AgentState) -> str:
     last = state["messages"][-1]
-    if last.tool_calls:
-        # Require approval for order creation
-        for tc in last.tool_calls:
-            if tc["name"] == "create_order":
-                return "needs_approval"
-        return "tools"
-    return END
+    if not getattr(last, "tool_calls", None):
+        return END
+    # High-stakes tools go through approval; everything else runs directly.
+    if any(tc["name"] == "create_order" for tc in last.tool_calls):
+        return "approval"
+    return "tools"
 
-def request_approval(state: AgentState) -> AgentState:
-    """Interrupt execution — human must approve before continuing."""
-    return {"pending_approval": True}
+def approval(state: AgentState) -> Command:
+    """Pause and surface the pending order to a human. The resumed value is the decision."""
+    last = state["messages"][-1]
+    order_calls = [tc for tc in last.tool_calls if tc["name"] == "create_order"]
 
-# Build with interrupt
+    # interrupt() returns whatever the human passes via Command(resume=...)
+    decision = interrupt({
+        "action": "approve_order",
+        "orders": [tc["args"] for tc in order_calls],
+        "prompt": "Approve these orders? Reply {'approved': bool, 'reason': str}",
+    })
+
+    if not decision.get("approved"):
+        # Reject: feed a tool message back so the agent can apologize / replan.
+        # Do NOT fall through to the tools node.
+        from langchain_core.messages import ToolMessage
+        return Command(
+            goto="agent",
+            update={"messages": [
+                ToolMessage(
+                    content=f"Order rejected by human: {decision.get('reason', 'no reason given')}",
+                    tool_call_id=tc["id"],
+                ) for tc in order_calls
+            ]},
+        )
+    # Approved: now (and only now) proceed to execute the tool.
+    return Command(goto="tools")
+
 graph = StateGraph(AgentState)
 graph.add_node("agent", agent)
 graph.add_node("tools", ToolNode(tools))
-graph.add_node("approval", request_approval)
+graph.add_node("approval", approval)  # returns Command, so its targets are dynamic
 
 graph.add_edge(START, "agent")
-graph.add_conditional_edges("agent", check_approval_needed, {
-    "tools": "tools",
-    "needs_approval": "approval",
-    END: END,
-})
+graph.add_conditional_edges("agent", route_after_agent,
+                            {"tools": "tools", "approval": "approval", END: END})
 graph.add_edge("tools", "agent")
-graph.add_edge("approval", "tools")  # After approval, execute the tool
 
-# Compile with checkpointing
-memory = SqliteSaver.from_conn_string(":memory:")
-app = graph.compile(checkpointer=memory, interrupt_before=["approval"])
+# Compile with a checkpointer — required for interrupt/resume.
+with SqliteSaver.from_conn_string(":memory:") as checkpointer:
+    app = graph.compile(checkpointer=checkpointer)
+    config = {"configurable": {"thread_id": "order-123"}}
 
-# First run — stops at approval node
-config = {"configurable": {"thread_id": "order-123"}}
-result = app.invoke(
-    {"messages": [{"role": "user", "content": "Order 5 Widget As"}]},
-    config=config,
-)
-# State is saved. Agent is paused.
+    # First run stops at interrupt(); the payload appears under "__interrupt__".
+    result = app.invoke(
+        {"messages": [{"role": "user", "content": "Order 5 Widget As"}]},
+        config=config,
+    )
+    print(result["__interrupt__"])  # show the orders to the human / UI
 
-# Human approves — resume from checkpoint
-result = app.invoke(None, config=config)  # Continues from where it left off
+    # Human decides. Resume by passing the decision into interrupt() via Command(resume=...).
+    final = app.invoke(Command(resume={"approved": True}), config=config)
+    # To deny instead:  app.invoke(Command(resume={"approved": False, "reason": "over budget"}), config=config)
 ```
+
+> `interrupt()` replaces the old `interrupt_before=[...]` / `app.invoke(None, config)` resume idiom, which paused *before* a node but did not let you pass or inspect an approval value. Note `SqliteSaver.from_conn_string` is now a context manager; for persistence on disk use a file path instead of `":memory:"`.
 
 ### TypeScript LangGraph
 
@@ -309,21 +335,73 @@ def with_retry(max_retries: int = 3):
 @with_retry(3)
 @with_timeout(30)
 async def query_database(sql: str) -> str:
-    """Execute a read-only SQL query against the analytics database.
+    """Run a read-only SELECT against the analytics warehouse and return rows.
 
     Args:
-        sql: A SELECT query. Must not contain INSERT, UPDATE, DELETE, or DROP.
+        sql: A single SELECT statement. No DML/DDL, no multiple statements.
     """
-    # Validate — never let an LLM run arbitrary SQL
-    forbidden = ["INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "TRUNCATE"]
-    if any(word in sql.upper() for word in forbidden):
-        return "Error: Only SELECT queries are allowed."
+    try:
+        validated = validate_readonly_sql(sql, allowed_tables={"orders", "products", "customers"})
+    except ValueError as e:
+        return f"Error: {e}"
 
-    result = await db.execute(sql)
-    if len(result) > 100:
-        return f"Query returned {len(result)} rows. Showing first 20:\n{format_rows(result[:20])}"
-    return format_rows(result)
+    # Defense in depth: the LLM-facing connection uses a DB role that only has
+    # SELECT on the allowed schema (see note below) AND a per-statement timeout.
+    rows = await ro_db.execute(validated, timeout_s=10)  # ro_db = read-only-role pool
+    if len(rows) > 50:
+        return f"Query returned {len(rows)} rows (showing first 20):\n{format_rows(rows[:20])}"
+    return format_rows(rows)
 ```
+
+**Why the old `"DROP" in sql.upper()` blocklist is not production-safe:** substring checks are trivially bypassed (`/*DROP*/`, `dr"||"op`, a column literally named `update_ts`), they still allow stacked statements (`SELECT 1; DELETE ...`), CTE-wrapped writes, `pg_sleep()`-style DoS, schema enumeration via `information_schema`/`pg_catalog`, and cross-tenant reads. **Allowlist with a real SQL parser instead of blocklisting.** Use `sqlglot` to parse to an AST, reject anything that isn't exactly one `SELECT`, and enforce table allowlist + tenant scoping:
+
+```python
+# pip install sqlglot
+import sqlglot
+from sqlglot import exp
+
+def validate_readonly_sql(sql: str, allowed_tables: set[str], tenant_id: str | None = None) -> str:
+    statements = sqlglot.parse(sql, read="postgres")
+    if len(statements) != 1:
+        raise ValueError("Exactly one statement is allowed (no stacked queries).")
+    tree = statements[0]
+
+    # 1. Top level must be a pure SELECT (this also rejects INSERT/UPDATE/DELETE/DDL,
+    #    and SELECT ... INTO / data-modifying CTEs at the root).
+    if not isinstance(tree, exp.Select):
+        raise ValueError("Only SELECT statements are allowed.")
+
+    # 2. No write expressions or unsafe constructs anywhere in the tree.
+    banned = (exp.Insert, exp.Update, exp.Delete, exp.Drop, exp.Alter,
+              exp.Create, exp.Command, exp.Merge, exp.Into, exp.Set)
+    if any(node for node in tree.walk() if isinstance(node, banned)):
+        raise ValueError("Query contains a forbidden write/DDL operation.")
+
+    # 3. Allowlist every referenced table; block catalog/schema probing.
+    for tbl in tree.find_all(exp.Table):
+        name = tbl.name.lower()
+        if tbl.db and tbl.db.lower() in ("information_schema", "pg_catalog"):
+            raise ValueError("System catalog access is not allowed.")
+        if name not in allowed_tables:
+            raise ValueError(f"Table '{name}' is not allowed.")
+
+    # 4. Force a hard row cap (LLMs forget LIMIT; large scans cost money / leak data).
+    if not tree.args.get("limit"):
+        tree = tree.limit(1000)
+
+    # 5. (Multi-tenant) inject a tenant filter so the agent can never read other tenants.
+    if tenant_id is not None:
+        tree = tree.where(exp.condition(f"tenant_id = {sqlglot.exp.Literal.string(tenant_id)}"))
+
+    return tree.sql(dialect="postgres")
+```
+
+Layer this with infrastructure controls — the validator is the inner ring, not the only ring:
+
+- **Dedicated read-only role.** Run agent queries on a connection whose Postgres role has `SELECT` only, on a restricted schema/view: `GRANT SELECT ON orders, products, customers TO agent_ro;` and nothing else. Even a parser bypass then cannot write.
+- **Statement timeout.** `SET statement_timeout = '10s'` on that role/session to kill `pg_sleep`-style or runaway scans.
+- **Prefer views.** Expose curated, pre-joined, already tenant-scoped views (e.g. `agent_orders_v`) and allowlist only those — never base tables.
+- **Parameterize the tenant id**; never string-format untrusted values into SQL elsewhere in your app.
 
 ### Tool Design Rules
 
@@ -390,6 +468,7 @@ async def maybe_summarize(state: AgentState) -> AgentState:
 ### Vector Store Memory (Long-term)
 
 ```python
+from datetime import datetime, timezone
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
 
@@ -418,7 +497,7 @@ def store_memory(fact: str, category: str = "general") -> str:
         texts=[fact],
         metadatas=[{
             "category": category,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }],
     )
     return f"Stored: {fact}"
@@ -431,7 +510,7 @@ def store_memory(fact: str, category: str = "general") -> str:
 ### Chunking Strategies
 
 ```python
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
 
 # For general documents
 splitter = RecursiveCharacterTextSplitter(
@@ -522,24 +601,37 @@ def format_docs_with_citations(docs):
 ### Supervisor Pattern
 
 ```python
+import json
+from typing import Annotated, TypedDict
 from langgraph.graph import StateGraph, START, END
+from langgraph.graph.message import add_messages
+from langchain_core.messages import SystemMessage
 
 class SupervisorState(TypedDict):
     messages: Annotated[list, add_messages]
     next_agent: str
 
+from typing import Literal
+from pydantic import BaseModel
+
+class Route(BaseModel):
+    next: Literal["researcher", "coder", "writer", "FINISH"]
+
+# with_structured_output guarantees a parsed Route — don't json.loads(content),
+# which breaks the moment the model wraps JSON in prose or a code fence.
+router_model = supervisor_model.with_structured_output(Route)
+
 def supervisor(state: SupervisorState) -> SupervisorState:
     """Route to the appropriate specialist agent."""
-    response = supervisor_model.invoke([
+    decision = router_model.invoke([
         SystemMessage(content="""You are a supervisor routing tasks to specialists:
 - researcher: for finding information
 - coder: for writing or reviewing code
 - writer: for creating content
-Respond with JSON: {"next": "agent_name"} or {"next": "FINISH"}"""),
+Pick the next worker, or FINISH when the task is complete."""),
         *state["messages"],
     ])
-    decision = json.loads(response.content)
-    return {"next_agent": decision["next"]}
+    return {"next_agent": decision.next}
 
 def route(state: SupervisorState) -> str:
     return state["next_agent"]
@@ -575,13 +667,20 @@ import tiktoken
 from contextlib import contextmanager
 
 class CostTracker:
-    PRICES = {  # per 1M tokens, late-2025 list prices — re-check the provider pricing pages before relying on these
-        "gpt-5": {"input": 1.25, "output": 10.00},
-        "gpt-5-mini": {"input": 0.25, "output": 2.00},
-        "gpt-5-nano": {"input": 0.05, "output": 0.40},
-        "claude-opus-4-5": {"input": 15.00, "output": 75.00},
-        "claude-sonnet-4-5": {"input": 3.00, "output": 15.00},
-        "claude-haiku-4-5": {"input": 1.00, "output": 5.00},
+    # USD per 1M tokens (input/output). List prices as of Jun 2026 — these move often;
+    # treat as a starting point and re-check the official pricing pages, ideally generating
+    # this dict from a dated constants file in CI:
+    #   OpenAI:    https://openai.com/api/pricing
+    #   Anthropic: https://platform.claude.com/docs/en/about-claude/pricing
+    PRICES = {
+        "gpt-5.5":          {"input": 5.00, "output": 30.00},  # flagship
+        "gpt-5.4":          {"input": 2.50, "output": 15.00},  # production workhorse
+        "gpt-5.1":          {"input": 1.25, "output": 10.00},
+        "gpt-5":            {"input": 1.25, "output": 10.00},
+        "o3":               {"input": 2.00, "output": 8.00},   # reasoning
+        "claude-opus-4-8":   {"input": 5.00, "output": 25.00},
+        "claude-sonnet-4-6": {"input": 3.00, "output": 15.00},
+        "claude-haiku-4-5":  {"input": 1.00, "output": 5.00},
     }
 
     def __init__(self):
@@ -609,7 +708,9 @@ class CostTracker:
 ### Streaming Responses
 
 ```python
-# LangGraph streaming
+# LangGraph streaming (assumes `app` and HumanMessage from the Basic Agent setup above)
+from langchain_core.messages import HumanMessage
+
 async for event in app.astream_events(
     {"messages": [HumanMessage(content="Hello")]},
     version="v2",
@@ -628,35 +729,36 @@ from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 
 primary = ChatOpenAI(model="gpt-5", timeout=30)
-fallback = ChatAnthropic(model="claude-sonnet-4-5", timeout=30)
+fallback = ChatAnthropic(model="claude-sonnet-4-6", timeout=30)
 
 model = primary.with_fallbacks([fallback])
-# Automatically tries fallback if primary fails
+# Automatically tries fallback if primary fails (cross-provider is the point —
+# survives a single vendor's outage or rate-limit spike)
 ```
 
 ---
 
 ## Modern Agent Surfaces (2025-2026)
 
-### Anthropic Memory Tool (beta)
+### Anthropic Memory Tool (public beta)
 
-Lets Claude store and retrieve files across turns so long-running agents don't blow context. Operations: `view`, `create`, `str_replace`, `insert`, `delete`, `rename`. Anthropic reports ~84% token reduction in extended workflows.
+Lets Claude store and retrieve files across turns so long-running agents don't blow context. Operations: `view`, `create`, `str_replace`, `insert`, `delete`, `rename`. You implement the storage backend (a per-conversation `/memories/` directory on disk or object store) by handling `tool_use` blocks named `"memory"` and returning `tool_result` blocks.
 
 ```python
-# Server-side: pass the memory tool + beta header. You implement the storage backend
-# (typically a per-conversation /memories/ directory on your filesystem or object store)
-# by handling tool_use blocks named "memory" and returning tool_result blocks.
+# Still public beta as of Jun 2026 — pass the memory tool + beta header.
+# Verify the current tool-type version string and header at:
+# https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool
 
 response = client.beta.messages.create(
-    model="claude-sonnet-4-5",
+    model="claude-sonnet-4-6",
     max_tokens=4096,
-    extra_headers={"anthropic-beta": "context-management-2025-06-27"},
-    tools=[{"type": "memory_20250818", "name": "memory"}],
+    betas=["context-management-2025-06-27"],          # current beta flag as of Jun 2026
+    tools=[{"type": "memory_20250818", "name": "memory"}],  # confirm latest memory_* version in docs
     messages=conversation,
 )
 ```
 
-Pair with **prompt caching** on a long system prompt so the agent's "personality + memory index" is cached across turns at 10% of base input price.
+Pair with **prompt caching** on a long system prompt so the agent's "personality + memory index" is cached across turns: cached input is billed at ~10% of the base input price (a ~90% discount). Combine with **tool-use context clearing** (same beta header) to drop stale tool results from the window automatically.
 
 ### OpenAI Responses API (March 2025)
 
@@ -745,44 +847,54 @@ class AgentResponse(BaseModel):
 ### LLM-as-Judge
 
 ```python
-EVAL_PROMPT = """Rate the following AI response on a scale of 1-5:
+from langchain_core.messages import HumanMessage
+from langchain_openai import ChatOpenAI
+from pydantic import BaseModel, Field
+
+class Judgement(BaseModel):
+    accuracy: int = Field(ge=1, le=5, description="Does it match the reference?")
+    completeness: int = Field(ge=1, le=5, description="Does it cover all key points?")
+    clarity: int = Field(ge=1, le=5, description="Is it well-written and clear?")
+    reasoning: str
+
+# Use a strong, separate judge model; structured output removes brittle json.loads parsing.
+eval_model = ChatOpenAI(model="gpt-5", temperature=0).with_structured_output(Judgement)
+
+EVAL_PROMPT = """Rate the AI response on a 1-5 scale for accuracy, completeness, and clarity.
 
 Question: {question}
 Response: {response}
-Reference Answer: {reference}
+Reference Answer: {reference}"""
 
-Criteria:
-- Accuracy (does it match the reference?)
-- Completeness (does it cover all key points?)
-- Clarity (is it well-written and easy to understand?)
-
-Respond with JSON: {"accuracy": N, "completeness": N, "clarity": N, "reasoning": "..."}"""
-
-async def evaluate_response(question: str, response: str, reference: str) -> dict:
-    result = await eval_model.ainvoke(
+async def evaluate_response(question: str, response: str, reference: str) -> Judgement:
+    return await eval_model.ainvoke(
         EVAL_PROMPT.format(question=question, response=response, reference=reference)
     )
-    return json.loads(result.content)
 
 # Run evaluation suite
 async def run_eval_suite(agent, test_cases: list[dict]) -> dict:
     results = []
     for case in test_cases:
-        response = await agent.ainvoke({"messages": [HumanMessage(content=case["question"])]})
-        answer = response["messages"][-1].content
+        out = await agent.ainvoke({"messages": [HumanMessage(content=case["question"])]})
+        answer = out["messages"][-1].content
         score = await evaluate_response(case["question"], answer, case["expected"])
         results.append({"case": case["question"], "score": score})
 
-    avg_accuracy = sum(r["score"]["accuracy"] for r in results) / len(results)
-    avg_completeness = sum(r["score"]["completeness"] for r in results) / len(results)
+    n = len(results)
+    avg_accuracy = sum(r["score"].accuracy for r in results) / n
+    avg_completeness = sum(r["score"].completeness for r in results) / n
     return {"results": results, "avg_accuracy": avg_accuracy, "avg_completeness": avg_completeness}
 ```
+
+> **Bias note:** an LLM judge favors verbose, confident, same-family answers and is itself promptable. Calibrate against a human-labeled gold set, randomize answer order for pairwise comparisons, and never let a model grade its own output unchecked in CI.
 
 ### Regression Testing
 
 ```python
-# tests/test_agent.py
+# tests/test_agent.py  (pytest-asyncio; `agent` is your compiled app from above)
 import pytest
+from langchain_core.messages import HumanMessage
+from my_agent import agent
 
 REGRESSION_CASES = [
     {
@@ -888,36 +1000,37 @@ app.listen(3100, () => console.log('MCP server on :3100'));
 
 ### Connecting LangGraph to MCP Tools
 
+Don't hand-roll an MCP client. Use the official `langchain-mcp-adapters`, which speaks **Streamable HTTP** (the transport the server above exposes at `/mcp`) and returns ready-to-use LangChain tools — handling schema conversion, sessions, and reconnects for you. The deprecated `sse_client` transport will not talk to a `StreamableHTTPServerTransport` server.
+
 ```python
-# Use MCP tools inside a LangGraph agent
+# pip install langchain-mcp-adapters langgraph langchain-openai
 import asyncio
-from mcp import ClientSession, sse_client
+from langchain_mcp_adapters.client import MultiServerMCPClient
+from langgraph.prebuilt import create_react_agent
+from langchain_openai import ChatOpenAI
 
-async def get_mcp_tools(server_url: str) -> list:
-    """Fetch tool definitions from an MCP server and convert to LangChain tools."""
-    async with sse_client(server_url) as (read, write):
-        async with ClientSession(read, write) as session:
-            await session.initialize()
-            mcp_tools = await session.list_tools()
+async def main():
+    client = MultiServerMCPClient({
+        "my-tools": {
+            "transport": "streamable_http",         # matches the server's /mcp endpoint
+            "url": "http://localhost:3100/mcp",
+            "headers": {"Authorization": "Bearer ${MCP_TOKEN}"},  # optional auth
+        },
+        # add more servers here; tools are merged into one list
+    })
 
-            langchain_tools = []
-            for tool in mcp_tools.tools:
-                # Create a closure for each tool
-                async def call_tool(name=tool.name, **kwargs):
-                    async with sse_client(server_url) as (r, w):
-                        async with ClientSession(r, w) as s:
-                            await s.initialize()
-                            result = await s.call_tool(name, kwargs)
-                            return result.content[0].text
+    tools = await client.get_tools()  # list[BaseTool], names/schemas come from the server
+    agent = create_react_agent(ChatOpenAI(model="gpt-5", temperature=0), tools)
 
-                langchain_tools.append(StructuredTool(
-                    name=tool.name,
-                    description=tool.description,
-                    func=call_tool,
-                    args_schema=create_schema_from_json(tool.inputSchema),
-                ))
-            return langchain_tools
+    result = await agent.ainvoke(
+        {"messages": [{"role": "user", "content": "Search the docs for CORS config and open a ticket."}]}
+    )
+    print(result["messages"][-1].content)
+
+asyncio.run(main())
 ```
+
+`MultiServerMCPClient` is **stateless by default** — each tool call opens a fresh session and tears it down. For tools that need a persistent session (e.g. sampling, server-side state), wrap calls in `async with client.session("my-tools") as session:`. To call a remote MCP server directly from a frontier model without an adapter, use the provider's native MCP tool type (see the OpenAI Responses example above, and the `mcp-client` / `mcp-server-builder` sibling skills).
 
 ---
 
@@ -936,8 +1049,9 @@ COPY . .
 RUN useradd -m agent && chown -R agent:agent /app
 USER agent
 
+# python:3.12-slim has no curl — use a stdlib check (no extra packages, no shell deps)
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-  CMD curl -f http://localhost:8000/health || exit 1
+  CMD ["python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health', timeout=4).status==200 else 1)"]
 
 EXPOSE 8000
 CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
@@ -945,13 +1059,23 @@ CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
 
 ```python
 # server.py — FastAPI wrapper with streaming, cost tracking, rate limiting
+import json, time, tiktoken
+from collections import defaultdict
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import StreamingResponse
-from collections import defaultdict
-import time, tiktoken
+from langchain_core.messages import HumanMessage
+
+from my_agent import agent  # your compiled LangGraph app (see "Basic Agent" above)
+
+MODEL = "gpt-5"
+PRICE_IN, PRICE_OUT = 1.25, 10.00  # USD/1M tokens for MODEL — keep in sync with CostTracker.PRICES
 
 app = FastAPI()
-enc = tiktoken.encoding_for_model("gpt-4o")
+start_time = time.time()
+try:
+    enc = tiktoken.encoding_for_model(MODEL)
+except KeyError:
+    enc = tiktoken.get_encoding("o200k_base")  # fallback for models tiktoken doesn't know yet
 
 # In-memory rate limiter (use Redis in production)
 request_counts: dict[str, list[float]] = defaultdict(list)
@@ -988,15 +1112,18 @@ async def chat(request: Request):
                     total_output_tokens += len(enc.encode(chunk))
                     yield f"data: {json.dumps({'text': chunk})}\n\n"
 
-        # Log cost (GPT-4o pricing: $2.50/1M input, $10/1M output)
-        cost = (input_tokens * 2.50 + total_output_tokens * 10.0) / 1_000_000
+        # Log cost using the model's own price (see PRICE_IN/PRICE_OUT above).
+        # Note: tiktoken counts only the raw text; it does NOT include tool-call
+        # args, system prompt, or reasoning tokens — for exact billing read
+        # usage_metadata off the final message instead of estimating here.
+        cost = (input_tokens * PRICE_IN + total_output_tokens * PRICE_OUT) / 1_000_000
         yield f"data: {json.dumps({'done': True, 'tokens': {'in': input_tokens, 'out': total_output_tokens}, 'cost_usd': round(cost, 6)})}\n\n"
 
     return StreamingResponse(stream(), media_type="text/event-stream")
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "model": "gpt-4o", "uptime": time.time() - start_time}
+    return {"status": "ok", "model": MODEL, "uptime": time.time() - start_time}
 ```
 
 ---
@@ -1005,12 +1132,17 @@ async def health():
 
 ```python
 # Cost-aware model routing — use cheap models when possible
+from datetime import datetime, timezone
 from langchain_openai import ChatOpenAI
 
+class BudgetExceededError(Exception):
+    pass
+
+# Prices in comments are USD/1M input tokens, list as of Jun 2026 — verify before relying on them.
 MODELS = {
-    "fast": ChatOpenAI(model="gpt-4o-mini", temperature=0),     # $0.15/1M in
-    "smart": ChatOpenAI(model="gpt-5", temperature=0),          # $2.50/1M in
-    "reasoning": ChatOpenAI(model="o1", temperature=1),          # $15/1M in
+    "fast": ChatOpenAI(model="gpt-5-nano", temperature=0),    # cheapest tier — classification, routing
+    "smart": ChatOpenAI(model="gpt-5", temperature=0),        # ~$1.25/1M in — general work
+    "reasoning": ChatOpenAI(model="o3"),                       # ~$2/1M in — multi-step logic/math (no temperature)
 }
 
 def select_model(task_type: str, input_length: int) -> str:
@@ -1026,12 +1158,12 @@ class BudgetTracker:
     def __init__(self, daily_limit_usd: float = 10.0):
         self.daily_limit = daily_limit_usd
         self.spent_today = 0.0
-        self.last_reset = datetime.now().date()
+        self.last_reset = datetime.now(timezone.utc).date()
 
     def check_budget(self, estimated_cost: float) -> bool:
-        if datetime.now().date() > self.last_reset:
+        if datetime.now(timezone.utc).date() > self.last_reset:
             self.spent_today = 0.0
-            self.last_reset = datetime.now().date()
+            self.last_reset = datetime.now(timezone.utc).date()
         if self.spent_today + estimated_cost > self.daily_limit:
             raise BudgetExceededError(f"Daily budget ${self.daily_limit} exceeded")
         return True

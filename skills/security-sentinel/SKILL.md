@@ -1,11 +1,11 @@
 ---
 name: security-sentinel
-description: "Runtime threat intelligence — URL/phishing scans, wallet scam detection, domain reputation, email header validation, smart-contract risk lookups. Use when a user/agent needs to vet an unknown link, address, or sender. Paired with security-hardening (defensive code) and security-pentester (offensive testing); for VirusTotal specifics see `virustotal`."
+description: "Runtime threat intel — URL/phishing scans, wallet scam detection, domain reputation, email-header validation, smart-contract risk, calibrated multi-source scoring. Use when an agent must vet an unknown link, address, contract, or sender before trusting it. Siblings: security-hardening, security-pentester, virustotal."
 ---
 
 # Security Sentinel
 
-> Disambiguation: this skill = runtime threat intel. For defensive code patterns see `security-hardening`. For active offensive testing see `security-pentester`. For VirusTotal API specifics see `virustotal`.
+> Disambiguation: this skill = runtime threat intel. For defensive code patterns see `security-hardening`. For active offensive testing see `security-pentester`. For deep VirusTotal API workflows see the optional `virustotal` skill (this skill works standalone without it).
 
 Autonomous threat detection and response. Scan URLs, wallets, domains, emails, and contracts before trusting them.
 
@@ -44,7 +44,8 @@ Final severity = highest severity across all matched checks.
 # VirusTotal URL scan
 vt url "https://example.com" --include=last_analysis_stats,reputation
 
-# Google Safe Browsing (via API)
+# Google Safe Browsing — v4 threatMatches:find still works until 2027-03-31.
+# Migrate to v5 (real-time SearchHashes / hash-prefix lookups) for new builds; see §9.
 curl -s "https://safebrowsing.googleapis.com/v4/threatMatches:find?key=$GSB_API_KEY" \
   -d '{
     "threatInfo": {
@@ -73,24 +74,66 @@ Check URLs against these red flags:
 
 ### Typosquatting Detection
 
-```python
-# Levenshtein distance check against known brands
-from difflib import SequenceMatcher
+A correct check must (1) decode punycode (`xn--`) to catch IDN homograph attacks, (2) fold Unicode confusables to their ASCII skeleton (so `раура1.com` with Cyrillic letters collapses onto `paypal`), and (3) compare the **eTLD+1** (registrable domain), not `split('.')[0]` — otherwise `paypal.com.evil.ru` and `paypal.attacker.io` slip through, and multi-label brands like `co.uk` confuse the base extraction. Compare both the edit-distance ratio AND an exact skeleton match (skeleton match = almost certainly malicious).
 
-KNOWN_BRANDS = [
+```python
+# pip install tldextract idna confusable_homoglyphs
+from difflib import SequenceMatcher
+import idna, tldextract
+from confusable_homoglyphs import confusables
+
+KNOWN_BRANDS = [  # store as registrable domains (eTLD+1)
     "google.com", "facebook.com", "paypal.com", "amazon.com",
     "microsoft.com", "apple.com", "netflix.com", "coinbase.com",
-    "binance.com", "metamask.io", "uniswap.org", "opensea.io"
+    "binance.com", "metamask.io", "uniswap.org", "opensea.io",
 ]
+# Fold a label to its ASCII/Latin "skeleton" so cross-script lookalikes collapse onto
+# their Latin form. We pass preferred_aliases=['latin'] so is_confusable() returns the
+# LATIN homoglyph of a non-Latin char (e.g. Cyrillic 'а' U+0430 -> 'a'); pure-ASCII chars
+# return False and pass through unchanged.
+def skeleton(s: str) -> str:
+    out = []
+    for ch in s:
+        try:
+            m = confusables.is_confusable(ch, greedy=True, preferred_aliases=["latin"])
+        except Exception:
+            m = False
+        if m and m[0].get("homoglyphs"):
+            out.append(m[0]["homoglyphs"][0]["c"])  # Latin canonical form
+        else:
+            out.append(ch)
+    return "".join(out).lower()
 
-def check_typosquat(domain: str, threshold: float = 0.8) -> list:
+BRAND_SKELETONS = {b: skeleton(tldextract.extract(b).domain) for b in KNOWN_BRANDS}
+
+def registrable(domain: str) -> str:
+    """Decode punycode, return eTLD+1 (handles co.uk, .com.br, etc.)."""
+    try:
+        domain = idna.decode(domain.encode("ascii")) if "xn--" in domain else domain
+    except idna.IDNAError:
+        pass
+    ext = tldextract.extract(domain.lower())
+    return f"{ext.domain}.{ext.suffix}" if ext.suffix else ext.domain
+
+def check_typosquat(domain: str, threshold: float = 0.85) -> list:
     alerts = []
-    domain_base = domain.split('.')[0].lower()
+    reg = registrable(domain)            # e.g. paypal.com.evil.ru -> evil.ru
+    label = tldextract.extract(reg).domain
+    label_skel = skeleton(label)
+    for brand, brand_skel in BRAND_SKELETONS.items():
+        if reg == brand:
+            continue
+        if label_skel == brand_skel:     # confusable/homoglyph hit
+            alerts.append(f"CRITICAL: '{domain}' confusable-matches '{brand}' (homoglyph skeleton)")
+            continue
+        ratio = SequenceMatcher(None, label, tldextract.extract(brand).domain).ratio()
+        if ratio >= threshold:
+            alerts.append(f"'{domain}' (reg: {reg}) resembles '{brand}' (similarity: {ratio:.0%})")
+    # brand name present but NOT the registrable domain → impersonation in a subdomain/path host
     for brand in KNOWN_BRANDS:
-        brand_base = brand.split('.')[0].lower()
-        ratio = SequenceMatcher(None, domain_base, brand_base).ratio()
-        if ratio >= threshold and domain != brand:
-            alerts.append(f"'{domain}' resembles '{brand}' (similarity: {ratio:.0%})")
+        bl = tldextract.extract(brand).domain
+        if bl in domain.lower() and registrable(domain) != brand:
+            alerts.append(f"HIGH: '{brand}' label appears in '{domain}' but it is not {brand}")
     return alerts
 ```
 
@@ -101,24 +144,52 @@ def check_typosquat(domain: str, threshold: float = 0.8) -> list:
 ### Before Transacting
 
 ```bash
-# Check address against known scam databases
-# ChainAbuse API
-curl -s "https://api.chainabuse.com/v0/addresses/$ADDRESS" \
-  -H "Authorization: Bearer $CHAINABUSE_API_KEY"
+# 1) Chainabuse — community scam reports (Public API v1.2; verify at docs.chainabuse.com)
+# Endpoint: GET /v0/reports (the "/v0/addresses/{addr}" path is gone). Screen by ?address=&chain=.
+# Auth: HTTP Basic — put the SAME API key in BOTH the username and password fields.
+#   "Authorization: Basic base64(API_KEY:API_KEY)" — curl -u does this for you.
+# chain ∈ {ETH, BTC, TRON, SOL, POLYGON, BSC, ARBITRUM, BASE, ...}
+curl -s -u "$CHAINABUSE_API_KEY:$CHAINABUSE_API_KEY" \
+  "https://api.chainabuse.com/v0/reports?address=$ADDRESS&chain=ETH&perPage=50"
+# Interpret the JSON: each item has `category` (PHISHING, RUG_PULL, SCAM, RANSOMWARE,
+# SEXTORTION, ...), `checked` (moderator-verified), `trustedReporter` (vetted source),
+# `createdAt`, and `addresses[]`. Treat checked OR trustedReporter reports as high-signal;
+# unverified single reports as Suspicious, not Malicious. NOTE: standard free keys are
+# capped at ~10 calls/month (1 call = up to 50 reports) — cache aggressively (see §8).
 
-# Etherscan labels (free)
-curl -s "https://api.etherscan.io/api?module=account&action=txlist&address=$ADDRESS&startblock=0&endblock=99999999&page=1&offset=1&apikey=$ETHERSCAN_API_KEY"
+# 2) OFAC / sanctions screening. Chainabuse is DEPRECATING its sanctions endpoint; use a
+#    sanctions oracle instead. On-chain: Chainalysis free Sanctions Oracle (read isSanctioned).
+#    Off-chain: TRM / Chainalysis sanctions API, or match against the OFAC SDN crypto list.
+#    Mainnet oracle 0x40C57923924B5c5c5455c48D93317139ADDaC8fb — call isSanctioned(address).
+#    (Same address on Polygon/BSC; verify at go.chainalysis.com/chainalysis-oracle-docs.html)
+cast call 0x40C57923924B5c5c5455c48D93317139ADDaC8fb \
+  "isSanctioned(address)(bool)" "$ADDRESS" --rpc-url "$ETH_RPC_URL"
+
+# 3) Etherscan V2 (multichain, single key). V1 was deprecated in 2025 — V2 REQUIRES chainid.
+#    Base URL: https://api.etherscan.io/v2/api   (chainid 1=ETH, 8453=Base, 42161=Arbitrum,
+#    137=Polygon, 56=BSC, 10=Optimism). Same key works on all 50+ supported chains.
+
+# Activity / age signal — does the address have history, or is it freshly funded?
+curl -s "https://api.etherscan.io/v2/api?chainid=1&module=account&action=txlist&address=$ADDRESS&startblock=0&endblock=99999999&page=1&offset=10&sort=asc&apikey=$ETHERSCAN_API_KEY"
+
+# Public name tag / label (e.g. "Phish/Hack", "Fake_Phishing", exchange labels)
+curl -s "https://api.etherscan.io/v2/api?chainid=1&module=nametag&action=getaddresstag&address=$ADDRESS&apikey=$ETHERSCAN_API_KEY"
+
+# Is the address a verified contract? (unverified source on a "token" = elevated risk)
+curl -s "https://api.etherscan.io/v2/api?chainid=1&module=contract&action=getsourcecode&address=$ADDRESS&apikey=$ETHERSCAN_API_KEY"
 ```
 
 ### Scam Wallet Red Flags
 
 | Signal | Risk Level | What to Check |
 |--------|-----------|---------------|
-| Address reported on ChainAbuse | Critical | Direct scam reports from victims |
-| OFAC/SDN sanctioned address | Critical | US Treasury sanctions list |
+| Chainabuse report, `checked` or `trustedReporter` | Critical | Moderator-verified / vetted-source scam report |
+| Chainabuse report, single unverified | Suspicious | One unverified victim report — corroborate, don't auto-block |
+| OFAC/SDN sanctioned address | Critical | Sanctions oracle `isSanctioned` / SDN crypto list |
+| Etherscan name tag = `Phish/Hack` or `Fake_Phishing` | Critical | Explorer-applied malicious label |
 | Tornado Cash interaction | Context-dependent | See mixer assessment below |
 | High-frequency small txs | Medium | Dust attack / address poisoning pattern |
-| Contract with no verified source | Medium | Etherscan/Basescan verification status |
+| Contract with no verified source | Medium | Etherscan `getsourcecode` returns empty `SourceCode` |
 | Recently created + high value received | High | Potential rug pull collection wallet |
 
 ### Address Poisoning Detection
@@ -205,7 +276,8 @@ curl -s "https://api.honeypot.is/v2/IsHoneypot?address=$TOKEN_ADDRESS&chainID=1"
 # Check SPF record
 dig TXT example.com | grep "v=spf1"
 
-# Check DKIM selector
+# Check DKIM selector (replace "selector" with the real one from the email's
+# DKIM-Signature header s= tag — common defaults: google, default, k1, s1)
 dig TXT selector._domainkey.example.com
 
 # Check DMARC policy
@@ -246,24 +318,37 @@ If DMARC policy = none → LOW protection (monitoring only, not enforcing)
 # Check domain registration age
 whois example.com | grep -i "creation date"
 
-# Risk thresholds:
-# < 7 days    → CRITICAL (almost certainly malicious for financial/brand domains)
-# < 30 days   → HIGH
-# < 90 days   → MEDIUM (could be legitimate startup)
-# > 1 year    → LOW (domain age alone is not sufficient)
+# Age is a RISK MULTIPLIER, never a verdict on its own. Legitimate new domains exist:
+# product launches, marketing campaigns, startups, and incident-response/takedown domains
+# are routinely days old. Weight age UP only when combined with another signal (typosquat,
+# a credential/login or "connect wallet" page, or a threat-intel hit — see §6 STEP 2/3).
+# < 7 days    → strong risk signal; CRITICAL only if it ALSO impersonates a brand or
+#               collects credentials/funds. Bare new domain = elevated, not confirmed-bad.
+# < 30 days   → HIGH contribution to score
+# < 90 days   → MEDIUM (commonly a legitimate startup or campaign)
+# > 1 year    → LOW (age is reassuring but not proof — aged domains get hijacked too)
 ```
 
 ### SSL/TLS Assessment
 
 ```bash
 # Check certificate details
-echo | openssl s_client -connect example.com:443 2>/dev/null | openssl x509 -text -noout
+echo | openssl s_client -connect example.com:443 -servername example.com 2>/dev/null \
+  | openssl x509 -text -noout
+```
 
-# Key checks:
-# - Issuer: Let's Encrypt = free (not inherently bad, but scammers use it)
-# - Subject Alternative Names: does it cover expected domains?
-# - Expiry: very short cert rotation could indicate automation abuse
-# - Self-signed: CRITICAL for any production site
+```
+Key checks (TLS is weak signal for malice — calibrate to context):
+- Issuer: free CAs (Let's Encrypt, ZeroSSL, Google Trust) are the norm now, NOT a red flag.
+- Subject / SAN: does CN/SAN actually cover the host? A mismatch or a wildcard that does
+  not include the brand it claims to be = real signal.
+- Validity window: SHORT-LIVED CERTS ARE NORMAL in 2026 (ACME automation; the CA/Browser
+  Forum is driving max lifetimes toward ~47 days by 2029). Do NOT flag short rotation as
+  abuse. A LONG-lived cert with a brand mismatch is more suspicious than a fresh ACME cert.
+- Self-signed / private CA: expected for internal, *.internal, RFC-1918, and corp-PKI hosts
+  — DOWN-weight there (see §6 STEP 3). Treat as a real problem ONLY on a PUBLIC site that
+  presents itself as a bank/exchange/brand or collects credentials, where a browser would
+  show a trust error. Combine with the host's public reputation before concluding.
 ```
 
 ### DNS Anomalies
@@ -288,42 +373,87 @@ dig TXT example.com +short        # SPF, verification records
 ### IOC Enrichment
 
 ```bash
-# AbuseIPDB — check IP reputation
-curl -s "https://api.abuseipdb.com/api/v2/check?ipAddress=1.2.3.4&maxAgeInDays=90" \
+# AbuseIPDB — check IP reputation (use a placeholder IP; never hardcode a real target)
+curl -s "https://api.abuseipdb.com/api/v2/check?ipAddress=203.0.113.10&maxAgeInDays=90" \
   -H "Key: $ABUSEIPDB_API_KEY" \
   -H "Accept: application/json"
 
-# PhishTank — check known phishing URLs
-curl -s "https://checkurl.phishtank.com/checkurl/" \
-  -d "url=https://suspicious.example.com&format=json&app_key=$PHISHTANK_API_KEY"
+# OpenPhish — current phishing-URL feed (PhishTank's public API is deprecated; see §9).
+# Free community feed, no key; refreshed frequently. Match the target against the feed.
+curl -s "https://openphish.com/feed.txt" | grep -Fxq "https://suspicious.example.com" \
+  && echo "OPENPHISH: listed (high-confidence phishing)" || echo "OPENPHISH: not listed"
 
-# OTX AlienVault — threat indicators
+# OTX AlienVault — threat indicators (free, key required)
 curl -s "https://otx.alienvault.com/api/v1/indicators/domain/example.com/general" \
   -H "X-OTX-API-KEY: $OTX_API_KEY"
 ```
 
-### Threat Intelligence Decision Matrix
+### Threat Intelligence Decision (calibrated, not a naive sum)
+
+Summing heterogeneous vendor weights and blocking at a fixed threshold produces
+false blocks (e.g. a year-old AbuseIPDB note + a 0.5 OTX prior would "block" a clean
+target). Use this ordered decision procedure instead. Run it AFTER the allowlist gate.
 
 ```
-Each source has a confidence weight:
-- VirusTotal (multi-engine):  weight = engines_flagging / total_engines (0.0–1.0)
-- Google Safe Browsing:       weight = 0.9 (high-confidence source)
-- AbuseIPDB:                  weight = reported_confidence / 100
-- PhishTank (community):      weight = 0.6 if verified, 0.3 if unverified
-- OTX AlienVault:             weight = 0.5
+STEP 0 — Known-good gate (prevents the worst false positives):
+  - Target is an org-maintained allowlist entry (your own domains/contracts)? → CLEAN, stop.
+  - Domain on a major reputable list (e.g. Tranco/Cisco-Umbrella top ~10k) AND not
+    flagged by any AUTHORITATIVE source below? → CLEAN, lower the weight of weak signals.
 
-Scoring (sum of weights from all sources):
-- Combined weight = 0         → CLEAN
-- Combined weight < 0.5       → LOW CONFIDENCE (note in output, proceed with caution)
-- Combined weight 0.5–1.49    → SUSPICIOUS (warn user, provide source details)
-- Combined weight >= 1.5      → MALICIOUS (block and explain)
+STEP 1 — Authoritative override (any ONE ⇒ verdict immediately):
+  - Google Safe Browsing v5 match (MALWARE / SOCIAL_ENGINEERING / UNWANTED) → MALICIOUS.
+  - OpenPhish / verified Chainabuse (checked|trustedReporter) listing → MALICIOUS.
+  - OFAC/SDN sanctioned address → MALICIOUS (legal, not heuristic).
+  - VirusTotal ≥ 5 engines flagging, OR ≥ 3 reputable engines agreeing → MALICIOUS.
+  These are high-precision; a single hit is sufficient. Do NOT average them away.
 
-IMPORTANT:
-- NEVER dismiss a single source automatically — a VirusTotal result with 30+
-  engine flags (weight >= 0.4) is a strong signal on its own
-- New threats often start with only one vendor detecting them
-- Check the specific threat type (phishing vs malware vs adware)
-- Recent reports carry more weight than old ones
+STEP 2 — Corroboration tier (needs ≥ 2 independent signals OR 1 strong + recency):
+  Score each source, then require AGREEMENT rather than a raw sum:
+    VirusTotal      = engines_flagging / total_engines        (1–4 engines = weak)
+    AbuseIPDB       = abuseConfidenceScore/100, ×0.5 if newest report > 90d old
+    OTX pulses      = 0.4 (prior/context only — never decisive alone)
+    Chainabuse      = 0.8 if checked|trusted else 0.3 (unverified)
+    Domain age      = +0.3 if eTLD+1 < 30d (see §5 — age alone is NOT proof)
+    Typosquat hit   = skeleton match 0.9 / edit-distance 0.5 (see §1)
+  - ≥ 2 independent sources each ≥ 0.4  → SUSPICIOUS (warn, show every source).
+  - 1 source ≥ 0.4 AND report age < 7d  → SUSPICIOUS (fresh single-vendor signal).
+  - exactly 1 weak source (< 0.4)        → LOW-CONFIDENCE note, proceed with caution.
+  - 0 signals                             → CLEAN.
+
+STEP 3 — Target-category weighting:
+  - Money-moving target (wallet, contract, "connect wallet"/login page) → escalate one
+    band on uncertainty (SUSPICIOUS→treat as block-worthy until confirmed).
+  - Internal/private host (RFC-1918, .internal, corp CA) → DOWN-weight TLS/age/self-signed
+    heuristics; private PKI and fresh certs are normal there.
+
+STEP 4 — False-positive escalation (before blocking anything high-impact):
+  - Conflict (authoritative CLEAN vs heuristic MALICIOUS)? Surface BOTH, do not auto-block;
+    ask the user or require a second authoritative source.
+  - Always record: source name, exact verdict field, report timestamp, and your confidence.
+    New threats often start with one vendor — log uncertainty, never fabricate corroboration.
+```
+
+### Output Templates (evidence, source, timestamp, uncertainty — always)
+
+```
+CLEAN
+  ✅ <target> — no threats found.
+  Checked: VirusTotal (0/72), Google Safe Browsing v5 (no match), Chainabuse (0 reports).
+  Sources current as of <ISO-8601 ts>. Absence of reports ≠ proof of safety.
+
+SUSPICIOUS
+  ⚠️  <target> — proceed with caution. Confidence: MEDIUM.
+  Evidence:
+    • VirusTotal: 3/72 engines (Fortinet, Sophos, Kaspersky) flag "phishing" [scanned <ts>]
+    • Domain age: registered 5 days ago (eTLD+1 <reg-domain>)
+  No authoritative source confirms. Recommend not entering credentials/funds until verified.
+
+MALICIOUS
+  🛑 <target> — BLOCKED. Confidence: HIGH.
+  Authoritative match:
+    • Google Safe Browsing v5: SOCIAL_ENGINEERING [<ts>]
+    • Chainabuse: 4 reports, category RUG_PULL, moderator-checked [oldest <ts>]
+  Action taken: <blocked tx / blocked navigation>. Alternative: <safe path>.
 ```
 
 ---
@@ -353,13 +483,14 @@ File download from external      → VirusTotal file hash check   Every time
 1. PHISHING DETECTED
    → Block URL in security headers (CSP)
    → Notify affected users
-   → Report to PhishTank/Google Safe Browsing
+   → Report it: Google Safe Browsing (safebrowsing.google.com/safebrowsing/report_phish),
+     APWG (reportphishing@apwg.org), and the impersonated brand's abuse contact
    → Check if credentials were entered → force password reset
 
 2. SCAM WALLET DETECTED
    → Block transaction
    → Warn user with specific evidence
-   → Report to ChainAbuse
+   → Report to Chainabuse (chainabuse.com/report)
    → Check transaction history for prior interactions
 
 3. COMPROMISED DOMAIN DETECTED
@@ -399,28 +530,33 @@ Cache scan results to preserve API quota and avoid redundant checks:
 
 ### Free Tier APIs
 
-| Service | Free Limit | Best For | Notes |
+Free-tier terms change — figures below are "as of Jun 2026, verify at the linked page."
+
+| Service | Free Limit (verify) | Best For | Notes |
 |---------|-----------|----------|-------|
-| VirusTotal | 4/min, 500/day | URL, file, domain, IP scans | |
-| AbuseIPDB | 1,000/day | IP reputation | |
-| PhishTank | Deprecated | Known phishing URL check | API access restricted; use as supplementary source only if legacy key available |
-| OpenPhish | Community feed, updated every 12h | Phishing URL feed | Free, no API key needed — recommended PhishTank replacement |
-| OTX AlienVault | Unlimited | Threat indicators, IOCs | |
-| Google Safe Browsing | 10,000/day | URL safety check | |
-| Etherscan | 5/sec | Contract verification, tx history | |
-| Honeypot.is | Unlimited | Token honeypot detection | |
-| WHOIS (CLI) | ~30-50/min per registrar | Domain age and registrar | Rate varies by TLD server; implement backoff on failures |
+| VirusTotal (v3) | 4/min, 500/day, 15.5k/month | URL, file, domain, IP scans | Public API; verify docs.virustotal.com/reference/public-vs-premium-api |
+| AbuseIPDB | ~1,000 checks/day | IP reputation | verify abuseipdb.com/pricing |
+| PhishTank | Deprecated | — | Public API restricted; do not rely on it. Use OpenPhish instead |
+| OpenPhish | Community feed | Phishing URL feed | Free, no key; `openphish.com/feed.txt`. PhishTank replacement |
+| OTX AlienVault | Free, key required | Threat indicators, IOCs | "Unlimited" no longer guaranteed — verify otx.alienvault.com |
+| Google Safe Browsing v5 | Free, default quota (raise via Cloud Console) | URL safety check | v4 ends 2027-03-31; migrate to v5. No published hard 10k/day cap |
+| Etherscan API V2 | ~5 req/sec, ~100k/day | Multichain contract/tx/label lookups | One key, 50+ chains via `chainid`; verify etherscan.io/apis |
+| Chainabuse (Public API v1.2) | ~10 calls/month (≤50 reports each) | Crypto scam reports | Basic auth; very low free quota — cache hard. docs.chainabuse.com |
+| Honeypot.is | Generous free tier | Token honeypot detection | verify honeypot.is |
+| WHOIS / RDAP (CLI) | ~30-50/min per registrar | Domain age and registrar | RDAP is the modern replacement for port-43 WHOIS; backoff on failures |
 
 ### Environment Variables
 
 ```bash
-VT_API_KEY=          # VirusTotal
-GSB_API_KEY=         # Google Safe Browsing
+VT_API_KEY=          # VirusTotal (v3 public API)
+GSB_API_KEY=         # Google Safe Browsing (v5; v4 sunsets 2027-03-31)
 ABUSEIPDB_API_KEY=   # AbuseIPDB
-PHISHTANK_API_KEY=   # PhishTank (deprecated — optional, legacy keys only)
 OTX_API_KEY=         # AlienVault OTX
-ETHERSCAN_API_KEY=   # Etherscan (or Basescan, etc.)
-CHAINABUSE_API_KEY=  # ChainAbuse
+ETHERSCAN_API_KEY=   # Etherscan API V2 — single key covers all chains via chainid
+ETH_RPC_URL=         # JSON-RPC endpoint (for cast calls, e.g. the sanctions oracle)
+CHAINABUSE_API_KEY=  # Chainabuse v1.2 — same key used as BOTH Basic-auth user AND password
+# PhishTank removed: public API deprecated; OpenPhish needs no key (see §6).
+# Never commit real keys — use a .env file or secrets manager; rotate if exposed.
 ```
 
 ### Graceful Degradation

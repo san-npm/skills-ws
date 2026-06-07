@@ -1,6 +1,6 @@
 ---
 name: aws-production-deploy
-description: "Production AWS infrastructure with Terraform/CDK: VPC, ECS Fargate, RDS, CloudFront, CI/CD, monitoring, and security hardening."
+description: "Production AWS infra-as-code in Terraform & CDK: 3-tier VPC, ECS Fargate, Aurora, CloudFront/S3/WAF, OIDC CI/CD, monitoring, security hardening. Use when deploying a web app to AWS for production, writing/reviewing Terraform or CDK, setting up GitHub Actions OIDC deploys, or hardening an AWS account (remote state, GuardDuty, KMS, IAM)."
 ---
 
 # AWS Production Deploy
@@ -138,7 +138,10 @@ resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 }
 
-# One NAT per AZ for production HA. Single NAT for dev to save ~$100/mo.
+# One NAT per AZ for production HA (cross-AZ NAT is a single point of failure
+# AND incurs cross-AZ data charges). Single NAT for dev cuts the per-NAT hourly
+# fee — roughly one gateway's hourly + data cost; verify current NAT Gateway
+# pricing for your region at https://aws.amazon.com/vpc/pricing/.
 resource "aws_eip" "nat" {
   count  = var.environment == "production" ? var.az_count : 1
   domain = "vpc"
@@ -260,7 +263,13 @@ resource "aws_iam_role_policy" "task" {
     Version = "2012-10-17"
     Statement = [
       { Effect = "Allow", Action = ["s3:GetObject","s3:PutObject"], Resource = ["arn:aws:s3:::${var.project}-${var.environment}-uploads/*"] },
-      { Effect = "Allow", Action = ["xray:PutTraceSegments","xray:PutTelemetryRecords"], Resource = ["*"] }
+      { Effect = "Allow", Action = ["xray:PutTraceSegments","xray:PutTelemetryRecords"], Resource = ["*"] },
+      # Required for ECS Exec (enable_execute_command below). Without these four
+      # SSM Messages actions on the TASK role, `aws ecs execute-command` fails with
+      # "execute command failed because execute command was not enabled".
+      { Effect = "Allow",
+        Action = ["ssmmessages:CreateControlChannel","ssmmessages:CreateDataChannel","ssmmessages:OpenControlChannel","ssmmessages:OpenDataChannel"],
+        Resource = ["*"] }
     ]
   })
 }
@@ -353,7 +362,10 @@ resource "aws_lb_listener" "http_redirect" {
   default_action { type = "redirect"; redirect { port = "443"; protocol = "HTTPS"; status_code = "HTTP_301" } }
 }
 
-# Blue/Green target groups for zero-downtime deploys
+# --- Two target groups for CodeDeploy blue/green ---
+# CodeDeploy swaps the production listener between these two groups. Both must
+# exist up front; the running service is attached to exactly one at a time and
+# CodeDeploy shifts traffic to the other on each deploy.
 resource "aws_lb_target_group" "blue" {
   name_prefix          = "blue-"
   port                 = var.container_port
@@ -376,7 +388,34 @@ resource "aws_lb_target_group" "green" {
   lifecycle { create_before_destroy = true }
 }
 
-# ECS Service with circuit breaker auto-rollback
+# Test listener on :8443 — lets CodeDeploy validate the green stack before it
+# receives production traffic. Reuse the prod cert or a separate test cert.
+resource "aws_lb_listener" "test" {
+  load_balancer_arn = aws_lb.main.arn
+  port              = 8443
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+  certificate_arn   = var.certificate_arn
+  default_action { type = "forward"; target_group_arn = aws_lb_target_group.green.arn }
+  lifecycle { ignore_changes = [default_action] }
+}
+
+# Allow the test-listener port through the ALB and into the tasks.
+resource "aws_security_group_rule" "alb_test_ingress" {
+  type              = "ingress"
+  security_group_id = aws_security_group.alb.id
+  from_port         = 8443
+  to_port           = 8443
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+}
+
+# ECS Service — CodeDeploy-controlled blue/green with auto-rollback.
+# NOTE: deployment_controller = CODE_DEPLOY is INCOMPATIBLE with the ECS
+# deployment_circuit_breaker / deployment_configuration blocks; rollback is
+# configured on the CodeDeploy deployment group instead (see section 2a). If you
+# prefer plain ECS rolling deploys, swap to the variant in section 2b — do NOT
+# mix the two.
 resource "aws_ecs_service" "app" {
   name            = "${var.project}-${var.environment}"
   cluster         = aws_ecs_cluster.main.id
@@ -384,6 +423,8 @@ resource "aws_ecs_service" "app" {
   desired_count   = var.desired_count
   launch_type     = "FARGATE"
   enable_execute_command = true
+
+  deployment_controller { type = "CODE_DEPLOY" }
 
   network_configuration {
     subnets          = var.private_subnet_ids
@@ -397,9 +438,8 @@ resource "aws_ecs_service" "app" {
     container_port   = var.container_port
   }
 
-  deployment_configuration { maximum_percent = 200; minimum_healthy_percent = 100 }
-  deployment_circuit_breaker { enable = true; rollback = true }
-
+  # CodeDeploy mutates task_definition and load_balancer on each deploy; ignore
+  # them so Terraform does not fight CodeDeploy.
   lifecycle { ignore_changes = [task_definition, load_balancer] }
 }
 
@@ -435,12 +475,108 @@ resource "aws_appautoscaling_policy" "requests" {
   target_tracking_scaling_policy_configuration {
     predefined_metric_specification {
       predefined_metric_type = "ALBRequestCountPerTarget"
-      resource_label         = "${aws_lb.main.arn_suffix}/${aws_lb_target_group.blue.arn_suffix}"
+      # With CodeDeploy blue/green the live target group alternates blue<->green,
+      # so per-target request scaling is approximate right after a deploy. If you
+      # need exact request-based scaling under blue/green, prefer a CPU/memory
+      # target (above) or a custom CloudWatch metric on the ALB request count.
+      resource_label = "${aws_lb.main.arn_suffix}/${aws_lb_target_group.blue.arn_suffix}"
     }
     target_value = 1000; scale_in_cooldown = 300; scale_out_cooldown = 60
   }
 }
 ```
+
+### 2a. CodeDeploy blue/green resources
+
+These complete the blue/green deploy the service above declares. CodeDeploy needs an app, a deployment group bound to the ECS service + ALB listeners + both target groups, and an IAM role. The `AppSpec` and the GitHub Actions invocation are in section 5.
+
+```hcl
+# modules/ecs/codedeploy.tf
+
+resource "aws_codedeploy_app" "app" {
+  name             = "${var.project}-${var.environment}"
+  compute_platform = "ECS"
+}
+
+resource "aws_iam_role" "codedeploy" {
+  name = "${var.project}-${var.environment}-codedeploy"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{ Action = "sts:AssumeRole", Effect = "Allow", Principal = { Service = "codedeploy.amazonaws.com" } }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "codedeploy" {
+  role       = aws_iam_role.codedeploy.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSCodeDeployRoleForECS"
+}
+
+resource "aws_codedeploy_deployment_group" "app" {
+  app_name               = aws_codedeploy_app.app.name
+  deployment_group_name  = "${var.project}-${var.environment}"
+  service_role_arn       = aws_iam_role.codedeploy.arn
+  deployment_config_name = "CodeDeployDefault.ECSCanary10Percent5Minutes"
+
+  deployment_style {
+    deployment_type   = "BLUE_GREEN"
+    deployment_option = "WITH_TRAFFIC_CONTROL"
+  }
+
+  blue_green_deployment_config {
+    # Spin up the green task set, run validation, then shift traffic.
+    deployment_ready_option { action_on_timeout = "CONTINUE_DEPLOYMENT" }
+    # Keep old (blue) task set for 15 min so you can roll back instantly.
+    terminate_blue_instances_on_deployment_success {
+      action                           = "TERMINATE"
+      termination_wait_time_in_minutes = 15
+    }
+  }
+
+  auto_rollback_configuration {
+    enabled = true
+    events  = ["DEPLOYMENT_FAILURE", "DEPLOYMENT_STOP_ON_ALARM"]
+  }
+
+  ecs_service {
+    cluster_name = aws_ecs_cluster.main.name
+    service_name = aws_ecs_service.app.name
+  }
+
+  load_balancer_info {
+    target_group_pair_info {
+      prod_traffic_route { listener_arns = [aws_lb_listener.https.arn] }
+      test_traffic_route { listener_arns = [aws_lb_listener.test.arn] }
+      target_group { name = aws_lb_target_group.blue.name }
+      target_group { name = aws_lb_target_group.green.name }
+    }
+  }
+}
+
+output "ecs_cluster_name" { value = aws_ecs_cluster.main.name }
+output "ecs_service_name" { value = aws_ecs_service.app.name }
+output "codedeploy_app_name" { value = aws_codedeploy_app.app.name }
+output "codedeploy_deployment_group" { value = aws_codedeploy_deployment_group.app.deployment_group_name }
+output "alb_arn_suffix" { value = aws_lb.main.arn_suffix }
+output "alb_dns_name" { value = aws_lb.main.dns_name }
+output "ecs_security_group_id" { value = aws_security_group.ecs.id }
+```
+
+### 2b. Simpler alternative: ECS rolling deploy with circuit breaker
+
+If you do NOT need blue/green (no per-deploy test traffic, faster rollouts are fine), drop section 2a, drop the test listener, and use the standard ECS rolling controller. Pick exactly one of 2a or 2b — `CODE_DEPLOY` and the circuit-breaker block are mutually exclusive.
+
+```hcl
+# Replacement for the aws_ecs_service.app body in section 2.
+# deployment_controller defaults to ECS, so just omit it.
+  enable_execute_command             = true
+  deployment_minimum_healthy_percent = 100
+  deployment_maximum_percent         = 200
+  deployment_circuit_breaker { enable = true, rollback = true }
+  # ECS-native rolling deploys mutate the task definition, so do NOT ignore it:
+  lifecycle { ignore_changes = [] }
+```
+
+With 2b, the GitHub Actions "Deploy" step in section 5 (`aws ecs update-service --force-new-deployment`) is the correct deploy mechanism. With 2a, use the CodeDeploy step shown there instead.
 
 ---
 
@@ -467,10 +603,21 @@ resource "aws_security_group" "rds" {
   egress { from_port = 0; to_port = 0; protocol = "-1"; cidr_blocks = ["0.0.0.0/0"] }
 }
 
+# Pin a specific supported minor and pick your upgrade policy. As of Jun 2026
+# Aurora PostgreSQL supports the 14 / 15 / 16 / 17 major lines (13.x left
+# standard support Feb 2026); 16.x and 17.x carry LTS minors. Use a recent minor
+# (e.g. 16.x LTS for stability, 17.x for newest features) and let AWS apply
+# patch upgrades in the maintenance window. Verify the current minor list at
+# https://docs.aws.amazon.com/AmazonRDS/latest/AuroraPostgreSQLReleaseNotes/AuroraPostgreSQL.Updates.html
+variable "engine_version" { default = "16.8" } # LTS line; bump deliberately
+
 resource "aws_rds_cluster" "main" {
   cluster_identifier                  = "${var.project}-${var.environment}"
   engine                              = "aurora-postgresql"
-  engine_version                      = "15.4"
+  engine_version                      = var.engine_version
+  allow_major_version_upgrade         = false # set true only for a planned major upgrade
+  apply_immediately                   = false # batch changes into the maintenance window
+  preferred_maintenance_window        = "sun:05:00-sun:06:00"
   database_name                       = replace(var.project, "-", "_")
   master_username                     = "dbadmin"
   manage_master_user_password         = true
@@ -537,6 +684,34 @@ output "reader_endpoint" { value = aws_rds_cluster.main.reader_endpoint }
 ```hcl
 # modules/cdn/main.tf
 
+variable "project" { type = string }
+variable "environment" { type = string }
+variable "domain_name" { type = string }
+variable "alb_dns_name" { type = string }
+# CloudFront + CLOUDFRONT-scoped WAF certs MUST live in us-east-1. Pass an ACM
+# cert ARN from us-east-1 here (see the provider alias note below).
+variable "certificate_arn" { type = string }
+
+# CloudFront and a CLOUDFRONT-scoped WAFv2 ACL can only be created in us-east-1.
+# Declare a us-east-1 provider alias in the ROOT module and pass it to this
+# module via `providers = { aws = aws, aws.us_east_1 = aws.us_east_1 }`:
+#
+#   # root main.tf
+#   provider "aws" { region = "eu-west-1" }            # your primary region
+#   provider "aws" { alias = "us_east_1"; region = "us-east-1" }
+#   module "cdn" {
+#     source    = "./modules/cdn"
+#     providers = { aws = aws, aws.us_east_1 = aws.us_east_1 }
+#     ...
+#   }
+#
+# and require both in the module:
+terraform {
+  required_providers {
+    aws = { source = "hashicorp/aws", configuration_aliases = [aws.us_east_1] }
+  }
+}
+
 resource "aws_s3_bucket" "assets" {
   bucket = "${var.project}-${var.environment}-assets"
 }
@@ -555,6 +730,31 @@ resource "aws_cloudfront_origin_access_control" "s3" {
   signing_behavior                  = "always"
   signing_protocol                  = "sigv4"
 }
+
+# OAC requires a bucket policy granting the CloudFront SERVICE principal
+# s3:GetObject, scoped to THIS distribution via AWS:SourceArn. Without it,
+# every object 403s because public access is blocked above.
+resource "aws_s3_bucket_policy" "assets" {
+  bucket = aws_s3_bucket.assets.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid       = "AllowCloudFrontOAC"
+      Effect    = "Allow"
+      Principal = { Service = "cloudfront.amazonaws.com" }
+      Action    = "s3:GetObject"
+      Resource  = "${aws_s3_bucket.assets.arn}/*"
+      Condition = { StringEquals = { "AWS:SourceArn" = aws_cloudfront_distribution.main.arn } }
+    }]
+  })
+}
+
+# Managed cache/origin-request/response-header policies (replace legacy
+# forwarded_values). These IDs are AWS-managed and stable across accounts.
+data "aws_cloudfront_cache_policy" "caching_optimized" { name = "Managed-CachingOptimized" }
+data "aws_cloudfront_cache_policy" "caching_disabled" { name = "Managed-CachingDisabled" }
+data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" { name = "Managed-AllViewerExceptHostHeader" }
+data "aws_cloudfront_response_headers_policy" "security" { name = "Managed-SecurityHeadersPolicy" }
 
 resource "aws_cloudfront_distribution" "main" {
   enabled         = true
@@ -579,27 +779,30 @@ resource "aws_cloudfront_distribution" "main" {
     origin_access_control_id = aws_cloudfront_origin_access_control.s3.id
   }
 
-  # Static assets — immutable, 1 year cache
+  # Static assets — immutable, long cache. CachingOptimized strips cookies,
+  # compresses, and respects Cache-Control from the origin.
   ordered_cache_behavior {
-    path_pattern     = "/_next/static/*"
-    allowed_methods  = ["GET", "HEAD"]
-    cached_methods   = ["GET", "HEAD"]
-    target_origin_id = "s3-assets"
-    compress         = true
-    forwarded_values { query_string = false; cookies { forward = "none" } }
-    viewer_protocol_policy = "redirect-to-https"
-    min_ttl = 31536000; default_ttl = 31536000; max_ttl = 31536000
+    path_pattern               = "/_next/static/*"
+    allowed_methods            = ["GET", "HEAD"]
+    cached_methods             = ["GET", "HEAD"]
+    target_origin_id           = "s3-assets"
+    compress                   = true
+    viewer_protocol_policy     = "redirect-to-https"
+    cache_policy_id            = data.aws_cloudfront_cache_policy.caching_optimized.id
+    response_headers_policy_id = data.aws_cloudfront_response_headers_policy.security.id
   }
 
-  # Default — forward to ALB
+  # Default — dynamic, forward to ALB. CachingDisabled = no caching;
+  # AllViewerExceptHostHeader forwards query strings, cookies, and headers
+  # (minus Host, which must resolve to the ALB origin).
   default_cache_behavior {
-    allowed_methods        = ["DELETE","GET","HEAD","OPTIONS","PATCH","POST","PUT"]
-    cached_methods         = ["GET","HEAD"]
-    target_origin_id       = "alb"
-    viewer_protocol_policy = "redirect-to-https"
-    compress               = true
-    forwarded_values { query_string = true; headers = ["Host","Authorization","Accept"]; cookies { forward = "all" } }
-    min_ttl = 0; default_ttl = 0; max_ttl = 0
+    allowed_methods          = ["DELETE","GET","HEAD","OPTIONS","PATCH","POST","PUT"]
+    cached_methods           = ["GET","HEAD"]
+    target_origin_id         = "alb"
+    viewer_protocol_policy    = "redirect-to-https"
+    compress                  = true
+    cache_policy_id           = data.aws_cloudfront_cache_policy.caching_disabled.id
+    origin_request_policy_id  = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
   }
 
   viewer_certificate {
@@ -611,11 +814,13 @@ resource "aws_cloudfront_distribution" "main" {
   restrictions { geo_restriction { restriction_type = "none" } }
 }
 
-# WAF — rate limiting + OWASP managed rules
+# WAF — rate limiting + OWASP managed rules.
+# A CLOUDFRONT-scoped WAFv2 ACL MUST be created in us-east-1, hence the aliased
+# provider declared in the module header above.
 resource "aws_wafv2_web_acl" "main" {
-  name  = "${var.project}-${var.environment}"
-  scope = "CLOUDFRONT"
-  provider = aws.us-east-1
+  provider = aws.us_east_1
+  name     = "${var.project}-${var.environment}"
+  scope    = "CLOUDFRONT"
 
   default_action { allow {} }
 
@@ -672,7 +877,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: npm }
+        # Use a current Active LTS. Node 22 is Active LTS through 2026; Node 24
+        # entered LTS in late 2025. Node 20 is in maintenance — avoid for new
+        # services. Match this to the runtime in your Dockerfile.
+        with: { node-version: 22, cache: npm }
       - run: npm ci && npm test && npm run lint && npm run typecheck
 
   deploy:
@@ -702,34 +910,76 @@ jobs:
           docker push $ECR_REGISTRY/myapp:latest
           echo "image=$ECR_REGISTRY/myapp:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
+      # Requires a `myapp-production-migrate` task definition with a `migrate`
+      # container that has DATABASE_URL injected as an ECS secret (valueFrom the
+      # same Secrets Manager secret as the app) and the SAME task/execution roles
+      # as the app. Register it in Terraform (a second aws_ecs_task_definition with
+      # the migrate command), or reuse the app task def and only override the
+      # command as below. SUBNETS/SG secrets must each be a JSON-array-safe,
+      # COMMA-separated list with NO spaces, e.g. subnet-aaa,subnet-bbb — the CLI
+      # parses subnets=[a,b]. Quote them if a single value to avoid shell globbing.
       - name: Run migrations
-        run: |
-          TASK_ARN=$(aws ecs run-task --cluster myapp-production \
-            --task-definition myapp-production-migrate --launch-type FARGATE \
-            --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$SG],assignPublicIp=DISABLED}" \
-            --overrides '{"containerOverrides":[{"name":"migrate","command":["npx","prisma","migrate","deploy"]}]}' \
-            --query 'tasks[0].taskArn' --output text)
-          aws ecs wait tasks-stopped --cluster myapp-production --tasks $TASK_ARN
-          EXIT=$(aws ecs describe-tasks --cluster myapp-production --tasks $TASK_ARN \
-            --query 'tasks[0].containers[0].exitCode' --output text)
-          [ "$EXIT" = "0" ] || exit 1
         env:
+          # comma-separated, no spaces: "subnet-aaa,subnet-bbb,subnet-ccc"
           SUBNETS: ${{ secrets.PRIVATE_SUBNET_IDS }}
           SG: ${{ secrets.ECS_SECURITY_GROUP_ID }}
-
-      - name: Deploy
         run: |
+          set -euo pipefail
+          NETCFG="awsvpcConfiguration={subnets=[${SUBNETS}],securityGroups=[${SG}],assignPublicIp=DISABLED}"
+          TASK_ARN=$(aws ecs run-task --cluster myapp-production \
+            --task-definition myapp-production-migrate --launch-type FARGATE \
+            --network-configuration "$NETCFG" \
+            --overrides '{"containerOverrides":[{"name":"migrate","command":["npx","prisma","migrate","deploy"]}]}' \
+            --query 'tasks[0].taskArn' --output text)
+          aws ecs wait tasks-stopped --cluster myapp-production --tasks "$TASK_ARN"
+          EXIT=$(aws ecs describe-tasks --cluster myapp-production --tasks "$TASK_ARN" \
+            --query 'tasks[0].containers[?name==`migrate`].exitCode | [0]' --output text)
+          [ "$EXIT" = "0" ] || { echo "migration exited $EXIT"; exit 1; }
+
+      # Register the new task-definition revision (shared by both deploy styles).
+      - name: Register task definition
+        id: taskdef
+        run: |
+          set -euo pipefail
           TASK_DEF=$(aws ecs describe-task-definition --task-definition myapp-production --query 'taskDefinition')
-          NEW_DEF=$(echo $TASK_DEF | jq --arg IMG "${{ steps.build.outputs.image }}" \
+          NEW_DEF=$(echo "$TASK_DEF" | jq --arg IMG "${{ steps.build.outputs.image }}" \
             '.containerDefinitions[0].image = $IMG | del(.taskDefinitionArn,.revision,.status,.requiresAttributes,.compatibilities,.registeredAt,.registeredBy)')
           NEW_ARN=$(aws ecs register-task-definition --cli-input-json "$NEW_DEF" --query 'taskDefinition.taskDefinitionArn' --output text)
-          aws ecs update-service --cluster myapp-production --service myapp-production --task-definition $NEW_ARN --force-new-deployment
-          aws ecs wait services-stable --cluster myapp-production --services myapp-production
+          echo "arn=$NEW_ARN" >> "$GITHUB_OUTPUT"
+
+      # --- Deploy variant A: CodeDeploy blue/green (matches section 2a) ---
+      # update-service is REJECTED on a CODE_DEPLOY-controlled service, so drive
+      # the deploy through CodeDeploy with an AppSpec that names the new revision.
+      - name: Deploy (CodeDeploy blue/green)
+        run: |
+          set -euo pipefail
+          APPSPEC=$(jq -n --arg TD "${{ steps.taskdef.outputs.arn }}" '{
+            version: "0.0",
+            Resources: [{ TargetService: { Type: "AWS::ECS::Service", Properties: {
+              TaskDefinition: $TD,
+              LoadBalancerInfo: { ContainerName: "app", ContainerPort: 3000 }
+            }}}]
+          }')
+          DEP_ID=$(aws deploy create-deployment \
+            --application-name myapp-production \
+            --deployment-group-name myapp-production \
+            --revision "revisionType=AppSpecContent,appSpecContent={content='$APPSPEC'}" \
+            --query 'deploymentId' --output text)
+          aws deploy wait deployment-successful --deployment-id "$DEP_ID"
+
+      # --- Deploy variant B: ECS rolling (use INSTEAD of A if you chose 2b) ---
+      # - name: Deploy (ECS rolling)
+      #   run: |
+      #     aws ecs update-service --cluster myapp-production --service myapp-production \
+      #       --task-definition ${{ steps.taskdef.outputs.arn }} --force-new-deployment
+      #     aws ecs wait services-stable --cluster myapp-production --services myapp-production
 
       - name: Verify
         run: |
+          set -euo pipefail
           for i in {1..5}; do
-            [ "$(curl -so /dev/null -w '%{http_code}' https://api.example.com/health)" = "200" ] || exit 1
+            [ "$(curl -so /dev/null -w '%{http_code}' https://api.example.com/health)" = "200" ] && break
+            [ "$i" = "5" ] && { echo "health check never returned 200"; exit 1; }
             sleep 2
           done
 ```
@@ -862,7 +1112,13 @@ export class ProductionStack extends cdk.Stack {
     });
 
     const db = new rds.DatabaseCluster(this, 'Database', {
-      engine: rds.DatabaseClusterEngine.auroraPostgres({ version: rds.AuroraPostgresEngineVersion.VER_15_4 }),
+      // CDK v2. The AuroraPostgresEngineVersion enum often lags AWS's released
+      // minors, so prefer `.of()` with an explicit supported version (see the
+      // RDS module note in section 3). Use `VER_16_x`/`VER_17_x` if present in
+      // your aws-cdk-lib version.
+      engine: rds.DatabaseClusterEngine.auroraPostgres({
+        version: rds.AuroraPostgresEngineVersion.of('16.8', '16'),
+      }),
       serverlessV2MinCapacity: 2, serverlessV2MaxCapacity: 16,
       writer: rds.ClusterInstance.serverlessV2('writer'),
       readers: [rds.ClusterInstance.serverlessV2('reader1', { scaleWithWriter: true })],
@@ -902,42 +1158,58 @@ export class ProductionStack extends cdk.Stack {
 | ECS | 256/512 | 512/1024+ |
 | Logs retention | 7 days | 30-90 days |
 
-**Biggest cost trap: NAT Gateway data charges.** Add VPC endpoints for S3, ECR, and CloudWatch Logs:
+**Biggest cost trap: NAT Gateway data charges.** Route ECR pulls and log shipping through VPC endpoints so they bypass NAT. Pulling images needs ALL of: `ecr.dkr` + `ecr.api` (interface) + `s3` (gateway — ECR layers live in S3). Interface endpoints also need a security group that allows 443 from the ECS tasks.
 
 ```hcl
+# Interface endpoints need 443 ingress from the workloads using them.
+resource "aws_security_group" "vpce" {
+  name_prefix = "${var.project}-${var.environment}-vpce-"
+  vpc_id      = aws_vpc.main.id
+  ingress { from_port = 443; to_port = 443; protocol = "tcp"; cidr_blocks = [aws_vpc.main.cidr_block] }
+  lifecycle { create_before_destroy = true }
+}
+
+# Gateway endpoints (S3 + DynamoDB) are FREE — no hourly or data charge.
 resource "aws_vpc_endpoint" "s3" {
-  vpc_id          = aws_vpc.main.id
-  service_name    = "com.amazonaws.${data.aws_region.current.name}.s3"
-  route_table_ids = aws_route_table.private[*].id
+  vpc_id            = aws_vpc.main.id
+  service_name      = "com.amazonaws.${data.aws_region.current.name}.s3"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids   = aws_route_table.private[*].id
 }
 
-resource "aws_vpc_endpoint" "ecr_dkr" {
-  vpc_id              = aws_vpc.main.id
-  service_name        = "com.amazonaws.${data.aws_region.current.name}.ecr.dkr"
-  vpc_endpoint_type   = "Interface"
-  subnet_ids          = aws_subnet.private[*].id
-  private_dns_enabled = true
+# Interface endpoints (ECR + logs) bill per-AZ-hour + per-GB; still far cheaper
+# than NAT data transfer for steady image pulls and log volume.
+locals {
+  interface_endpoints = toset(["ecr.dkr", "ecr.api", "logs", "secretsmanager"])
 }
-
-resource "aws_vpc_endpoint" "logs" {
+resource "aws_vpc_endpoint" "interface" {
+  for_each            = local.interface_endpoints
   vpc_id              = aws_vpc.main.id
-  service_name        = "com.amazonaws.${data.aws_region.current.name}.logs"
+  service_name        = "com.amazonaws.${data.aws_region.current.name}.${each.key}"
   vpc_endpoint_type   = "Interface"
   subnet_ids          = aws_subnet.private[*].id
+  security_group_ids  = [aws_security_group.vpce.id]
   private_dns_enabled = true
 }
 ```
 
-Saves $50-200/mo on active services.
+Endpoints trade NAT data-transfer cost for per-endpoint hourly + per-GB fees, so the net saving depends on traffic and region — measure with Cost Explorer and verify current rates at https://aws.amazon.com/privatelink/pricing/ and https://aws.amazon.com/vpc/pricing/. Gateway endpoints (S3/DynamoDB) are free, so add them unconditionally.
 
 ---
 
 ## 10. Debugging ECS in Production
 
 ```bash
-# SSH into running container
+# Open an interactive shell via ECS Exec (Session Manager, NOT SSH).
+# Requires: enable_execute_command on the service, the four ssmmessages:* perms
+# on the TASK role (section 2), and a shell in the image. Distroless/no-shell
+# images have no /bin/sh — bake in a debug shell or use an ephemeral sidecar.
 aws ecs execute-command --cluster myapp-prod --task TASK_ID \
   --container app --interactive --command /bin/sh
+
+# Verify Exec is actually enabled on a running task (look for enableExecuteCommand):
+aws ecs describe-tasks --cluster myapp-prod --tasks TASK_ARN \
+  --query 'tasks[0].enableExecuteCommand'
 
 # Tail logs
 aws logs tail /ecs/myapp-production/app --since 30m --follow
@@ -946,6 +1218,122 @@ aws logs tail /ecs/myapp-production/app --since 30m --follow
 aws ecs describe-tasks --cluster myapp-prod --tasks TASK_ARN \
   --query 'tasks[0].stoppedReason'
 
-# Force redeploy
+# Force redeploy (ECS rolling controller only — a CODE_DEPLOY service rejects
+# this; trigger a CodeDeploy deployment instead, see section 5 variant A).
 aws ecs update-service --cluster myapp-prod --service myapp-prod --force-new-deployment
 ```
+
+---
+
+## 11. Terraform Remote State (do this first)
+
+Local state is unacceptable for a team or for production. With S3-native state locking (Terraform 1.10+/1.11+) you no longer need a DynamoDB lock table — set `use_lockfile = true`. The state bucket must be encrypted and versioned.
+
+```hcl
+# backend.tf — bootstrap the bucket ONCE with local state, then migrate.
+terraform {
+  backend "s3" {
+    bucket       = "myorg-tfstate-prod"
+    key          = "app/production/terraform.tfstate"
+    region       = "us-east-1"
+    encrypt      = true
+    use_lockfile = true            # native S3 lock; Terraform >= 1.10
+    kms_key_id   = "alias/tfstate" # CMK, not the default aws/s3 key
+  }
+}
+
+# state bucket resources (apply with a temporary local backend first)
+resource "aws_s3_bucket" "tfstate" { bucket = "myorg-tfstate-prod" }
+resource "aws_s3_bucket_versioning" "tfstate" {
+  bucket = aws_s3_bucket.tfstate.id
+  versioning_configuration { status = "Enabled" }
+}
+resource "aws_s3_bucket_server_side_encryption_configuration" "tfstate" {
+  bucket = aws_s3_bucket.tfstate.id
+  rule { apply_server_side_encryption_by_default { sse_algorithm = "aws:kms"; kms_master_key_id = aws_kms_key.tfstate.arn } }
+}
+resource "aws_s3_bucket_public_access_block" "tfstate" {
+  bucket                  = aws_s3_bucket.tfstate.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+resource "aws_kms_key" "tfstate" { description = "tfstate"; enable_key_rotation = true }
+resource "aws_kms_alias" "tfstate" { name = "alias/tfstate"; target_key_id = aws_kms_key.tfstate.key_id }
+```
+
+If you are on Terraform < 1.10, keep a DynamoDB lock table and set `dynamodb_table` in the backend block instead of `use_lockfile`.
+
+---
+
+## 12. Production Guardrails (don't skip these)
+
+The modules above ship a working stack; these turn it into something you can defend in an audit and operate at 3am.
+
+### CI role: scope it and bound it
+The `github-actions-deploy` role assumed in section 5 must be locked to your repo via the OIDC `sub` claim and capped with a permissions boundary so a compromised workflow can't escalate.
+
+```hcl
+data "aws_iam_openid_connect_provider" "github" { url = "https://token.actions.githubusercontent.com" }
+
+data "aws_iam_policy_document" "gha_assume" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    principals { type = "Federated"; identifiers = [data.aws_iam_openid_connect_provider.github.arn] }
+    condition { test = "StringEquals"; variable = "token.actions.githubusercontent.com:aud"; values = ["sts.amazonaws.com"] }
+    # Lock to one repo + ref. NEVER use repo:org/*:* — that lets any repo assume it.
+    condition { test = "StringLike"; variable = "token.actions.githubusercontent.com:sub"; values = ["repo:myorg/myapp:ref:refs/heads/main"] }
+  }
+}
+
+resource "aws_iam_role" "gha_deploy" {
+  name                 = "github-actions-deploy"
+  assume_role_policy   = data.aws_iam_policy_document.gha_assume.json
+  permissions_boundary = aws_iam_policy.gha_boundary.arn # caps max privilege
+}
+```
+
+Pair this with GitHub Environments: the `environment: production` in section 5 should have **required reviewers** so a human approves each prod deploy (an approval gate, not just a label).
+
+### Detection: turn it on account-wide
+```hcl
+resource "aws_guardduty_detector" "main" { enable = true }
+resource "aws_securityhub_account" "main" {}
+resource "aws_config_configuration_recorder" "main" {
+  name     = "default"
+  role_arn = aws_iam_role.config.arn
+  recording_group { all_supported = true; include_global_resource_types = true }
+}
+```
+GuardDuty (threat detection), Security Hub (CIS/AWS Foundational Security Best Practices scoring), and AWS Config (resource compliance + drift) are the baseline three. Add Access Analyzer to catch public/cross-account exposure.
+
+### ECR: scan on push + expire old images
+```hcl
+resource "aws_ecr_repository" "app" {
+  name                 = "myapp"
+  image_tag_mutability = "IMMUTABLE"          # tags can't be overwritten
+  image_scanning_configuration { scan_on_push = true }
+  encryption_configuration { encryption_type = "KMS" }
+}
+resource "aws_ecr_lifecycle_policy" "app" {
+  repository = aws_ecr_repository.app.name
+  policy = jsonencode({ rules = [{
+    rulePriority = 1, description = "keep last 20 images"
+    selection    = { tagStatus = "any", countType = "imageCountMoreThan", countNumber = 20 }
+    action       = { type = "expire" }
+  }] })
+}
+```
+Note: `IMMUTABLE` tags mean the `:latest` retag in section 5's build step will fail — push only the immutable `:$IMAGE_TAG` and reference that, or use a mutable repo for `:latest`.
+
+### RDS: parameter group + KMS + tested restores
+- Attach an `aws_rds_cluster_parameter_group` to enforce `rds.force_ssl = 1`, sane `log_min_duration_statement`, and `log_statement = 'ddl'`.
+- Encrypt with a customer-managed KMS key (`kms_key_id` on the cluster), not the default `aws/rds` key, so you control rotation and cross-account sharing.
+- `backup_retention_period` (35 in section 3) is worthless if you've never restored. Periodically `aws rds restore-db-cluster-to-point-in-time` into a scratch cluster and smoke-test it. Consider `aws_backup` with cross-region copy for DR.
+
+### Canary / synthetic alarm
+The section 6 alarms are reactive. Add a CloudWatch Synthetics canary hitting a real user path and alarm on its `SuccessPercent`, so you detect "site is down" before customers do. Wire canary failure into the CodeDeploy `auto_rollback_configuration` alarms (section 2a) so a bad deploy rolls back automatically.
+
+### Tagging & least-privilege defaults
+Set a provider-level `default_tags` block (`Environment`, `Project`, `Owner`, `CostCenter`) so every resource is attributable in Cost Explorer and the budget alarm in section 6 is actionable. Run `tfsec`/`checkov`/`trivy config` in the `test` job (section 5) to catch insecure Terraform before apply.

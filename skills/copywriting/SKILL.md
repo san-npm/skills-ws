@@ -7,15 +7,52 @@ description: "Copywriting — headline frameworks (PAS/AIDA/4U/BAB), page-by-pag
 
 Master framework for high-converting copy across all marketing touchpoints with proven headline formulas, page-specific playbooks, and voice optimization.
 
+---
+
+## Copywriting Workflow (Agent Runbook)
+
+Follow this loop for any copy task. Do not skip the intake — copy written without inputs is generic copy.
+
+**Step 0 — Intake (ask for what you don't have).** Before writing, collect:
+- **Audience & awareness stage** (Eugene Schwartz's 5 stages: unaware → problem-aware → solution-aware → product-aware → most-aware). This decides the lead: most-aware buyers want the offer/price up front; unaware buyers need the problem framed first.
+- **The one action** this copy must drive (the conversion goal) and the surface (hero, ad, email, PDP, pricing).
+- **Offer specifics**: price, trial terms, guarantee, what they get.
+- **Proof assets**: real metrics, named customers, quotes, ratings, certifications. If none exist, you write benefit copy WITHOUT fabricated numbers (see [Claims & Compliance](#claims-compliance--ethical-guardrails)).
+- **Voice inputs**: brand, tone, 3–5 words it should/shouldn't sound like, reading level. See [Voice Calibration](#voice-calibration-framework).
+- **Constraints**: regulated category (health/finance/legal), channel rules (CAN-SPAM, platform ad policy), banned claims.
+
+**Step 1 — Diagnose (if rewriting existing copy).** Score the current copy against: (a) Is the headline a benefit/outcome or a feature/category label? (b) Does the first screen pass the "5-second clarity test" — can a stranger say what it is, who it's for, and the next step? (c) Is there a single, obvious CTA? (d) Is every claim substantiated? Note the top 3 gaps.
+
+**Step 2 — Draft.** Pick a headline framework ([library below](#headline-framework-library)) matched to awareness stage. Write hero → proof → body → CTA in that order so each section earns the next. Lead with the customer's outcome, not the company.
+
+**Step 3 — Tighten.** Cut hedge words, adverbs, and "we"-centric sentences. Convert features to benefits ("10GB storage" → "store 10,000 records"). One idea per sentence. Read it aloud; if you stumble, rewrite.
+
+**Step 4 — QA checklist (every deliverable must pass):**
+- [ ] Headline states an outcome a target reader wants, in plain language.
+- [ ] First screen answers what / who / why-you / next-step.
+- [ ] Exactly one primary CTA per screen; verb matches funnel stage ([CTA system](#cta-optimization-system)).
+- [ ] Every number, superlative, and testimonial is true and substantiated ([compliance](#claims-compliance--ethical-guardrails)).
+- [ ] No fabricated stats, fake scarcity, or invented testimonials.
+- [ ] Voice matches the brief; reading level fits the audience.
+- [ ] Benefits, not feature lists. No unexplained jargon.
+- [ ] Mobile: headline + CTA visible without scrolling.
+
+**Step 5 — Output format.** Deliver as labeled blocks the user can paste: `Headline`, `Subhead`, `Body`, `CTA (primary)`, `CTA (secondary)`, `Microcopy/risk-reversal`. For tests, give 2–3 distinct angles (e.g., benefit-led vs. problem-led vs. proof-led), not 3 reworded versions of the same line.
+
 ## Table of Contents
 
-1. [Headline Framework Library](#headline-framework-library)
-2. [Page-by-Page Copy Playbooks](#page-by-page-copy-playbooks)
-3. [CTA Optimization System](#cta-optimization-system)
-4. [Voice Calibration Framework](#voice-calibration-framework)
-5. [Before/After Copy Rewrites](#beforeafter-copy-rewrites)
-6. [Copy Testing & Optimization](#copy-testing--optimization)
-7. [Industry-Specific Adaptations](#industry-specific-adaptations)
+1. [Copywriting Workflow (Agent Runbook)](#copywriting-workflow-agent-runbook)
+2. [Headline Framework Library](#headline-framework-library)
+3. [AI-Snippet-Friendly Leads (AEO / AI search)](#ai-snippet-friendly-leads-aeo--ai-search)
+4. [Page-by-Page Copy Playbooks](#page-by-page-copy-playbooks)
+5. [CTA Optimization System](#cta-optimization-system)
+6. [Voice Calibration Framework](#voice-calibration-framework)
+7. [Before/After Copy Rewrites](#beforeafter-copy-rewrites)
+8. [Copy Testing & Optimization](#copy-testing--optimization)
+9. [Claims, Compliance & Ethical Guardrails](#claims-compliance--ethical-guardrails)
+10. [Industry-Specific Adaptations](#industry-specific-adaptations)
+
+Related skills: long-form page builds → `landing-page-builder`; conversion-rate optimization → `page-cro`; modal/exit-intent copy → `popup-cro`; lifecycle/nurture emails → `email-sequence`; topic & funnel planning → `content-strategy`.
 
 ---
 
@@ -113,6 +150,80 @@ Real Examples:
 - "Double Your Website Traffic Without Spending Money on Ads"
 - "How to Create Viral Content When You're Not Naturally Funny or Creative"
 ```
+
+---
+
+## AI-Snippet-Friendly Leads (AEO / AI search)
+
+A growing share of traffic now starts inside an answer engine — Google AI Overviews (AI Mode), Perplexity, ChatGPT/Claude with web access, Bing Copilot — which read your page, extract a passage, and either quote it or paraphrase it with a citation. To get pulled into that answer (Answer Engine Optimization, AEO / "Generative Engine Optimization"), the *lead* of each page or section must be written so a machine can lift one self-contained, factual passage without surrounding context. This is the opposite of a teasing curiosity hook — and both can coexist on the same page (see "Two-layer pattern" below).
+
+> Note (as of Jun 2026): the specifics of AI Overviews/AI Mode and Perplexity change frequently. Verify current behavior at the source — e.g. Google Search Central (https://developers.google.com/search) and each engine's own docs — rather than trusting any fixed "ranking factor."
+
+### What AI extractors reward (write FOR these)
+
+1. **Answer-first, in the first 1–3 sentences.** State the direct answer before any setup. Lead sentence should stand alone if quoted with zero prior context.
+2. **Entity-first, disambiguated.** Name the subject explicitly and say what category it is, instead of relying on pronouns or the page title. "Acme Popups is an exit-intent email-capture tool for ecommerce stores" — not "It's the smarter way to grow." Models match entities → categories; an unnamed "it" gets dropped.
+3. **Definitional sentences in subject–verb–object form.** "X is a Y that does Z for [audience]." These are the passages extractors love and the ones that win the one-line "what is X" answer.
+4. **Self-contained, attributable facts.** Include the number, unit, date, and scope in the same sentence: "In 2026, the average ecommerce email-capture rate is about 2–4% of visitors." A claim that depends on the previous paragraph won't survive extraction.
+5. **Question-shaped headings (H2/H3)** that mirror real queries ("How much does X cost?", "Is X better than Y?"), with the answer in the first sentence beneath.
+6. **Scannable structure**: short paragraphs (≤3 sentences), bulleted lists for steps/criteria, and a comparison table for "X vs Y" intent. Extractors map list items and table cells cleanly.
+7. **Cite-worthy substance**: original data, clear methodology, named sources, and a publish/update date. Engines preferentially quote pages that themselves cite and that look maintained.
+
+### Two-layer pattern (use both)
+
+Put the **machine-readable answer first**, then the **human persuasion**. You don't sacrifice your hook — you lead with the extractable fact and follow with the emotional/benefit copy that converts the human who clicks through.
+
+```markdown
+## What is exit-intent email capture?
+Exit-intent email capture is a popup technique that detects when a visitor is
+about to leave a website and shows a single offer (a discount or lead magnet)
+to capture their email before they go. Stores typically recover 2–5% of
+abandoning visitors this way.            <-- extractable, entity-first, factual
+
+Here's why that 2–5% is the difference between a store that grows and one that
+quietly leaks its ad spend...            <-- the human hook / persuasion continues
+```
+
+### Lead patterns by intent
+
+| Query intent | Snippet-friendly lead pattern | Example opening sentence |
+|---|---|---|
+| Definitional ("what is X") | `[Entity] is a [category] that [function] for [audience].` | "Yiield is a DeFi yield aggregator that routes stablecoin deposits to the highest-rated lending markets." |
+| Comparison ("X vs Y") | One-sentence verdict + a 3–5 row table | "X suits teams that need [trait]; Y suits teams that need [trait]. The differences:" + table |
+| How-to ("how to X") | Numbered steps, each step a full imperative sentence | "1. Install the script in your site `<head>`. 2. Define a trigger…" |
+| Cost ("how much is X") | State the range, the unit, and as-of date in sentence one | "As of 2026, X starts at $29/month and scales with monthly visitors." |
+| Best-of ("best X for Y") | Lead with named criteria, then a short ranked list | "The best tools for [use case] share three traits: [a], [b], [c]." |
+
+### FAQ block (machine-readable Q&A)
+
+Add an FAQ where each answer's **first sentence fully answers the question** (don't open with "Great question!"). This is the single highest-leverage AEO move for product/landing pages, and it doubles as schema-eligible content:
+
+```markdown
+## Frequently Asked Questions
+
+**Does it work on mobile?**
+Yes. Exit-intent triggers on mobile use scroll-velocity and back-button signals
+instead of cursor movement, so capture works on phones and tablets.
+
+**How fast is setup?**
+Most stores are live in under 10 minutes: paste one script tag and pick a template.
+
+**Do I need a credit card to try it?**
+No. The 14-day trial requires only an email; billing starts only if you upgrade.
+```
+
+If the page also ships FAQPage structured data, the same Q&A text is reused — write the copy answer-first and the schema follows for free.
+
+### AEO anti-patterns (these get you skipped)
+
+- Burying the answer below a story, a video, or three paragraphs of brand throat-clearing.
+- Pronoun-led openings ("It's the easiest way…") with no named entity or category.
+- Vague claims with no number, date, or source ("incredibly fast", "the best").
+- Walls of text with no headings, lists, or tables.
+- Stuffing keywords — modern extractors reward clarity and corroboration, not density, and keyword-stuffed copy reads worse to humans too.
+- Fabricated stats to look "citeable." A wrong number that gets quoted is a liability, not a win (see [Claims & Compliance](#claims-compliance--ethical-guardrails)).
+
+For topic selection and which questions to target across the funnel, pair this with `content-strategy`.
 
 ---
 
@@ -373,18 +484,26 @@ High-Converting Action Words:
   Exclusive: "Join", "Become", "Claim", "Reserve", "Secure"
   Results: "Boost", "Increase", "Improve", "Optimize", "Maximize"
 
-Weak Action Words to Avoid:
-  Generic: "Click Here", "Submit", "Continue", "Go"
-  Passive: "Learn More", "Read About", "Find Out"
-  Salesy: "Buy Now", "Purchase", "Order Today"
-
-Context-Specific CTAs:
-  Content Downloads: "Get the [Specific Resource]"
-  Free Trials: "Start Your Free [Duration] Trial"
-  Consultations: "Book Your [Type] Call"
-  Demos: "See [Product] in Action"
-  Webinars: "Reserve Your Seat"
+Almost Always Weak (replace these):
+  Generic: "Click Here", "Submit", "Continue", "Go"   # describe the action, not the mechanic
+  Vague: "Learn More" as the SOLE primary CTA         # fine as a secondary link
 ```
+
+**"Buy Now" is not weak — it's situational.** The CTA must match where the visitor is in the funnel and what they're committing to. Don't soften a transactional CTA into "Learn More"; that adds a click and loses intent. Pick the verb that names the *next real step*:
+
+| Context | Right CTA verb | Wrong CTA (why) |
+|---------|---------------|-----------------|
+| **Ecommerce PDP / cart** | "Add to Cart", "Buy Now", "Checkout" | "Learn More" — visitor is ready; an extra step kills purchase intent. Direct purchase CTAs are correct here. |
+| **High-AOV / considered purchase** | "Add to Cart" (let cart be the decision point); "Buy Now" for repeat buyers / one-product pages | "Buy Now" can feel premature for a first-time $2k purchase; test against "Add to Cart" |
+| **SaaS self-serve** | "Start Free Trial", "Get Started Free", "Start Building" | "Buy Now" — they want to try before paying |
+| **SaaS / B2B sales-led** | "Book a Demo", "Talk to Sales", "Get a Quote" | "Buy Now" — there's no self-serve checkout |
+| **Lead magnet / content** | "Get the [Resource]", "Download the Guide" | "Submit" |
+| **Subscription / paid newsletter** | "Subscribe", "Join for $X/mo" | "Learn More" if the visitor already scrolled the pricing |
+| **Nonprofit / fundraising** | "Donate", "Donate $50", "Give Monthly" | "Submit", "Continue" |
+| **Booking / services** | "Book Your [Type] Call", "Reserve Your Seat", "Schedule Now" | "Click Here" |
+| **App install** | "Download Free", "Get the App" | "Learn More" |
+
+Rule of thumb: on a **transactional** surface (cart, pricing CTA for an existing buyer, donation form), use the direct verb — "Buy Now"/"Donate"/"Subscribe" outperform soft CTAs. On a **consideration** surface (cold landing page, first touch), use trial/demo/download verbs that lower commitment.
 
 **CTA Optimization Framework:**
 ```html
@@ -454,48 +573,17 @@ Context-Specific CTAs:
 - Multiple times without overwhelming
 ```
 
-**CTA A/B Testing Framework:**
-```python
-def cta_testing_framework():
-    """Systematic approach to CTA optimization"""
-    
-    test_elements = {
-        'copy_variations': [
-            'Get Started Free',
-            'Start Your Free Trial', 
-            'Try It Risk-Free',
-            'Access Your Account',
-            'Begin Free Trial'
-        ],
-        'design_variations': [
-            'button_color': ['#FF6B35', '#4CAF50', '#2196F3'],
-            'button_size': ['small', 'medium', 'large'],
-            'button_style': ['filled', 'outlined', 'ghost']
-        ],
-        'placement_tests': [
-            'hero_section',
-            'after_benefits',
-            'sidebar_sticky',
-            'exit_intent_popup'
-        ],
-        'urgency_elements': [
-            'Limited time offer',
-            'Only X spots left',
-            'Ends at midnight',
-            'While supplies last'
-        ]
-    }
-    
-    # Test priority order
-    testing_sequence = [
-        1. 'copy_variations',  # Highest impact
-        2. 'placement_tests',   # Medium impact  
-        3. 'design_variations', # Lower impact
-        4. 'urgency_elements'   # Context-dependent
-    ]
-    
-    return design_test_matrix(test_elements, testing_sequence)
-```
+**What to test, and in what order.** Run ONE change per test (an "element" test), not a redesign, or you can't attribute the lift. Sequence tests by expected effect size — biggest lever first:
+
+| Priority | Element | What to vary | Why first/last |
+|----------|---------|--------------|----------------|
+| 1 | Copy / message | "Get Started Free" vs "Start Your Free Trial" vs "Try It Risk-Free" vs "Book a Demo" | Message-match drives the largest swings; cheapest to change |
+| 2 | Offer & friction | Free trial vs demo, credit-card vs no-card, form-field count | Changing the *ask* moves intent more than styling |
+| 3 | Placement | Hero only, hero + sticky footer, repeat after social proof, exit-intent | Visibility/repetition compounds; test after message is settled |
+| 4 | Visual | Color/contrast, size, filled vs outlined | Real but usually small; only worth it on high-traffic pages |
+| 5 | Urgency (handle with care) | "Ends Friday", "3 seats left" — only if the scarcity is *real* | Fake countdowns/scarcity are deceptive and FTC-actionable (see Claims & Compliance) |
+
+Don't call a winner on raw conversion-rate difference. Pre-compute the sample size you need, run to it, then check significance — see [Copy Testing & Optimization](#copy-testing--optimization) for the formulas.
 
 ---
 
@@ -644,6 +732,8 @@ Changes Made:
 - Concrete benefit (20% fewer hours)
 - Results-focused language
 - Clear next steps with relevant CTAs
+
+⚠️ Substantiation: "Double Your Revenue" and "20% fewer hours" are claims. Ship them only with documented results; otherwise reframe qualitatively ("scale without burning out"). See [Claims & Compliance](#claims-compliance--ethical-guardrails).
 ```
 
 ### Email Subject Line Makeovers
@@ -703,6 +793,8 @@ Transformation Elements:
 - Proof elements ($50M in revenue)
 - Action-oriented CTA with clear value
 - Credibility indicators with specific numbers
+
+⚠️ Substantiation: "300% More Leads in 90 Days", "$50M in revenue", "247% ROI", and "500+ businesses" are factual claims. Use these exact numbers ONLY if documented and current; a time-bound promise like "in 90 days" can be a deceptive guarantee if unconditional. If unproven, replace with `[METRIC — substantiate]` or qualitative copy. See [Claims & Compliance](#claims-compliance--ethical-guardrails).
 ```
 
 ---
@@ -711,56 +803,68 @@ Transformation Elements:
 
 ### A/B Testing Framework for Copy
 
-**Testing Methodology:**
-```python
-def copy_testing_framework(page_type, traffic_volume):
-    """Structured approach to copy A/B testing"""
-    
-    testing_priorities = {
-        'high_impact': {
-            'headline': 0.3,  # 30% impact on conversions
-            'primary_cta': 0.25,
-            'value_proposition': 0.2,
-            'social_proof': 0.15,
-            'offer_details': 0.1
-        },
-        'test_duration': calculate_test_duration(traffic_volume, confidence_level=0.95),
-        'sample_size': calculate_minimum_sample_size(current_conversion_rate, 
-                                                   minimum_detectable_effect=0.1)
-    }
-    
-    test_variations = {
-        'headline_tests': [
-            'benefit_focused',
-            'problem_focused', 
-            'curiosity_driven',
-            'social_proof_led',
-            'urgency_based'
-        ],
-        'cta_tests': [
-            'action_variations',
-            'urgency_levels',
-            'benefit_clarity',
-            'risk_reversal'
-        ]
-    }
-    
-    return design_test_sequence(testing_priorities, test_variations)
+**Test in priority order, not by guessed "impact weights."** Headline/value-prop and CTA usually move conversions most, but the only honest weight is your own historical test data — do NOT promise "headline = 30% of conversions." Rank tests by *expected lift × ease*, then validate with statistics. A "winner" that isn't statistically significant is noise: shipping it is how teams convince themselves copy works when it doesn't.
 
-# Example test results analysis
-def analyze_copy_test_results(variant_a, variant_b):
-    """Statistical analysis of copy test performance"""
-    
-    results = {
-        'conversion_rate_lift': calculate_conversion_lift(variant_a, variant_b),
-        'statistical_significance': run_statistical_test(variant_a, variant_b),
-        'confidence_interval': calculate_confidence_interval(variant_a, variant_b),
-        'business_impact': project_business_impact(conversion_lift, traffic_volume),
-        'recommendation': generate_implementation_recommendation(results)
+**Before you test — size it.** The single biggest A/B-test mistake is stopping early ("peeking") the moment a variant looks ahead. Decide the sample size up front, run to it, then evaluate once. Here is a self-contained, runnable Python implementation (standard library only — no external deps) for sample size and a two-proportion z-test:
+
+```python
+import math
+from statistics import NormalDist
+
+Z = NormalDist()  # standard normal
+
+def required_sample_size(baseline_rate, mde_relative, power=0.80, alpha=0.05):
+    """Per-variant sample size for a two-proportion test (two-sided).
+
+    baseline_rate : current conversion rate, e.g. 0.04 for 4%
+    mde_relative  : minimum detectable effect as a fraction of baseline,
+                    e.g. 0.10 means "detect a 10% relative lift" (4% -> 4.4%)
+    Returns the visitors needed in EACH variant.
+    """
+    p1 = baseline_rate
+    p2 = baseline_rate * (1 + mde_relative)
+    z_alpha = Z.inv_cdf(1 - alpha / 2)   # 1.96 at alpha=0.05
+    z_beta = Z.inv_cdf(power)            # 0.84 at power=0.80
+    pooled = (p1 + p2) / 2
+    numerator = (z_alpha * math.sqrt(2 * pooled * (1 - pooled))
+                 + z_beta * math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2
+    n = numerator / (p2 - p1) ** 2
+    return math.ceil(n)
+
+def ab_test_result(visitors_a, conv_a, visitors_b, conv_b):
+    """Two-proportion z-test. Returns lift, z, two-sided p-value, and verdict."""
+    rate_a = conv_a / visitors_a
+    rate_b = conv_b / visitors_b
+    rel_lift = (rate_b - rate_a) / rate_a if rate_a else float("inf")
+
+    pooled = (conv_a + conv_b) / (visitors_a + visitors_b)
+    se = math.sqrt(pooled * (1 - pooled) * (1 / visitors_a + 1 / visitors_b))
+    z = (rate_b - rate_a) / se if se else 0.0
+    p_value = 2 * (1 - Z.cdf(abs(z)))   # two-sided
+
+    if p_value < 0.05:
+        verdict = "SHIP B" if rate_b > rate_a else "KEEP A (B is worse)"
+    else:
+        verdict = "INCONCLUSIVE — keep running or call it a draw"
+    return {
+        "rate_a": round(rate_a, 4),
+        "rate_b": round(rate_b, 4),
+        "relative_lift": round(rel_lift, 4),
+        "z_score": round(z, 3),
+        "p_value": round(p_value, 4),
+        "verdict": verdict,
     }
-    
-    return results
+
+# Example: 4% baseline, want to detect a 10% relative lift
+print(required_sample_size(0.04, 0.10))          # -> 39475 visitors per variant
+print(ab_test_result(12000, 480, 12000, 540))    # 4.0% vs 4.5%, p≈0.055 -> INCONCLUSIVE
 ```
+
+**How to use the output:**
+- `required_sample_size` tells you the visitors-per-variant to commit to. At ~2,500 visitors/day across both arms, the example (~39.5k each ≈ 79k total) needs ~32 days. If that exceeds 4–6 weeks, raise the MDE (accept detecting only bigger wins) — don't shorten the run.
+- Stop only when **both** arms hit the planned sample. Then call `ab_test_result` once. `p_value < 0.05` = real; otherwise the result is a draw, regardless of how pretty the lift looks.
+- The example deliberately shows a 4.0% → 4.5% "win" that lands at **p≈0.055 — just over the 0.05 line, so NOT significant** (and it ran on only 12k/arm, well short of the ~39.5k needed). This is exactly the trap that false-precision dashboards and early peeking encourage: a tempting lift that the math says is still noise.
+- For low-traffic pages where you'll never reach significance, test bigger swings (new angle, new offer), not button colors, and lean on qualitative signal (session recordings, on-page surveys, sales-call objections).
 
 ### Copy Performance Metrics
 
@@ -784,6 +888,62 @@ Qualitative Metrics:
   - Sales team objection reports
   - Brand voice consistency scores
 ```
+
+---
+
+## Claims, Compliance & Ethical Guardrails
+
+Persuasive copy that can't be backed up is a legal and brand liability, not a clever move. Apply these as hard gates in the [QA checklist](#copywriting-workflow-agent-runbook). This is general guidance, not legal advice — for regulated categories (health, finance, supplements, legal) have counsel review before publishing, and confirm current rules, since enforcement guidance evolves.
+
+> As of Jun 2026, verify the current text of these rules at their sources: FTC endorsement/advertising guidance (https://www.ftc.gov/business-guidance/advertising-marketing), CAN-SPAM (https://www.ftc.gov/business-guidance/resources/can-spam-act-compliance-guide-business), and GDPR/ePrivacy for EU/UK audiences (https://gdpr.eu). Rules differ by jurisdiction; the buyer's location governs.
+
+### Substantiation — the core rule
+
+Every objective or quantified claim must be **true and provable before it ships.** If you don't have the proof, you don't make the claim.
+
+- **Numeric / performance claims** ("300% more leads", "2× revenue", "save 10 hours/week") require real, documented evidence (a study, your own measured data, or aggregated customer results). Never invent a statistic to make a headline land. If the agent lacks a source, write the benefit qualitatively ("dramatically more leads" → "more qualified leads, faster") or insert a `[SOURCE NEEDED: ___]` placeholder for the user to fill — do not fabricate.
+- **Typical vs. exceptional results.** If a result is a best case, label it ("Results vary; this customer's outcome is not typical") and prefer presenting typical results. Cherry-picked outliers presented as the norm are deceptive.
+- **Comparative claims** ("faster than X", "the only tool that…") need a defensible basis and must be current.
+- **Superlatives** ("best", "#1", "world-leading") invite challenge — qualify them ("rated #1 for ease of use by [source, year]") or drop them.
+
+### Testimonials & endorsements (FTC)
+
+- Use only **real** testimonials from real customers who actually said it and consented to its use. Never write a fake testimonial or generate a synthetic "customer quote."
+- Endorsers must disclose **material connections** (paid, free product, affiliate, employee). Influencer/affiliate copy needs a clear, conspicuous disclosure — not buried in a hashtag wall.
+- Don't present a paid endorsement as an independent review.
+- AI-generated faces, voices, or "customers" presented as real people are deceptive — don't.
+
+### Email & messaging consent
+
+- **US (CAN-SPAM):** accurate "From"/subject lines, identify the message as an ad where required, include a valid physical postal address, provide a working one-click unsubscribe, and honor opt-outs promptly. No deceptive headers.
+- **EU/UK (GDPR + ePrivacy) and CASL (Canada):** generally require **prior opt-in consent** to email marketing; keep proof of consent; offer easy withdrawal. Pre-checked consent boxes are not valid consent under GDPR.
+- Write the unsubscribe and consent microcopy as part of the deliverable — it's copy, not an afterthought.
+
+### Dark patterns — do not use
+
+These boost short-term metrics and are increasingly regulated (FTC, EU Digital Services Act, state laws). Avoid:
+
+- **Fake urgency/scarcity**: countdown timers that reset, "only 2 left" when stock is unlimited, fake "12 people viewing".
+- **Confirmshaming**: opt-out copy that guilts ("No thanks, I don't want to save money").
+- **Forced continuity / hidden auto-renew**: free trials that bill silently; bury-the-terms pricing. State renewal terms plainly.
+- **Roach motel**: easy to subscribe, hard to cancel. Cancellation should be as easy as signup.
+- **Drip pricing / hidden fees**: show the real total early.
+- **Disguised ads** and **trick questions** in forms.
+
+Real scarcity ("sale ends Friday" when it truly does, "3 seats left" when there genuinely are) is fine and effective — the rule is that the claim must be *true*.
+
+### Regulated categories — extra caution
+
+- **Health / wellness / supplements**: no claims to diagnose, treat, cure, or prevent disease unless substantiated and lawful; include required disclaimers; avoid fear-based pressure. (Verify FDA/FTC rules.)
+- **Finance / crypto / investing**: no guaranteed returns or "risk-free" framing; include risk disclosures; follow securities/advertising rules in each jurisdiction. (See the trading-related disclaimers pattern — KYC/jurisdiction/risk.)
+- **Legal, medical, tax advice copy**: add "consult a qualified professional" and avoid implying individualized advice.
+
+### AI-generated-copy disclosure & accuracy
+
+- Don't present AI-generated content as a human's first-person experience or as an independent expert when it isn't.
+- Fact-check any statistic, citation, price, or claim the model produces before publishing — models hallucinate plausible-looking numbers. Unverified figures must be removed or flagged, never shipped.
+
+> **Note on the example copy in this skill.** Headlines like "Get 300% More Leads in 90 Days" or "Double Your Revenue" appear here only to illustrate *structure*. In production, every such number must be backed by real, documented results or rewritten qualitatively. Treat each as `[METRIC — substantiate or replace]`.
 
 ---
 
@@ -859,4 +1019,18 @@ Qualitative Metrics:
 </div>
 ```
 
-This comprehensive copywriting framework provides the foundation for creating high-converting copy across all marketing channels and business contexts.
+---
+
+## Quick Decision Tree
+
+Use this to route any copy request to the right part of this skill:
+
+- **Writing a headline?** → match to awareness stage, pick from the [framework library](#headline-framework-library) (problem-aware → PAS/BAB; solution-aware → 4U/AIDA).
+- **Want the page found by AI search / answer engines?** → write the [answer-first, entity-first lead](#ai-snippet-friendly-leads-aeo--ai-search) + an FAQ block.
+- **Which page is it?** → use the matching [page playbook](#page-by-page-copy-playbooks) (home / pricing / feature / about), then the relevant industry adaptation.
+- **Choosing a CTA?** → match the verb to the funnel surface in the [CTA table](#cta-optimization-system); transactional → direct ("Buy Now"/"Donate"), consideration → trial/demo/download.
+- **Tone feels off?** → run the [voice calibration](#voice-calibration-framework) matrix and checklist.
+- **About to ship?** → run the [QA checklist](#copywriting-workflow-agent-runbook) and the [claims & compliance gates](#claims-compliance--ethical-guardrails). No unsubstantiated number, fake scarcity, or invented testimonial leaves the building.
+- **Optimizing live copy?** → diagnose top-3 gaps, then test ONE element at a time and size the sample before you start ([testing](#copy-testing--optimization)).
+
+For deeper specializations, hand off to the sibling skills: full page builds → `landing-page-builder`; CRO experiments and analysis → `page-cro`; popups/exit-intent → `popup-cro`; email nurture flows → `email-sequence`; topic and funnel planning → `content-strategy`.

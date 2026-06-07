@@ -19,7 +19,9 @@ description: "Popup, modal, slide-in, and banner conversion optimization — exi
 
 ## Popup Types & When to Use Each
 
-| Type | Trigger | Best For | Avg Conversion Rate |
+> The conversion ranges below are **rough industry heuristics, not guarantees** — actual rates swing widely by industry, offer strength, traffic quality, and audience temperature. Use them to set rough expectations, then measure your own baseline.
+
+| Type | Trigger | Best For | Typical Conv. Range* |
 |------|---------|----------|-------------------|
 | Exit Intent Modal | Mouse leaves viewport | Lead capture, cart save | 2-5% |
 | Timed Modal | After X seconds on page | Newsletter signup, offers | 1-3% |
@@ -30,6 +32,8 @@ description: "Popup, modal, slide-in, and banner conversion optimization — exi
 | Inline/Embedded | Always visible in content | Content upgrades, contextual | 1-3% |
 | Click-Triggered | User clicks a link/button | Intentional opt-in, details | 5-15% |
 | Two-Step Opt-In | Click → then form appears | Higher-quality leads | 3-8% |
+
+<sub>*Rough ranges from public CRO benchmarks; treat as directional. Your numbers depend on offer, industry, device, and traffic source.</sub>
 
 ---
 
@@ -53,6 +57,23 @@ Mobile: No cursor — use alternative signals
 ### JavaScript Implementation
 
 ```javascript
+// --- Small cookie helpers used throughout this skill ---
+function setCookie(name, value, days) {
+  const expires = days
+    ? '; expires=' + new Date(Date.now() + days * 864e5).toUTCString()
+    : ''; // omit `days` => session cookie (cleared when browser closes)
+  document.cookie =
+    `${name}=${encodeURIComponent(value)}${expires}; path=/; SameSite=Lax`;
+}
+function getCookie(name) {
+  return document.cookie.split('; ').reduce((acc, c) => {
+    const [k, v] = c.split('=');
+    return k === name ? decodeURIComponent(v) : acc;
+  }, '');
+}
+// `showPopup(id)` is your renderer — see the Cookie Consent section for a
+// consent-aware implementation that gates analytics on tracking consent.
+
 // Desktop exit intent
 let exitIntentShown = false;
 
@@ -64,8 +85,10 @@ document.addEventListener('mouseout', (e) => {
     exitIntentShown = true;
     showPopup('exit-intent');
 
-    // Set cookie to prevent repeat on this session
-    setCookie('exit_intent_shown', 'true', 1); // 1 day
+    // Suppress repeats. The `exitIntentShown` flag already covers THIS page view;
+    // the cookie controls how long until exit intent may fire again across visits.
+    // Use 1 day for an aggressive cap, up to 7 (see "Exit Intent Best Practices").
+    setCookie('exit_intent_shown', Date.now().toString(), 1); // 1-day re-show cap
   }
 });
 
@@ -225,28 +248,34 @@ Priority 2: Exit intent with offer (lead capture)
 Priority 3: Content upgrade (contextual value)
 Priority 4: Newsletter signup (general)
 Priority 5: Announcement banner (informational)
-Priority 6: Cookie consent (compliance — always show regardless)
+Priority 6: Cookie/consent banner (compliance — show first, before any marketing popup;
+            must be proportionate and not block content as a pretext)
 ```
 
 ---
 
 ## Mobile Popup Rules (Google Guidelines)
 
+> The "intrusive interstitial" signal specifically targets the experience when a user **arrives on a page from mobile search**. It's one input among many in Google's broader page-experience assessment — it won't single-handedly tank a strong page, but it can blunt rankings and it hurts real UX/conversions regardless of SEO. There is no public "delay = safe" threshold; judge by how much content the interstitial obscures and when.
+
 ### What Google Penalizes (Intrusive Interstitials)
 
-Google's page experience signals penalize popups that:
+The signal targets popups seen by a user landing from search that:
 
-- **Cover most of the page** immediately or before scrolling
-- **Standalone interstitials** users must dismiss before accessing content
-- **Above-the-fold layouts** where content is pushed below an interstitial
+- **Cover the main content** immediately on arrival or right after a small scroll
+- **Standalone interstitials** the user must dismiss before they can read the content
+- **Above-the-fold layouts** where the content is pushed down by an interstitial-like section
 
-### What's Allowed
+### What's Generally Allowed — with caveats
 
-✅ **Cookie consent / age verification** — legally required, always OK
-✅ **Login walls** for paywalled content (Google knows about these)
-✅ **Banners** that use a "reasonable amount of screen space" and are easily dismissible
-✅ **Popups triggered by user action** (click-triggered)
-✅ **Popups after sufficient engagement** (scroll/time delay)
+✅ **Legally-required notices** — cookie consent, or age verification where it is **actually required** for that content/jurisdiction (alcohol, gambling, adult content). These get latitude *only* if proportionate and not used as a pretext to wall off content.
+✅ **Login/paywall walls** for genuinely gated/private content.
+✅ **Banners** using a "reasonable amount of screen space" that are easily dismissible.
+✅ **Popups triggered by an explicit user action** (e.g. the user taps "Get the discount").
+
+⚠️ **Engagement-delayed popups are NOT automatically safe.** A full-screen overlay that fires after 10s or a 50% scroll still obscures content and can both harm UX/INP and risk the interstitial signal — especially for users who arrived from search. Delay reduces *false triggers*, not the obscuring problem. For search-landing pages, prefer a **dismissible banner or small bottom slide-in** over any content-covering overlay; reserve full overlays for return visits, in-app, or user-initiated flows.
+
+> **Age verification ≠ "always OK".** It is required only for specific regulated content. Don't gate ordinary pages behind an age gate as a popup workaround — that reads as an interstitial and adds friction with no legal cover.
 
 ### Mobile-Safe Popup Guidelines
 
@@ -265,8 +294,11 @@ DON'T:
 ├── Cover content before user has scrolled
 ├── Use tiny close buttons (frustrating on touch)
 ├── Show popup immediately on mobile landing pages from search
+├── Inject a layout-shifting popup without reserved space (hurts CLS)
 └── Stack multiple popups
 ```
+
+**Core Web Vitals impact:** popups touch every CWV metric. (1) **CLS** — a popup that pushes content reflows the page; render it as a fixed/absolute overlay so it doesn't shift layout, or reserve its space. (2) **INP** — heavy popup JS (especially anything that blocks the main thread on first interaction) degrades responsiveness; lazy-load popup code and defer non-critical work. (3) **LCP** — never let popup assets compete with the hero image; load popup images only after the trigger. Measure popup-on vs popup-off in field data (CrUX/RUM), not just lab tools.
 
 ### Mobile Popup CSS Pattern
 
@@ -435,8 +467,9 @@ PRIZES: 5% off (40%), 10% off (30%), 15% off (15%),
         Free shipping (10%), 20% off (5%)
 CTA: [Spin the Wheel]
 FORM: Email required to spin
-NOTE: Converts at 5-12% but attracts discount shoppers.
-      Use strategically.
+NOTE: Often converts well (commonly cited ~5-12%, but highly
+      variable) — yet attracts discount-seekers and can erode margin
+      and brand. Measure margin impact, not just opt-in rate.
 ```
 
 ---
@@ -514,13 +547,87 @@ INLINE BANNER (within page content):
 
 ---
 
-## Cookie Consent Integration
+## Cookie Consent & Privacy Compliance (2026)
 
-### Requirements
+> **Not legal advice.** Privacy law varies by jurisdiction and changes often. Validate your specific banner, consent records, and email-capture flow with privacy counsel and your DPO before launch. This section reflects the regime as of Jun 2026.
 
-- **GDPR (EU):** Explicit opt-in before non-essential cookies. No pre-checked boxes.
-- **CCPA (California):** Opt-out model. Can set cookies but must offer "Do Not Sell" option.
-- **ePrivacy:** Consent required for tracking cookies across EU.
+### Consent Matrix — what each regime requires before you fire popups/pixels
+
+| Regime | Model | Before non-essential cookies/tracking | Marketing email capture |
+|--------|-------|----------------------------------------|--------------------------|
+| **GDPR (EU/EEA)** | Opt-in | Explicit, freely-given, granular consent. No pre-checked boxes, no "consent walls" that force acceptance. "Reject all" must be as easy as "Accept all" (equal prominence, same number of clicks — enforced by EU DPAs and EDPB). Store proof of consent. | Lawful basis required (usually consent or, narrowly, soft opt-in for existing customers' similar products). Privacy notice + named controller at point of capture. |
+| **ePrivacy Directive (EU)** | Opt-in | Consent required before storing/reading ANY non-essential cookie or using device storage (localStorage, fingerprinting, pixels) — independent of whether data is "personal." | Soft opt-in allowed in some member states for existing customers only. |
+| **UK GDPR + PECR** | Opt-in | Same opt-in standard as EU. ICO actively enforces "reject all" parity and cookie-wall rules. | Soft opt-in for existing customers buying similar goods/services; otherwise consent. |
+| **CPRA/CCPA (California)** | Opt-out | May set cookies, but must honor **"Do Not Sell or Share My Personal Information"** (the CPRA-era label — *not* the old "Do Not Sell") and respect **Global Privacy Control (GPC)** as a valid opt-out signal automatically. "Sharing" includes cross-context behavioral/targeted advertising, so most ad pixels count. Provide a **"Limit the Use of My Sensitive Personal Information"** link if you process SPI. | Notice at collection required; opt-out of sale/share applies if email is shared with ad partners. |
+| **Other US states** (e.g. VA/CO/CT/UT and the 15+ states live by 2026) | Opt-out | Most require honoring opt-out of targeted advertising and a universal opt-out signal (GPC); several require opt-**in** for sensitive data. Treat GPC as mandatory across US traffic. | Notice + opt-out of targeted-ad sharing. |
+| **Brazil (LGPD), Canada (CASL/PIPEDA), etc.** | Mixed | LGPD ~ GDPR-style consent. CASL requires express (or limited implied) consent for commercial email. | Jurisdiction-specific — geo-gate or apply strictest applicable standard. |
+
+### GPC (Global Privacy Control) — required, not optional
+
+Under CPRA and most newer US state laws, an opt-out preference signal (GPC) sent by the browser **must be treated as a valid opt-out of sale/share** without any user action in your banner. Detect and honor it:
+
+```javascript
+// Treat GPC as an opt-out signal before loading ad/sharing pixels
+const gpcOptOut = navigator.globalPrivacyControl === true;
+if (gpcOptOut) {
+  // Do NOT load ad-tech that "sells/shares" data; suppress targeting pixels.
+  // You may still set strictly-necessary + first-party functional cookies.
+  disableAdvertisingTags();
+}
+```
+
+### Email capture is NOT exempt from consent
+
+> **Correction to a common myth:** collecting an email via a popup is a direct user action, but that does **not** exempt marketing email from privacy law. Sending marketing email still requires a **lawful basis** (consent, or a narrow "soft opt-in" for existing customers buying similar products in EU/UK), a **privacy notice** at the point of capture, and — under CAN-SPAM/CASL/GDPR — a working unsubscribe. Where you intend to use the email for marketing, get a **separate, unchecked opt-in** and keep proof of it.
+
+### Compliant lead-form copy & structure
+
+```
+HEADLINE: Get 15% off your first order
+FORM:
+  [ Email input ]
+  [ ] Yes, email me offers and news. (UNCHECKED by default — required in EU/UK)
+  [ Claim My Discount ]
+MICROCOPY (below button, small):
+  We'll email you a code now. By subscribing you agree to our
+  Privacy Policy [link]. Unsubscribe anytime. We never sell your data.
+```
+
+Rules:
+- **Unchecked** marketing-consent checkbox wherever consent is the lawful basis (EU/EEA/UK, and safest default globally). Pre-ticked boxes are invalid (CJEU *Planet49*).
+- **Link the privacy notice** at the point of capture; name who you are.
+- **Separate the transaction from the subscription.** "Email me the code" (service) ≠ "subscribe me to marketing" (consent) — let the user opt into each.
+- **Double opt-in** is best practice for deliverability and is effectively required to prove consent in strict regimes; trigger a confirmation email before adding to marketing lists.
+- **Data minimization:** ask for email only unless a field is genuinely needed. Don't collect phone/DOB "just in case."
+- **Honor unsubscribe + suppression** immediately; never re-import unsubscribed contacts.
+
+### Consent Mode & cookieless / privacy-preserving measurement (2024–2026)
+
+Ad and analytics platforms now expect a **consent signal** rather than just a cookie. Wire your banner into it and design for a cookieless baseline:
+
+- **Google Consent Mode v2** (required to use Google Ads audiences/remarketing in the EEA): set `ad_storage`, `analytics_storage`, `ad_user_data`, `ad_personalization` to `denied` by default, then update on consent. With consent denied, Google sends **cookieless pings** for modeled conversions.
+
+```javascript
+// Default DENIED until the user consents (Consent Mode v2)
+gtag('consent', 'default', {
+  ad_storage: 'denied',
+  analytics_storage: 'denied',
+  ad_user_data: 'denied',
+  ad_personalization: 'denied',
+});
+// On "Accept" in your banner:
+function grantConsent() {
+  gtag('consent', 'update', {
+    ad_storage: 'granted',
+    analytics_storage: 'granted',
+    ad_user_data: 'granted',
+    ad_personalization: 'granted',
+  });
+}
+```
+
+- For popup measurement that survives consent denial, prefer **first-party, server-side, and aggregate/modeled** signals over third-party cookies: server-side tagging, first-party event logging keyed to a first-party ID, or privacy-preserving analytics (e.g. cookieless/EU-hosted tools). Treat third-party-cookie data as a declining, consent-gated bonus — not the source of truth.
+- Always check vendor docs for the current required parameters; APIs here change frequently. Verify Consent Mode fields at the Google Tag/Ads consent docs before shipping.
 
 ### Cookie Consent + Marketing Popup Coordination
 
@@ -555,11 +662,16 @@ function showPopup(popupId) {
   }
 }
 
-function onPopupSubmit(popupId, email) {
-  // Email collection doesn't require tracking consent
-  // (it's a direct user action, not passive tracking)
-  submitEmail(email);
+function onPopupSubmit(popupId, email, marketingConsent) {
+  // The email submission itself is a direct user action — but you still need a
+  // lawful basis + privacy notice to use it (see Compliance section above).
+  // Only add to a MARKETING list if the user ticked the opt-in.
+  submitTransactionalEmail(email);        // e.g. send the discount code (service)
+  if (marketingConsent) {
+    subscribeToMarketingList(email);      // separate, explicit opt-in
+  }
 
+  // Analytics on the conversion event is "tracking" — gate it on tracking consent.
   if (hasTrackingConsent()) {
     trackEvent('popup_converted', { id: popupId });
   }
@@ -609,22 +721,38 @@ TEST 4: Design
 
 ### Statistical Significance
 
-- **Minimum sample size:** 1,000 popup impressions per variant
-- **Minimum conversions:** 50+ per variant for reliable results
-- **Duration:** Run tests for at least 7 days (captures weekday/weekend variation)
-- **Confidence level:** 95% minimum before declaring a winner
-- **Don't peek:** Set test duration upfront and don't call it early
+- **Sample size depends on baseline + effect size** — there is no universal "1,000 impressions" number. Lower baseline rates and smaller lifts need far more traffic. Use the table below.
+- **Minimum conversions:** aim for ~100+ conversions per variant (50 is a bare floor for a rough read) before trusting a result.
+- **Duration:** run at least 1–2 full weeks to capture weekday/weekend and full purchase cycles, even if significance hits sooner.
+- **Confidence level:** 95% (α = 0.05) minimum; pick power = 80% when sizing.
+- **Don't peek / no early stopping** on a fixed-horizon test — it inflates false positives. Set the duration and required N up front, or use a sequential/Bayesian method designed for continuous monitoring.
+
+**Required sample size per variant** (2-sided, 95% confidence, 80% power), to detect a *relative* lift over a baseline conversion rate:
+
+| Baseline conv. rate | Detect +10% rel. | +20% rel. | +50% rel. |
+|---------------------|------------------|-----------|-----------|
+| 1% | ~155,000 / variant | ~40,000 | ~7,000 |
+| 2% | ~77,000 | ~20,000 | ~3,400 |
+| 5% | ~30,000 | ~7,600 | ~1,300 |
+| 10% | ~14,000 | ~3,600 | ~620 |
+
+Reading it: a popup at a **2% baseline** that you hope to lift to **2.4% (+20% relative)** needs **~20,000 impressions per variant** — not 1,000. (Approximate; use a proper calculator — e.g. Evan Miller's "Sample Size" or your testing tool's built-in — for exact figures and for absolute-lift inputs.) If the math says you can't reach N in a reasonable window, test a **bigger swing** (offer, not button color), test on **higher-traffic pages**, or accept a **directional** read and re-test later.
 
 ### Tools for A/B Testing Popups
 
-| Tool | Best For | Price |
-|------|----------|-------|
-| OptinMonster | WordPress, full-featured | $16+/mo |
-| Sumo | Simple, free tier | Free to $49/mo |
-| Privy | Ecommerce / Shopify | Free to $30+/mo |
-| ConvertFlow | SaaS, personalization | $29+/mo |
-| Unbounce Smart Builder | Landing pages + popups | $99+/mo |
-| Custom (JS) | Full control | Free (dev time) |
+> Pricing and free-tier limits change constantly — **verify current pricing on the vendor's site before recommending** (as of Jun 2026). Choose on fit, not headline price.
+
+| Tool | Best fit | Choose it when |
+|------|----------|----------------|
+| OptinMonster | WordPress / general web | You want deep trigger + display-rules control without building it; WP-first stack |
+| Sumo | Simple / small sites | You need a fast, low-effort setup and a usable free tier |
+| Privy / Justuno / OptiMonk | Ecommerce (Shopify) | You need cart-value triggers, spin-to-win, and email/SMS list sync to a store |
+| ConvertFlow | SaaS / personalization | You need on-site personalization, multi-step funnels, and CRM-aware targeting |
+| Unbounce / Instapage | Landing pages + popups | Popups live alongside built landing pages and you want one builder |
+| Klaviyo / Mailchimp (built-in forms) | Already on that ESP | You want capture + flows in one tool and don't need advanced display rules |
+| Custom (JS) | Full control | You need exact behavior, no third-party script weight, and own consent/CWV handling |
+
+**Tool-fit criteria, in priority order:** (1) does it integrate with your ESP/CRM and consent platform; (2) display-rule granularity (trigger × segment × frequency cap); (3) built-in A/B testing + significance reporting; (4) script weight / performance (async, lazy-loaded — see Core Web Vitals note); (5) Consent Mode / GPC awareness; (6) price for your traffic volume.
 
 ---
 
@@ -830,14 +958,16 @@ Page content        │  ✕ close     │
 
 ### Key Metrics to Track
 
-| Metric | How to Calculate | Benchmark |
+> "Rough range" below = directional heuristic, not a target. Benchmark against your own historical numbers and segment by device/source.
+
+| Metric | How to Calculate | Rough range |
 |--------|-----------------|-----------|
 | Impression rate | Popups shown / page views | Depends on triggers |
 | Conversion rate | Submissions / impressions | 2-5% (email), 5-15% (click) |
 | Close rate | Dismissals / impressions | 70-90% (normal) |
 | Impact on bounce rate | Compare bounce rate with/without popup | Should not increase >5% |
 | Revenue per popup impression | Revenue attributed / impressions | Track over time |
-| Email quality | Open rate of popup-captured emails | Should be within 80% of other sources |
+| Email quality | Open rate of popup-captured emails | Often ~within 80% of other opt-in sources; compare to *your* baselines |
 
 ### Tracking Implementation
 
@@ -863,10 +993,10 @@ trackPopupEvent('cta_click', 'exit-discount', 'claim_discount');
 
 ## Common Mistakes
 
-1. **Popup on page load for mobile** — Google penalizes this. Delay or use banners.
+1. **Content-covering popup on mobile search landings** — risks Google's intrusive-interstitial signal and hurts UX/INP. Note delaying it doesn't make it "safe" (it still obscures content); prefer a dismissible banner or small slide-in for search traffic. See Mobile Popup Rules.
 2. **No frequency cap** — Showing the same popup every page view = instant annoyance.
 3. **Too many form fields** — Email only. Name is optional. Phone number kills conversion.
-4. **Generic offer** — "Subscribe to our newsletter" converts 80% less than a specific lead magnet.
+4. **Generic offer** — a vague "Subscribe to our newsletter" typically converts far worse than a specific lead magnet (often a multiple lower in CRO case studies; magnitude varies — test your own). Give a concrete reason to opt in.
 5. **Tiny close button** — If users can't dismiss easily, they leave the site entirely.
 6. **Same popup for everyone** — Segment by source, behavior, and customer status.
 7. **No A/B testing** — Even small changes (headline, CTA color) can 2x conversion rate.
@@ -879,7 +1009,7 @@ trackPopupEvent('cta_click', 'exit-discount', 'claim_discount');
 ## Quick-Start Implementation
 
 ### Week 1: Foundation
-1. Choose tool (OptinMonster, Sumo, custom JS)
+1. Choose a tool by **fit, not headline price** (see "Tools for A/B Testing Popups" — match your ESP/CRM, consent platform, and traffic volume; custom JS if you need full control)
 2. Create one exit-intent popup with a specific lead magnet
 3. Set frequency cap (once per 7 days)
 4. Add to high-traffic pages only

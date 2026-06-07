@@ -1,6 +1,6 @@
 ---
 name: testing-strategy
-description: "Testing pyramid, framework selection, mocking patterns, CI integration, flaky test management, visual regression, contract testing, mutation testing, and performance testing for production codebases."
+description: "Test strategy for production codebases: testing pyramid, framework choice, mocking, factories, DB isolation per ORM, coverage gates, CI sharding, flaky-test triage, visual/contract/mutation testing, performance/SLOs, observability. Use when designing or auditing a test strategy, setting coverage/CI gates, fixing flaky tests, or reviewing AI-generated tests."
 ---
 
 # Testing Strategy
@@ -13,7 +13,13 @@ description: "Testing pyramid, framework selection, mocking patterns, CI integra
 | Integration | 20% | <1s each | Medium-high | Vitest, Supertest, Testcontainers |
 | E2E | 10% | <30s each | High | Playwright, Cypress |
 
-**Key principle:** Push tests down the pyramid. If you can test it as a unit, don't write an integration test for it.
+**Key principle (risk-based, not absolute):** Push tests down the pyramid *for logic mocks can fully validate* — pure functions, branching, edge cases. But unit-testability does **not** remove the need for higher tiers. Always add a test where mocks can lie:
+
+- **Integration** for anything that crosses a boundary (DB, queue, cache, external API) — the place where serialization, transactions, and contracts actually break.
+- **Contract** between services you deploy independently (see Contract Testing below) so a unit-green provider can't silently break a consumer.
+- **E2E** for critical user workflows (signup, checkout, payment, auth) where the cost of a regression is high — a few deep E2E flows beat hundreds of shallow ones.
+
+Rule of thumb: choose the *lowest tier that can fail the way production fails*. A unit test of a SQL query string proves nothing about whether the query runs; an integration test against a real Postgres (Testcontainers) does.
 
 ## Framework Selection
 
@@ -96,20 +102,45 @@ test('admin can delete posts', async () => {
 
 ## Coverage Targets
 
-| Metric | Target | Enforcement |
-|--------|--------|-------------|
-| Line | ≥80% | CI gate |
-| Branch | ≥75% | CI gate |
-| Critical paths | 100% | Code review |
-| New code | ≥90% | PR diff check |
+Coverage is a *floor and a smoke alarm*, not a goal. High line coverage with weak assertions is **coverage theater** — code executes but nothing is verified. Calibrate per repo and pair coverage with mutation score (see Mutation Testing) to measure whether tests actually assert behavior.
 
-```json
+| Metric | Starting target | Enforcement | Notes |
+|--------|-----------------|-------------|-------|
+| Line | ≥80% | CI gate | Per-repo; mature services often sit 85–90%, early prototypes lower |
+| Branch | ≥75% | CI gate | Branch > line as a quality signal |
+| Critical paths (auth, payments, pricing) | 100% | Code review + explicit test | Don't average these away |
+| New/changed code | ≥90% | PR diff coverage (Codecov/Coveralls patch %) | Gate the diff, not the whole repo — avoids "ratchet" pain |
+
+**Calibration rules**
+- **Don't ratchet a legacy repo to 80% overnight.** Gate *diff coverage* on new code; let total coverage drift up over time.
+- **Exclude generated/boilerplate** from the denominator: migrations, codegen output (`*.gen.ts`), type-only files, barrel `index.ts`, framework scaffolding.
+- **Risk-based exceptions** are fine when documented: a thin adapter with a fully covered contract test may not need 90% line coverage of glue code. Record the exception in the PR.
+- **A coverage gate alone proves nothing.** Add a mutation-score check on critical modules to catch assertion-free tests.
+
+```typescript
 // vitest.config.ts
-{ test: { coverage: {
-  provider: 'v8',
-  thresholds: { lines: 80, branches: 75, functions: 80 },
-  exclude: ['**/*.test.ts', '**/types/**', '**/migrations/**']
-}}}
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    coverage: {
+      // 'v8' = fast, native, line/branch from V8 (default in Vitest 1.x+).
+      // 'istanbul' = slower but more precise branch/statement attribution
+      // and emits coverage-final.json that merges cleanly across shards.
+      provider: 'v8',
+      reporter: ['text', 'html', 'json', 'lcov'], // lcov for Codecov; json for merging
+      thresholds: { lines: 80, branches: 75, functions: 80, statements: 80 },
+      exclude: [
+        '**/*.test.ts',
+        '**/*.config.ts',
+        '**/*.d.ts',
+        '**/types/**',
+        '**/migrations/**',
+        '**/*.gen.ts',
+      ],
+    },
+  },
+});
 ```
 
 ## CI Integration
@@ -121,7 +152,10 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16
+        # Pin to the SAME major you run in production so tests catch
+        # version-specific SQL/index behavior. Postgres 17 is current GA and
+        # 18 is recent as of mid-2026 — match prod, don't chase latest.
+        image: postgres:17
         env: { POSTGRES_PASSWORD: test }
         ports: ['5432:5432']
     steps:
@@ -201,17 +235,14 @@ npx stryker run
 # Target: >80% mutation score on critical modules
 ```
 
-## References
-
-See `references/` for CI templates, factory patterns, and load testing scenarios.
-
-
 ## Visual Regression Testing
 
 ### Playwright Screenshot Comparisons
 
 ```typescript
 // playwright.config.ts
+import { defineConfig } from '@playwright/test';
+
 export default defineConfig({
   expect: {
     toHaveScreenshot: {
@@ -274,7 +305,8 @@ test('checkout flow visual', async ({ page }) => {
 
 ```bash
 npm i -D chromatic
-npx chromatic --project-token=<token>
+# Token from the CI secret store, never committed:
+npx chromatic --project-token="$CHROMATIC_PROJECT_TOKEN"
 # CI: runs on every push, compares against baseline branch
 ```
 
@@ -294,8 +326,10 @@ npx chromatic --project-token=<token>
 
 Consumer-driven contracts: the consumer defines what it needs, the provider verifies it can deliver.
 
+> **Version-sensitive.** The `PactV4`/`MatchersV3` API below targets `@pact-foundation/pact` v12–v15. Pin the version (`npm i -D @pact-foundation/pact@^15`) and check the [pact-js docs](https://github.com/pact-foundation/pact-js) before copying — the builder API has changed across majors (older code used `Pact`/`Matchers` and an `.addInteraction({...})` object form). If versions don't match, the `.withRequest(method, path)` and callback-`builder` signatures will differ.
+
 ```typescript
-// consumer.pact.spec.ts — consumer side
+// consumer.pact.spec.ts — consumer side (@pact-foundation/pact v12+)
 import { PactV4, MatchersV3 } from '@pact-foundation/pact';
 const { like, eachLike, string } = MatchersV3;
 
@@ -413,27 +447,91 @@ export async function createUserWithPosts(db: DB, postCount = 3) {
 
 | Strategy | Speed | Isolation | Use when |
 |----------|-------|-----------|----------|
-| Transaction rollback | Fastest | Per-test | Unit/integration with single DB |
-| Truncate tables | Fast | Per-suite | Multiple connections needed |
-| Separate DB per worker | Slowest | Perfect | Parallel CI with migrations |
+| Transaction rollback | Fastest | Per-test | Single connection, ORM supports nested/abortable tx |
+| Truncate tables | Fast | Per-suite/test | Multiple connections, or rollback not viable |
+| Separate DB / schema per worker | Slower | Perfect | Parallel CI with migrations, full realism |
+
+> **Gotcha:** Most ORMs (Drizzle, Prisma) run transactions in a **callback scope** and roll back by *throwing* — you cannot hold a `tx` handle open across `beforeEach`/`afterEach` and call `tx.rollback()` later. Use the per-ORM patterns below. Transaction rollback also can't catch bugs in code that *commits its own transaction* — for those, truncate or a per-worker DB.
+
+**Drizzle — abort via thrown sentinel inside the callback**
+
+Drizzle's `db.transaction(cb)` only rolls back if the callback throws (or you call `tx.rollback()`, which itself throws to unwind). Wrap each test body in a transaction and throw a sentinel to discard:
 
 ```typescript
-// Transaction rollback pattern (Vitest + Drizzle)
-import { beforeEach, afterEach } from 'vitest';
+// test-tx.ts
+import { db } from '@/lib/db';
 
-let tx: Transaction;
-beforeEach(async () => {
-  tx = await db.transaction();
-  // Pass tx instead of db to all queries in test
-});
-afterEach(async () => {
-  await tx.rollback();
-});
+const ROLLBACK = Symbol('rollback');
 
-// Truncate pattern
-afterEach(async () => {
-  await db.execute(sql`TRUNCATE users, posts, comments RESTART IDENTITY CASCADE`);
+/** Runs `fn` against a transaction `tx`, then always rolls back. */
+export async function withRollback(fn: (tx: typeof db) => Promise<void>) {
+  try {
+    await db.transaction(async (tx) => {
+      await fn(tx as unknown as typeof db);
+      throw ROLLBACK; // discard everything written in this test
+    });
+  } catch (e) {
+    if (e !== ROLLBACK) throw e; // re-throw real errors
+  }
+}
+
+// usage — pass `tx` to every query the code-under-test runs
+test('admin can delete posts', async () => {
+  await withRollback(async (tx) => {
+    const admin = await createUser(tx, { role: 'admin' });
+    const post = await createPost(tx, { authorId: admin.id });
+    await deletePost(tx, post.id);
+    expect(await findPost(tx, post.id)).toBeUndefined();
+  });
 });
+```
+
+**Prisma — interactive transaction + thrown rollback (or `prisma-test-environment`)**
+
+```typescript
+// Prisma interactive transaction, rolled back by throwing:
+const ROLLBACK = Symbol('rollback');
+async function withRollback(fn: (tx: Prisma.TransactionClient) => Promise<void>) {
+  try {
+    await prisma.$transaction(async (tx) => { await fn(tx); throw ROLLBACK; });
+  } catch (e) { if (e !== ROLLBACK) throw e; }
+}
+```
+
+For parallel suites prefer a **schema-per-worker** strategy: give each Vitest/Jest worker its own Postgres schema, point `DATABASE_URL` at `...?schema=test_${workerId}`, and run `prisma migrate deploy` against it once.
+
+**Truncate (any ORM, raw SQL) — simplest when rollback won't work**
+
+```typescript
+import { sql } from 'drizzle-orm';
+// Reset to a clean state between tests. RESTART IDENTITY resets serial PKs;
+// CASCADE handles FK-linked rows. List tables explicitly or query them.
+afterEach(async () => {
+  await db.execute(
+    sql`TRUNCATE TABLE users, posts, comments RESTART IDENTITY CASCADE`
+  );
+});
+```
+
+**Rails / Django (for non-JS stacks)**
+- **Rails:** `use_transactional_tests = true` (RSpec/Minitest) wraps each example in a transaction and rolls back automatically; switch to `DatabaseCleaner` with `:truncation` when tests span threads/processes (system/feature specs with a real browser).
+- **Django:** subclass `TestCase` (wraps each test in a transaction + savepoints, auto-rollback). Use `TransactionTestCase` only when you must commit (e.g. testing `on_commit` hooks), and `pytest-django`'s `@pytest.mark.django_db(transaction=True)` for the same.
+
+**Parallel integration tests — Testcontainers (one real DB per run)**
+
+```typescript
+// db.testcontainer.ts — spin a throwaway Postgres for the whole test run
+import { PostgreSqlContainer } from '@testcontainers/postgresql';
+
+let container: Awaited<ReturnType<PostgreSqlContainer['start']>>;
+
+export async function setup() {
+  container = await new PostgreSqlContainer('postgres:17').start();
+  process.env.DATABASE_URL = container.getConnectionUri();
+  // run migrations against the fresh container, then hand off to tests
+}
+export async function teardown() { await container.stop(); }
+// wire via Vitest globalSetup: defineConfig({ test: { globalSetup: './db.testcontainer.ts' } })
 ```
 
 ### Seeding Strategies
@@ -464,7 +562,13 @@ export async function seed(db: DB) {
 
 ### Best Practices
 
-```typescript
+```tsx
+// snapshot.test.tsx
+import { test, expect } from 'vitest';
+import { render } from '@testing-library/react'; // needs jsdom/happy-dom env
+import { Alert } from '@/components/Alert';
+import { formatDisplayName } from '@/lib/format';
+
 // ✅ Inline snapshots for small, focused assertions
 test('formats user display name', () => {
   expect(formatDisplayName({ first: 'Jane', last: 'Doe' }))
@@ -527,35 +631,46 @@ npx playwright test --shard=2/4
 
 ### GitHub Actions Matrix
 
+Coverage merge is the part that silently goes wrong. Vitest's **V8** provider does not emit nyc/Istanbul-compatible JSON, so `nyc merge` on raw V8 output produces empty or wrong reports. Two reliable options:
+
+**A. Let your coverage service merge (simplest, recommended).** Each shard uploads its own `lcov`/json; Codecov/Coveralls stitches them by commit SHA. No manual merge step.
+
 ```yaml
 # .github/workflows/test.yml
 jobs:
   test:
-    strategy:
-      matrix:
-        shard: [1, 2, 3, 4]
+    strategy: { matrix: { shard: [1, 2, 3, 4] } }
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: 'pnpm' }
       - run: pnpm install --frozen-lockfile
-      - run: pnpm vitest --shard=${{ matrix.shard }}/4
-      - name: Upload coverage
-        uses: actions/upload-artifact@v4
+      # Each shard writes a uniquely-named lcov so uploads don't collide.
+      - run: pnpm vitest run --shard=${{ matrix.shard }}/4 --coverage
+      - uses: codecov/codecov-action@v5   # merges shards server-side by SHA
         with:
-          name: coverage-${{ matrix.shard }}
-          path: coverage/
+          files: ./coverage/lcov.info
+          flags: shard-${{ matrix.shard }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+```
 
+**B. Merge yourself with Istanbul JSON.** Switch the Vitest provider to `istanbul` (which writes `coverage/coverage-final.json`), upload that per shard, then merge with `istanbul-merge` + `nyc report`:
+
+```yaml
   merge-coverage:
     needs: test
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
-        with: { pattern: coverage-*, merge-multiple: true, path: coverage/ }
-      - run: npx nyc merge coverage/ merged-coverage.json
-      - run: npx nyc report --reporter=text --temp-dir=coverage/
+        with: { pattern: coverage-*, path: shards/ } # each = coverage-final.json
+      # Combine the per-shard Istanbul JSON into one map, then report.
+      - run: npx istanbul-merge --out coverage/coverage-final.json shards/**/coverage-final.json
+      - run: npx nyc report --reporter=text --reporter=lcov --temp-dir=coverage/
 ```
+
+(With provider `istanbul`, also `actions/upload-artifact@v4` each shard's `coverage/coverage-final.json` as `coverage-${{ matrix.shard }}` in the `test` job.)
 
 ### Playwright Sharding with Blob Reports
 
@@ -652,6 +767,72 @@ test('grants access at exactly 18', () => {
 });
 ```
 
+## Test Strategy & Governance
+
+The hard part of a test suite at scale isn't writing tests — it's keeping them fast, owned, trustworthy, and safe. This section covers the strategy decisions reviewers look for.
+
+### Risk-Based Test Selection
+
+Don't test everything equally. Spend depth where a defect is likely *and* costly.
+
+| Risk = Likelihood x Impact | Strategy |
+|----------------------------|----------|
+| High impact, high churn (auth, payments, pricing, permissions) | Unit + integration + contract + an E2E happy path; 100% critical-path coverage; mutation score gate |
+| High impact, low churn (money math, tax, crypto) | Exhaustive unit + property-based tests; lock with mutation testing |
+| Low impact, high churn (UI copy, layout) | Visual regression + a thin smoke test; skip deep unit tests |
+| Low impact, low churn (internal admin tooling) | Smoke test only; don't gold-plate |
+
+- **Change-based selection in CI:** run the full suite on `main`/release branches; on PRs run impacted tests first. Vitest `--changed` (vs a base ref) and Jest `--onlyChanged`/`--findRelatedTests <files>` cut feedback time on large repos.
+- **Property-based tests** (fast-check) beat dozens of example tests for parsers, serializers, money/units, and invariant checks: assert a property over generated inputs (`fc.assert(fc.property(fc.integer(), (n) => decode(encode(n)) === n))`).
+
+### Ownership & Naming Conventions
+
+- **Co-locate tests** with the code (`foo.ts` → `foo.test.ts`) so ownership follows the module via `CODEOWNERS`. A failing test should have an obvious owner.
+- **Name tests by behavior, not implementation.** Pattern: `<subject> <does X> when <condition>`. Good: `rejects checkout when cart is empty`. Bad: `test calculateTotal 2`. The test name should read as a spec line in CI output.
+- **One assertion *concept* per test.** Multiple `expect`s are fine if they verify one behavior; if a test needs "and also" in its name, split it.
+- **Tag slow/integration/e2e** tests so they can be filtered: Vitest/Jest test name tags or separate `*.integration.test.ts` globs; gate them to run post-unit.
+
+### Hermetic, Reproducible CI
+
+A test that depends on wall-clock time, network, ordering, or ambient state is a future flake. Make tests hermetic:
+
+- **No real network.** Mock outbound HTTP at the boundary (msw/nock) or use Testcontainers for real deps you control. A test hitting `api.stripe.com` is not a test, it's an outage waiting to happen.
+- **Freeze time and seed randomness.** `vi.setSystemTime(...)`; seed `faker` (`faker.seed(123)`) and any RNG so failures reproduce.
+- **Pin everything:** `pnpm install --frozen-lockfile`, pinned base images (`postgres:17`, not `:latest`), pinned action SHAs/majors. Cache deps, never test results.
+- **Randomize test order** (Vitest `sequence.shuffle`, Jest `--shuffle`) to surface hidden inter-test coupling before it becomes a flake.
+- **Fail on console.error/unhandled rejections** in CI to catch silent regressions.
+
+### Contract & Schema Versioning
+
+Independently deployed services drift. Version the contract, not just the code:
+
+- **Pact:** publish the consumer's `pacticipant` *version* (`--consumer-app-version=$GIT_SHA`) and tag the deploy environment; gate releases with `can-i-deploy` (shown above). Use **provider versioning + branch tags** so a new consumer contract doesn't block an old provider.
+- **OpenAPI/JSON Schema:** snapshot the schema in the repo and fail the build on a breaking diff (e.g. `oasdiff breaking old.yaml new.yaml`). Treat removing a field or tightening a type as a major-version change.
+- **GraphQL:** run schema-diff in CI and block breaking changes unless the field is deprecated first.
+- **Events/queues:** validate message payloads against a versioned schema (Zod/Avro/Protobuf) in a contract test on both producer and consumer.
+
+### Data Privacy & Secrets in Tests
+
+Test data and fixtures are a common leak path — treat them like production data.
+
+- **Never use real PII in fixtures.** Generate it: `faker.internet.email()`, synthetic names/addresses. Never paste a real customer record, a production DB dump, or a real card number into a fixture.
+- **No real secrets in the repo or CI logs.** Inject via the CI secret store (`${{ secrets.X }}`), not committed `.env`. Use obvious placeholders in examples (`Bearer <test-token>`, `AXIOM_TOKEN=<your-token>`, `0xYourWalletAddress`).
+- **Use provider *test* modes,** never live keys: Stripe `sk_test_...` + test cards (`4242 4242 4242 4242`), sandbox endpoints, throwaway accounts.
+- **Scrub before sharing.** Strip secrets/PII from CI artifacts and screenshots (mask in Playwright). Scan with a secret scanner (gitleaks/`trufflehog`) in CI to block accidental commits.
+- **Anonymize prod-derived test data:** if you must seed from production, hash/redact identifiers and emails first; document the transform.
+
+### Reviewing AI-Generated Tests
+
+LLM-written tests are fast to produce and easy to trust too much. Before merging, verify:
+
+1. **The test actually asserts behavior** — not just that code runs without throwing. Reject `expect(result).toBeDefined()` standing in for a real check (classic AI coverage theater).
+2. **It can fail.** Temporarily break the implementation (or read the diff) and confirm the test goes red. A test that passes against broken code is worse than none. Run it through mutation testing on critical modules.
+3. **No tautologies or mock-only assertions** — e.g. asserting a mock returns the value you told it to return, or re-implementing the function inside the test.
+4. **Inputs are meaningful**, including edge/boundary cases (empty, null, max, negative, unicode), not just one happy path with round numbers.
+5. **No hidden coupling to internals** that will break on refactor; it should test the public contract.
+6. **It's hermetic** (no real network/time/order dependence) and uses synthetic, PII-free data.
+7. **Snapshots are reviewed,** not blindly accepted — an AI that runs `--update` then commits a 500-line snapshot has tested nothing.
+
 ## API Testing Patterns
 
 ### Supertest (Express/Fastify)
@@ -697,6 +878,8 @@ describe('POST /api/orders', () => {
 
 ```typescript
 // playwright.config.ts — API project (no browser needed)
+import { defineConfig } from '@playwright/test';
+
 export default defineConfig({
   projects: [
     {
@@ -931,9 +1114,13 @@ Sentry.captureException(error, { fingerprint: ['checkout-flow', error.code] });
 | Error rate | >1% of transactions | PagerDuty |
 | Performance | p95 > 2s | Slack |
 
-**Performance monitoring:** Enabled by default with `tracesSampleRate`. Start at `0.1` (10%) in production, increase if needed:
+**Performance monitoring (tracing):** *Not* automatic — you must opt in by setting a non-zero `tracesSampleRate` (or `tracesSampler`) in each runtime config (`sentry.client.config.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`). With it unset/`0`, no transactions are sent. Profiling additionally requires `profilesSampleRate` *and* the profiling integration. Start at 10% in production and raise as needed:
 ```typescript
-Sentry.init({ dsn: '...', tracesSampleRate: 0.1, profilesSampleRate: 0.1 });
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  tracesSampleRate: 0.1,   // 10% of transactions traced
+  profilesSampleRate: 0.1, // relative to traced transactions; needs nodeProfilingIntegration() on the server
+});
 ```
 
 ## Logging
@@ -988,18 +1175,21 @@ export function middleware(request: Request) {
 
 ### Centralized Log Aggregation
 
-| Service | Pino transport | Free tier |
-|---------|---------------|-----------|
-| **Axiom** | `@axiomhq/pino` | 500GB/mo ingest |
-| **Datadog** | `pino-datadog-transport` | 14-day trial |
-| **BetterStack** | `@logtail/pino` | 1GB/mo |
+| Service | Pino transport | Notes |
+|---------|---------------|-------|
+| **Axiom** | `@axiomhq/pino` | Generous free/ingest tier; verify current quota at axiom.co/pricing |
+| **Datadog** | `pino-datadog-transport` | Priced per ingested GB + retention; verify at datadoghq.com/pricing |
+| **BetterStack** | `@logtail/pino` | Free tier exists; verify current GB/retention at betterstack.com |
+| **Grafana Loki** (self-host) | `pino-loki` | Open-source, no per-GB vendor cost; you run storage |
+
+> Free-tier sizes and pricing change frequently — figures verified as of Jun 2026 only directionally. **Always confirm current quotas on the vendor's pricing page** before committing; don't hardcode a GB limit into your runbook.
 
 ```typescript
-// Production transport example (Axiom)
+// Production transport example (Axiom). Token comes from env — never commit it.
 import pino from 'pino';
 const transport = pino.transport({
   target: '@axiomhq/pino',
-  options: { dataset: 'my-app', token: process.env.AXIOM_TOKEN },
+  options: { dataset: 'my-app', token: process.env.AXIOM_TOKEN }, // e.g. AXIOM_TOKEN=<your-token>
 });
 export const logger = pino(transport);
 ```
@@ -1014,7 +1204,7 @@ export const logger = pino(transport);
 
 ### Should-Have (Week 2)
 - [ ] Centralized log aggregation (Axiom/Datadog)
-- [ ] Performance budgets: LCP < 2.5s, FID < 100ms, CLS < 0.1
+- [ ] Performance budgets (Core Web Vitals, "good" thresholds): LCP < 2.5s, **INP < 200ms** (INP replaced FID as a Core Web Vital in Mar 2024), CLS < 0.1; supporting: TTFB < 800ms, FCP < 1.8s
 - [ ] Database query monitoring (slow query log, connection pool alerts)
 - [ ] Custom business metric dashboards (signup rate, activation, errors by endpoint)
 

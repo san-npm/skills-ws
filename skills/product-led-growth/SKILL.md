@@ -1,6 +1,6 @@
 ---
 name: product-led-growth
-description: "Product-led growth playbooks — activation loops, viral mechanics, freemium optimization, and self-serve revenue."
+description: "Product-led growth playbooks — activation loops, viral mechanics, freemium gating, PQL scoring, self-serve revenue, and product-led sales. Use when designing PLG onboarding, defining aha/activation metrics, building freemium gates or reverse trials, scoring PQLs, wiring self-serve Stripe billing, or layering sales onto self-serve."
 ---
 
 # Product-Led Growth (PLG)
@@ -57,24 +57,28 @@ Each stage feeds the next. Advocacy drives acquisition. The flywheel compounds.
 
 The aha moment is the action (or set of actions) that correlates most strongly with long-term retention. It's when the user first experiences your product's core value.
 
-**Famous examples:**
+**Famous examples (historical / anecdotal — treat as illustrations of the *pattern*, not as current benchmarks):**
 
-| Company | Aha Moment | Metric |
-|---------|-----------|--------|
-| Slack | Team sends 2,000 messages | 93% retention after this threshold |
-| Dropbox | User saves 1 file to Dropbox folder | Retention 2x vs non-savers |
-| Facebook | 7 friends in 10 days | Retention cliff without this |
-| Zoom | Host first meeting | 80%+ return rate |
-| Figma | Invite a collaborator to a file | 3x retention vs solo users |
-| Notion | Create 5+ pages with content | Habit formation threshold |
-| Calendly | Share scheduling link, get first booking | Value realized |
+These figures come from growth talks and case studies circa 2013–2020; the exact thresholds were never independently audited and the products have changed since. Use them to understand the *shape* of an aha moment, then derive your own from your data (method below). Do not quote these numbers as if they were current facts.
+
+| Company | Aha Moment (as reported) | Reported signal | Era |
+|---------|--------------------------|-----------------|-----|
+| Slack | Team sends ~2,000 messages | High retention past this threshold | ~2014–2015 |
+| Dropbox | Saves ≥1 file to a synced folder | Markedly higher retention vs non-savers | ~2010s |
+| Facebook | 7 friends in 10 days | Retention cliff below this | ~2008–2012 |
+| Zoom | Hosts first meeting | High return rate | ~2017–2019 |
+| Figma | Invites a collaborator to a file | Higher retention vs solo users | ~2018–2020 |
+| Notion | Creates several content-filled pages | Habit-formation threshold | ~2019–2020 |
+| Calendly | Shares a link and gets first booking | Value realized | ~2018–2020 |
+
+**The takeaway is the *type* of action, not the literal number:** the durable aha moments are collaborative (invite/share), data-creating (save/create), or outcome-producing (first booking/meeting). Always recompute the threshold for your own product.
 
 **How to find YOUR aha moment:**
 1. List all user actions in first 7 days
-2. For each action, calculate Day 30 retention rate for users who did it vs didn't
-3. The action with the highest retention delta is your aha moment candidate
-4. Validate with correlation analysis (not just causation assumption)
-5. Test by driving more users to that action — does retention improve?
+2. For each action, calculate Day 30 retention rate for users who did it vs didn't — **and the sample size in each group** (a 90% delta on 11 users is noise)
+3. Rank candidates by retention delta, but discard any where either arm has < ~100 users or where the difference isn't statistically significant
+4. **Beware confounders:** the action may just be a marker of an already-engaged user (selection bias), not the cause of retention. Control for an engagement proxy (e.g., sessions in days 0–2) before crediting the action
+5. **Prove causation, don't assume it:** run a holdout experiment — randomly nudge half of new users toward the action and leave the other half alone, then compare Day-30 retention. If retention rises in the nudged arm, the action is causal and worth designing onboarding around. Correlation alone (steps 2–3) only generates the hypothesis
 
 ```sql
 -- Find aha-moment candidates: for each candidate action,
@@ -98,21 +102,42 @@ retention AS (
                          AND u.signup_date + INTERVAL '35 days'
 ),
 candidate AS (
-  SELECT 'invited_teammate'      AS action, invited      AS did_it, user_id FROM user_actions
+  SELECT 'invited_teammate'       AS action, invited         AS did_it, user_id FROM user_actions
   UNION ALL
-  SELECT 'created_project',      created_project, user_id FROM user_actions
+  SELECT 'created_project',       created_project, user_id FROM user_actions
   UNION ALL
-  SELECT 'connected_integration', connected,      user_id FROM user_actions
+  SELECT 'connected_integration', connected,       user_id FROM user_actions
+),
+stats AS (
+  SELECT
+    c.action,
+    COUNT(*) FILTER (WHERE c.did_it = 1)                                  AS n_yes,
+    COUNT(*) FILTER (WHERE c.did_it = 0)                                  AS n_no,
+    AVG(COALESCE(r.retained_d30, 0)) FILTER (WHERE c.did_it = 1)::numeric AS p_yes,
+    AVG(COALESCE(r.retained_d30, 0)) FILTER (WHERE c.did_it = 0)::numeric AS p_no
+  FROM candidate c
+  LEFT JOIN retention r ON r.user_id = c.user_id
+  GROUP BY c.action
 )
 SELECT
-  c.action,
-  AVG(CASE WHEN c.did_it = 1 THEN COALESCE(r.retained_d30, 0) END) AS retention_if_yes,
-  AVG(CASE WHEN c.did_it = 0 THEN COALESCE(r.retained_d30, 0) END) AS retention_if_no
-FROM candidate c
-LEFT JOIN retention r ON r.user_id = c.user_id
-GROUP BY c.action
-ORDER BY (retention_if_yes - retention_if_no) DESC;
--- The action with the highest delta is your aha-moment candidate.
+  action,
+  n_yes, n_no,
+  ROUND(p_yes, 3)                       AS retention_if_yes,
+  ROUND(p_no,  3)                       AS retention_if_no,
+  ROUND(p_yes - p_no, 3)                AS abs_delta,
+  ROUND(p_yes / NULLIF(p_no, 0), 2)     AS lift_ratio,   -- relative risk; >1 means the action correlates with retention
+  -- two-proportion z-score: |z| > 1.96 ≈ p < 0.05 (treat smaller |z| as "not yet significant")
+  ROUND(
+    (p_yes - p_no) / NULLIF(
+      sqrt( ((p_yes * n_yes + p_no * n_no) / NULLIF(n_yes + n_no, 0))
+          * (1 - (p_yes * n_yes + p_no * n_no) / NULLIF(n_yes + n_no, 0))
+          * (1.0 / NULLIF(n_yes, 0) + 1.0 / NULLIF(n_no, 0)) ), 0)
+  , 2)                                  AS z_score
+FROM stats
+WHERE n_yes >= 100 AND n_no >= 100      -- drop under-powered candidates
+ORDER BY abs_delta DESC;
+-- Pick the action with the largest abs_delta AND |z_score| > 1.96.
+-- Correlation only — confirm causality with a randomized nudge holdout before re-architecting onboarding.
 ```
 
 ### Time-to-Value (TTV) Optimization
@@ -176,11 +201,13 @@ Product REQUIRES others to get value. Can't use it alone effectively.
 - Google Docs: sharing IS the product
 
 **2. Artificial virality (referral programs)**
-Incentivized sharing. User gets reward for inviting others.
-- Dropbox: 500MB free storage per referral (both sides)
-- Uber: $10 credit for referrer and referee
-- Notion: $5 credit per referral
-- Robinhood: free stock for both parties
+Incentivized sharing. User gets reward for inviting others. (Reward amounts below are illustrative — programs and payouts change; verify current terms before quoting.)
+- Dropbox: bonus storage per referral, double-sided (the canonical example)
+- Uber: ride credit for both referrer and referee
+- Notion: account credit per successful referral
+- Robinhood: free stock for both parties (subject to eligibility)
+
+Double-sided rewards (both parties benefit) consistently outperform one-sided ones — they give the sender a non-awkward reason to invite.
 
 **3. Content virality (organic distribution)**
 User-created content gets shared outside the product.
@@ -251,14 +278,16 @@ The most sustainable viral loop — product gets better with more users:
 
 **The freemium golden rule:** Give away enough that users experience core value and NEED more.
 
-| Gate Type | Give Free | Gate (Paid) | Example |
+Exact plan limits below are *illustrative shapes*, not current quotes — vendors retune them constantly. Confirm any number against the vendor's live pricing page before you cite it.
+
+| Gate Type | Give Free | Gate (Paid) | Example pattern |
 |-----------|----------|------------|----------|
-| Usage limits | 3 projects | Unlimited projects | Notion, Trello |
-| Feature gates | Core features | Advanced features | Slack (threads free, analytics paid) |
-| Seat limits | 1-5 users | 6+ users | Figma (3 projects free) |
-| Storage limits | 5GB | 50GB+ | Dropbox, Google Drive |
+| Usage limits | A few projects/items | Unlimited | Notion, Trello (item/board caps on free) |
+| Feature gates | Core features | Advanced features (analytics, automations) | Slack (advanced features paid) |
+| Seat limits | Small team cap | Larger / unlimited seats | Figma, Linear (per-seat paid tiers) |
+| Storage limits | A few GB | Tens–hundreds of GB | Dropbox, Google Drive |
 | Support tier | Community/docs | Priority/dedicated | Most SaaS |
-| History/retention | 7-day history | Unlimited history | Slack (90-day message limit on free) |
+| History/retention | Recent history only | Full history | Slack (free tier limits how far back you can search/see messages — verify the current window at slack.com/pricing) |
 
 **Rules for gating:**
 - Free must include the aha moment (never gate the first value experience)
@@ -277,12 +306,14 @@ The most sustainable viral loop — product gets better with more users:
 
 ### Free-to-Paid Conversion Benchmarks
 
-| Conversion Rate | Rating | Examples |
+Bands are industry rules of thumb; the per-company percentages are rough, widely-circulated estimates (not audited disclosures) — treat them as illustrative of the tier, not as quotable facts.
+
+| Conversion Rate | Rating | Typical of |
 |----------------|--------|----------|
 | 1-2% | Below average | Broad consumer products |
-| 2-5% | Average / healthy | Most B2B SaaS (Slack ~3%, Dropbox ~4%) |
-| 5-10% | Strong | High-intent products (Zoom ~6%, Calendly ~8%) |
-| 10%+ | Exceptional | Niche/high-value products (Superhuman, Linear) |
+| 2-5% | Average / healthy | Most B2B SaaS (broad-funnel freemium) |
+| 5-10% | Strong | High-intent products (clear paid use case) |
+| 10%+ | Exceptional | Niche/high-value products (premium positioning) |
 
 **To improve conversion:**
 - Reduce time-to-value (faster activation = higher conversion)
@@ -300,10 +331,10 @@ Day 14: Trial expires → Downgrade to free tier
 Result: Users experience premium value, feel the loss, convert at higher rates
 ```
 
-**Reverse trial benchmarks:**
-- Traditional freemium: 2-5% conversion
-- Reverse trial: 7-15% conversion (2-3x improvement)
-- Companies using it: Airtable, Grammarly, Loom
+**Reverse trial benchmarks (directional, not guaranteed — depends heavily on product and ICP):**
+- Traditional freemium: ~2-5% conversion
+- Reverse trial: often 2-3x that (commonly cited in the ~7-15% range)
+- The pattern is widely used by collaboration and productivity SaaS (e.g., Slack and many Notion-style tools default new workspaces into a time-boxed full-feature experience before downgrading). Confirm any specific company's current flow yourself — onboarding designs change frequently.
 
 **Implementation tips:**
 - Clear countdown ("7 days left of Pro features")
@@ -341,25 +372,116 @@ Result: Users experience premium value, feel the loss, convert at higher rates
 - **Social proof near CTA** — "Join 10,000+ teams" or customer logos
 - **Money-back guarantee** — reduces purchase anxiety
 
-### Payment Integration Patterns
+### Payment Integration Patterns (Stripe Billing)
 
-**Stripe is the default. Here's the architecture:**
+Stripe is the default for self-serve SaaS. APIs evolve — pin a Stripe API version in your account and confirm exact parameters at https://docs.stripe.com/billing before shipping. (If your app is Next.js/serverless, also see the sibling `stripe-billing` skill for framework wiring.)
 
-```
-User clicks "Upgrade" → Stripe Checkout (hosted) → Webhook confirms → Update DB → Unlock features
+**The four moving parts:**
+
+| Piece | What it does | Stripe object |
+|-------|--------------|---------------|
+| Checkout Session | Hosted, PCI-compliant page that collects payment and starts a subscription | `checkout.session` (`mode: 'subscription'`) |
+| Customer Portal | Stripe-hosted page where users upgrade/downgrade/cancel/update card — you build none of this | Billing Customer Portal |
+| Subscription | The recurring relationship; carries one or more items (tiers, seats, metered usage) | `subscription`, `subscription_item` |
+| Webhooks | The source of truth that tells *your* DB what actually happened | `event` (verify signature) |
+
+**Golden rule: never grant entitlements from the browser redirect.** The `success_url` only means the user came back — it does not mean payment cleared. Grant access from **webhooks** only.
+
+**1. Start a subscription (server-side):**
+```js
+// mode 'subscription' = recurring; use 'payment' for one-time, 'setup' to save a card for later.
+const session = await stripe.checkout.sessions.create({
+  mode: 'subscription',
+  customer: stripeCustomerId,                 // reuse an existing Customer; don't create dupes
+  line_items: [{ price: 'price_pro_monthly', quantity: seatCount }],
+  client_reference_id: internalAccountId,     // map the session back to YOUR account
+  subscription_data: { trial_period_days: 14 },
+  allow_promotion_codes: true,
+  success_url: 'https://app.example.com/billing?session_id={CHECKOUT_SESSION_ID}',
+  cancel_url:  'https://app.example.com/pricing',
+});
+// redirect the user to session.url
 ```
 
-**Usage-based billing:**
-```
-Track usage events → Aggregate hourly/daily → Report to Stripe Metering API → Invoice at period end
+**2. Let users self-manage (no custom billing UI needed):**
+```js
+const portal = await stripe.billingPortal.sessions.create({
+  customer: stripeCustomerId,
+  return_url: 'https://app.example.com/settings',
+});
+// redirect to portal.url — Stripe handles upgrades, proration, cancellation, card updates, invoices
 ```
 
-**Key implementation details:**
-- Use Stripe Checkout (not custom forms) for PCI compliance
-- Always handle webhooks idempotently (same event may fire twice)
-- Implement dunning (failed payment retry: day 1, 3, 5, 7 then cancel)
-- Prorate upgrades mid-cycle
-- Allow downgrade at end of billing period (not immediate)
+**3. Webhook handler = your entitlement engine.** Verify the signature, then act on these events:
+
+| Event | Do this |
+|-------|---------|
+| `checkout.session.completed` | First grant: read `client_reference_id`, mark account paid, store `customer`/`subscription` IDs |
+| `customer.subscription.created` / `customer.subscription.updated` | Re-sync entitlements from the subscription's items, price, `status`, and `quantity` (this is the canonical "what plan are they on now" event — fires on upgrade, downgrade, seat change, trial→active) |
+| `customer.subscription.deleted` | Revoke entitlements / drop to free tier |
+| `invoice.paid` | Confirm continued access for the new period |
+| `invoice.payment_failed` | Enter dunning / grace state (Stripe also retries automatically per your retry settings) |
+
+```js
+// Express example — note express.raw: signature verification needs the UNPARSED body.
+app.post('/webhooks/stripe', express.raw({ type: 'application/json' }), (req, res) => {
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(
+      req.body, req.headers['stripe-signature'], process.env.STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    return res.status(400).send(`Webhook signature failed: ${err.message}`);
+  }
+
+  // Idempotency: Stripe can deliver the same event more than once.
+  // Record event.id and no-op if you've already processed it.
+  if (alreadyProcessed(event.id)) return res.json({ received: true });
+
+  switch (event.type) {
+    case 'checkout.session.completed':
+      grantAccess(event.data.object.client_reference_id, event.data.object.subscription);
+      break;
+    case 'customer.subscription.updated':
+    case 'customer.subscription.created':
+      syncEntitlements(event.data.object);   // map price/items/status → your feature flags
+      break;
+    case 'customer.subscription.deleted':
+      downgradeToFree(event.data.object.customer);
+      break;
+    case 'invoice.payment_failed':
+      enterDunning(event.data.object.customer);
+      break;
+  }
+  markProcessed(event.id);
+  res.json({ received: true });
+});
+```
+
+**4. Usage-based billing — use Stripe Billing *Meters* (the modern API; the old "Metering API" / `usage_records` flow is legacy).**
+```js
+// Define a Meter once (e.g., event_name 'api_request'), attach a metered Price to it,
+// then report usage as meter events — Stripe aggregates and bills at period end.
+await stripe.billing.meterEvents.create({
+  event_name: 'api_request',
+  payload: { stripe_customer_id: stripeCustomerId, value: '1' },
+  identifier: dedupeKey,   // unique per usage unit → safe to retry without double-billing
+});
+```
+Pattern: `track usage events → report as meter events (idempotent) → Stripe Billing Meters aggregate → metered Price invoices at period end`. For hybrid plans, put a flat-fee item and a metered item on the same subscription.
+
+**Entitlement sync — the part teams get wrong:**
+- Treat the Stripe subscription as the source of truth and your DB as a *cache*. On every subscription event, recompute the account's plan + limits from the subscription's `items`, `status`, and `quantity` rather than incrementing local counters.
+- Map plan → feature flags in one place (a `priceId → entitlements` table) so Free/Pro/Enterprise gating stays consistent across the app.
+- Handle the in-between `status` values (`trialing`, `past_due`, `unpaid`, `canceled`) explicitly — `past_due` should usually keep access during the grace/dunning window, `canceled`/`unpaid` should revoke.
+
+**Other implementation details:**
+- Always handle webhooks idempotently (key on `event.id`); same event may fire twice.
+- Let Stripe handle dunning via its automatic retry + Smart Retries settings rather than hand-rolling a retry schedule.
+- Prorate upgrades mid-cycle (Stripe does this by default on subscription item changes); schedule downgrades for period end so users keep what they paid for.
+
+**Verify before you ship (test mode):**
+- Use **test-mode** keys and Stripe's test cards (e.g., `4242 4242 4242 4242` succeeds; `4000 0000 0000 0341` triggers a failed payment for dunning tests).
+- Run the **Stripe CLI** to forward events locally and replay them: `stripe listen --forward-to localhost:3000/webhooks/stripe`, then `stripe trigger checkout.session.completed`. Confirm your DB ends in the right entitlement state for each event before going live.
 
 ### Expansion Revenue
 
@@ -369,11 +491,11 @@ Expansion revenue = revenue growth from existing customers (upsells + cross-sell
 
 | Lever | Mechanism | Example |
 |-------|----------|---------|
-| Seat-based | More users = more revenue | Slack: $8.75/user/mo |
+| Seat-based | More users = more revenue | Slack, Linear (per-seat paid plans) |
 | Usage-based | More usage = more revenue | AWS, Twilio, OpenAI |
 | Feature upsell | Upgrade to higher tier | Zoom: Pro → Business |
 | Cross-sell | Buy additional products | Atlassian: Jira + Confluence |
-| Platform fees | % of transaction | Stripe: 2.9% + 30¢ |
+| Platform fees | % of transaction | Stripe, Shopify (per-transaction take rate — verify current rate on the vendor's pricing page) |
 
 **Target: > 120% Net Revenue Retention (NRR).** This means expansion revenue exceeds churn.
 
@@ -391,8 +513,10 @@ NRR = ($100k + $15k - $3k - $5k) / $100k = 107%
 **NRR benchmarks:**
 - < 100%: Shrinking (churn > expansion) — urgent problem
 - 100-110%: Healthy
-- 110-130%: Strong (Slack: ~120%, Datadog: ~130%)
-- 130%+: Exceptional (Snowflake: ~158%, Twilio: ~140%)
+- 110-130%: Strong
+- 130%+: Exceptional
+
+The often-cited figures for Snowflake, Datadog, Twilio, Slack, etc. are point-in-time numbers from specific past quarters and have generally compressed since the 2021 peak — most have trended down toward (or below) ~120% as they matured. Don't quote a specific company's NRR from memory; pull the current figure from its latest quarterly earnings / 10-Q (public SaaS companies report NRR or "net dollar retention" there).
 
 ## 6. PLG Metrics Dashboard
 
