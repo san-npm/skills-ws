@@ -1,6 +1,6 @@
 ---
 name: polymarket-trading
-description: "Analyze sports prediction markets on Polymarket: scan bookmaker odds (The Odds API), de-vig to true probabilities, find positive-EV favorites, and optionally execute trades after explicit per-trade confirmation. Use when the user mentions polymarket, prediction markets, sports betting, scan/place bets, NBA/football odds, positions, redeem, or edge."
+description: "Analyze sports prediction markets on Polymarket: scan bookmaker odds (The Odds API) for a raw shortlist, then de-vig to true probabilities to find positive-EV favorites, and optionally execute trades after confirmation. Use when the user mentions polymarket, prediction markets, sports betting, scan/place bets, NBA/football odds, positions, redeem, or edge."
 ---
 
 # Polymarket Sports Prediction Markets
@@ -60,7 +60,7 @@ Set these in your environment. **Never commit a real wallet address, private key
 
 | Script | Status | Purpose | Auth |
 |---|---|---|---|
-| `scripts/scan.mjs` | **Ships with this skill** | Scan odds → de-vig → filter favorites → match PM market → resolve token ID → live CLOB price → present picks | No (read-only) |
+| `scripts/scan.mjs` | **Ships with this skill** | Scan odds → raw `1/odds` shortlist signal (NOT de-vigged) → match PM market → resolve token ID → live CLOB midpoint. De-vig + EV decision happen later in Step 2 | No (read-only) |
 | Query helper (e.g. `polymarket.mjs`) | **User-supplied** | Search PM markets, get price/book/spread | No |
 | Trade client (e.g. `trade.mjs`) | **User-supplied** | Place buy/sell orders on the CLOB | Yes |
 | Redeem helper (e.g. `redeem.mjs`) | **User-supplied** | Redeem resolved winning positions | Yes |
@@ -71,7 +71,7 @@ Only `scripts/scan.mjs` is bundled. **The execution/query/redeem clients are NOT
 
 ## Workflow
 
-### Step 1: SCAN — Fetch & De-vig Bookmaker Odds (read-only)
+### Step 1: SCAN — Fetch Bookmaker Odds for a Raw Shortlist (read-only)
 
 ```bash
 # Scan all sports
@@ -80,13 +80,13 @@ node scripts/scan.mjs --all-sports
 # Single sport
 node scripts/scan.mjs --sport=basketball_nba
 
-# Custom probability threshold (de-vigged)
+# Custom probability threshold (applied to the raw `1/odds` shortlist signal)
 node scripts/scan.mjs --all-sports --min-prob=0.75
 ```
 
 `scan.mjs` does the following (read-only — no keys needed beyond `$ODDS_API_KEY`):
 1. Fetches odds from The Odds API (`h2h` market, EU region, decimal format, next ~48h).
-2. Computes implied probability per outcome by averaging `1/decimal_odds` across all listed bookmakers.
+2. Computes a **raw** implied-probability signal per outcome by averaging `1/decimal_odds` across all listed bookmakers. This is **not** de-vigged — it overstates probability and is only a shortlist signal; de-vig happens in Step 2.
 3. Filters to the top outcome per game above the threshold and matches it on Polymarket (Gamma `public-search`), resolving the outcome `token_id`.
 4. Pulls the **live CLOB midpoint** for that token and reports `Edge = bookProb − pmPrice`.
 

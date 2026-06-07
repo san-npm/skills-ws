@@ -571,7 +571,7 @@ app.get('/fleet/status', (req, res) => {
 
 // Node registration endpoint
 app.post('/fleet/register', (req, res) => {
-    const { node_id, ip_address, capabilities } = req.body;
+    const { node_id, ip_address, capabilities, item_hash } = req.body;
 
     let fleet;
     try {
@@ -579,23 +579,28 @@ app.post('/fleet/register', (req, res) => {
     } catch {
         fleet = { nodes: [] };
     }
-    
-    // Update or add node
+
+    // Update or add node. We persist item_hash (the Aleph instance hash captured
+    // at create time) so the autoscale/auto-recreate paths can delete/recreate
+    // this exact instance later. Heartbeats omit item_hash, so on re-register we
+    // preserve whatever hash we already stored for this node.
     const existingIndex = fleet.nodes.findIndex(n => n.node_id === node_id);
+    const prior = existingIndex >= 0 ? fleet.nodes[existingIndex] : {};
     const nodeData = {
         node_id,
         ip_address,
         capabilities,
+        item_hash: item_hash || prior.item_hash || null,
         last_seen: new Date().toISOString(),
         status: 'active'
     };
-    
+
     if (existingIndex >= 0) {
         fleet.nodes[existingIndex] = nodeData;
     } else {
         fleet.nodes.push(nodeData);
     }
-    
+
     fs.writeFileSync('/opt/fleet-manager/nodes.json', JSON.stringify(fleet, null, 2));
     res.json({ success: true });
 });
@@ -748,9 +753,12 @@ deploy_worker_node() {
     local node_name="${FLEET_NAME}-worker-${node_id}"
     echo "Deploying worker node $node_id ($node_name)..."
 
-    # Worker provisioning script. The worker registers with the primary over the
-    # TAILSCALE mesh (primary_tailscale_ip), authenticating with the shared key.
-    # We pass primary's Tailscale IP + the key in as env vars at SSH time.
+    # Worker provisioning script. The worker JOINS the Tailscale mesh FIRST, then
+    # registers with the primary over that mesh (primary_tailscale_ip), so the
+    # address it registers is always its reachable Tailscale IP — never a
+    # firewalled public/private address. We pass primary's Tailscale IP, the
+    # shared key, the Tailscale auth key, and the instance ITEM_HASH in as env
+    # vars at SSH time.
     local setup_script
     setup_script=$(cat <<'WORKER_SETUP'
 #!/bin/bash
@@ -762,31 +770,53 @@ apt-get install -y curl wget git htop jq ca-certificates iproute2
 curl -fsSL https://get.docker.com -o /tmp/get-docker.sh && sh /tmp/get-docker.sh
 curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs
 
+# Join the Tailscale mesh BEFORE registering, so `tailscale ip -4` returns a
+# reachable mesh address (the control plane is only reachable over the mesh).
+curl -fsSL https://tailscale.com/install.sh | sh
+: "${TAILSCALE_AUTH_KEY:?TAILSCALE_AUTH_KEY required to join the mesh before registering}"
+printf '%s' "$TAILSCALE_AUTH_KEY" > /tmp/ts && chmod 600 /tmp/ts
+tailscale up --auth-key="file:/tmp/ts" --hostname="$NODE_ID"
+rm -f /tmp/ts
+# Confirm we actually have a mesh IP before going any further.
+for _ in $(seq 1 12); do
+  TS_IP="$(tailscale ip -4 2>/dev/null || true)"
+  [[ -n "$TS_IP" ]] && break
+  sleep 5
+done
+[[ -n "${TS_IP:-}" ]] || { echo "Worker never obtained a Tailscale IP — aborting"; exit 1; }
+
 # Install OpenClaw (official installer; Node already present).
 curl -fsSL https://openclaw.ai/install.sh | bash
 # Run `openclaw onboard --install-daemon` to set up the daemon (see docs).
 
 # Registration: POST to the primary over Tailscale, key from EnvironmentFile.
-# NODE_ID / PRIMARY_TS_IP / FLEET_API_KEY are provided via /etc/worker.env.
+# NODE_ID / PRIMARY_TS_IP / FLEET_API_KEY / ITEM_HASH are provided via /etc/worker.env.
 install -o root -g root -m 600 /dev/null /etc/worker.env
 cat > /etc/worker.env <<ENVF
 NODE_ID=${NODE_ID}
 PRIMARY_TS_IP=${PRIMARY_TS_IP}
 FLEET_API_KEY=${FLEET_API_KEY}
+ITEM_HASH=${ITEM_HASH}
 ENVF
 
 cat > /opt/register-worker.sh <<'REGISTER'
 #!/bin/bash
 set -euo pipefail
 set -a; . /etc/worker.env; set +a
-# Use the Tailscale IP as our reachable address (public ports are firewalled).
-LOCAL_IP="$(tailscale ip -4 2>/dev/null || hostname -I | awk '{print $1}')"
+# Use the Tailscale IP as our reachable address. We already joined the mesh in
+# the setup phase, so this must succeed; bail rather than register an
+# unreachable public/private fallback address.
+LOCAL_IP="$(tailscale ip -4 2>/dev/null || true)"
+[[ -n "$LOCAL_IP" ]] || { echo "No Tailscale IP yet — not registering an unreachable address"; exit 1; }
 curl -fsS -X POST "http://${PRIMARY_TS_IP}:8080/fleet/register" \
   -H "Content-Type: application/json" \
   -H "x-api-key: ${FLEET_API_KEY}" \
-  -d "{\"node_id\":\"${NODE_ID}\",\"ip_address\":\"${LOCAL_IP}\",\"capabilities\":[\"compute\",\"openclaw\"]}"
+  -d "{\"node_id\":\"${NODE_ID}\",\"ip_address\":\"${LOCAL_IP}\",\"item_hash\":\"${ITEM_HASH}\",\"capabilities\":[\"compute\",\"openclaw\"]}"
 REGISTER
 chmod +x /opt/register-worker.sh
+
+# Register once now (Tailscale is already up), then keep a heartbeat going.
+/opt/register-worker.sh
 
 # Heartbeat as a supervised systemd timer (re-registers every 30s; updates last_seen).
 cat > /etc/systemd/system/heartbeat.service <<'HB_SVC'
@@ -810,7 +840,7 @@ HB_TIMER
 systemctl daemon-reload
 systemctl enable --now heartbeat.timer
 
-echo "Worker node setup complete."
+echo "Worker node setup complete (joined mesh, registered over Tailscale)."
 WORKER_SETUP
     )
 
@@ -830,9 +860,12 @@ WORKER_SETUP
     worker_ip="$(wait_for_ip "$node_name")" || { echo "Worker $node_id got no IP"; return 1; }
 
     # primary_ip here is the primary's TAILSCALE IP (resolved by the caller after
-    # the mesh is up). Provision over SSH with NODE_ID/PRIMARY_TS_IP/FLEET_API_KEY.
+    # the mesh is up). Provision over SSH with NODE_ID/PRIMARY_TS_IP/FLEET_API_KEY/
+    # TAILSCALE_AUTH_KEY (so the worker joins the mesh first) and ITEM_HASH (so the
+    # primary's registry records the instance hash for later delete/recreate).
     ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new "$SSH_USER@$worker_ip" \
-        "NODE_ID='$node_name' PRIMARY_TS_IP='$primary_ip' FLEET_API_KEY='$FLEET_API_KEY' bash -s" \
+        "NODE_ID='$node_name' PRIMARY_TS_IP='$primary_ip' FLEET_API_KEY='$FLEET_API_KEY' \
+         TAILSCALE_AUTH_KEY='$TAILSCALE_AUTH_KEY' ITEM_HASH='$item_hash' bash -s" \
         <<< "$setup_script"
 
     # Record name, id, crn, IP, and item_hash. IP is REQUIRED by Tailscale/backup/
@@ -880,9 +913,9 @@ jq --arg ip "$primary_ts_ip" '.primary_node.tailscale_ip=$ip' \
     mv /tmp/fleet.$$ ~/.aleph-deploy/configs/fleet.json
 echo "Primary Tailscale IP: $primary_ts_ip"
 
-# 3. Deploy workers, registering each against the primary's Tailscale IP.
-#    Each worker also joins Tailscale during provisioning (its setup script
-#    installs Tailscale via setup-tailscale-mesh.sh, run right after).
+# 3. Deploy workers. Each worker's setup script JOINS the Tailscale mesh FIRST
+#    and only THEN registers — so it registers against the primary's Tailscale IP
+#    using its own reachable Tailscale IP (never a firewalled public address).
 worker_total=$((NODE_COUNT - 1))
 for i in $(seq 1 "$worker_total"); do
     if (( ${#WORKER_CRNS[@]} > 0 )); then
@@ -902,7 +935,7 @@ echo "Next: run setup-tailscale-mesh.sh to verify the mesh, then setup-load-bala
 jq . ~/.aleph-deploy/configs/fleet.json
 ```
 
-> **Ordering note.** Workers reach the fleet manager over Tailscale, so the primary joins the mesh *before* workers are provisioned (step 2). Each worker joins Tailscale as part of its own provisioning — run `setup-tailscale-mesh.sh` (next section) to add Tailscale to any node that still needs it and to verify connectivity. The public IPs are used only for the initial SSH provisioning hop.
+> **Ordering note.** Workers reach the fleet manager over Tailscale, so the primary joins the mesh *before* workers are provisioned (step 2). Each worker's setup script then joins Tailscale **first** and only **then** registers, so the address it registers is always its reachable Tailscale IP. This requires `TAILSCALE_AUTH_KEY` in the environment (passed through to each worker at SSH time). You can still run `setup-tailscale-mesh.sh` (next section) afterward to verify mesh connectivity. The public IPs are used only for the initial SSH provisioning hop.
 
 > **Primary needs the fleet SSH key (one-time).** Several primary-resident services (replication, backups, node monitor, key rotation) SSH from the primary to workers, so the primary must hold the **private** key. Copy it once, locked down, after the primary is up — prefer Tailscale for the hop:
 >
@@ -1013,9 +1046,11 @@ fleet_scale() {
             done
             [[ -z "$wip" ]] && { echo "  $wname got no IP — skipping"; continue; }
             # Provision over SSH: Tailscale join + register with the primary over the mesh.
+            # ITEM_HASH is passed through so the primary's registry records this
+            # instance's hash for later delete/recreate.
             ssh "${SSH_OPTS[@]}" "$SSH_USER@$wip" \
                 "NODE_ID='$wname' PRIMARY_TS_IP='$primary_ts' FLEET_API_KEY='$FLEET_API_KEY' \
-                 TAILSCALE_AUTH_KEY='$TAILSCALE_AUTH_KEY' bash -s" <<'REPROV'
+                 TAILSCALE_AUTH_KEY='$TAILSCALE_AUTH_KEY' ITEM_HASH='$whash' bash -s" <<'REPROV'
 set -euo pipefail; export DEBIAN_FRONTEND=noninteractive
 apt-get update && apt-get install -y curl jq iproute2
 curl -fsSL https://get.docker.com | sh
@@ -1026,7 +1061,7 @@ curl -fsSL https://openclaw.ai/install.sh | bash
 TS_IP="$(tailscale ip -4 2>/dev/null || hostname -I | awk '{print $1}')"
 curl -fsS -X POST "http://$PRIMARY_TS_IP:8080/fleet/register" -H "x-api-key: $FLEET_API_KEY" \
   -H 'Content-Type: application/json' \
-  -d "{\"node_id\":\"$NODE_ID\",\"ip_address\":\"$TS_IP\",\"capabilities\":[\"compute\",\"openclaw\"]}"
+  -d "{\"node_id\":\"$NODE_ID\",\"ip_address\":\"$TS_IP\",\"item_hash\":\"${ITEM_HASH:-}\",\"capabilities\":[\"compute\",\"openclaw\"]}"
 REPROV
             # Append {name,id,ip,item_hash} to fleet.json atomically.
             local wtmp; wtmp="$(mktemp)"
@@ -1747,6 +1782,23 @@ sudo cp /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.backup
 # Resolve this node's Tailscale IP for the (private) stats listener.
 TS_IP="\$(tailscale ip -4 2>/dev/null || echo '${PRIMARY_TS_IP}')"
 
+# TLS: HAProxy terminates HTTPS with a single COMBINED PEM (fullchain + private
+# key concatenated, key last) at this path. Drop a real cert here for production:
+#   sudo cat fullchain.pem privkey.pem > \$TLS_PEM   # order matters: cert(s) then key
+# (Let's Encrypt: \`cat \$LE/fullchain.pem \$LE/privkey.pem\`.) If no cert is present
+# we DO NOT open a bogus plaintext :443 — the 443 listener is added only when the
+# PEM exists, so the advertised URL matches what actually serves TLS.
+TLS_PEM="/etc/haproxy/certs/site.pem"
+sudo mkdir -p /etc/haproxy/certs && sudo chmod 700 /etc/haproxy/certs
+if [[ -s "\$TLS_PEM" ]]; then
+    sudo chmod 600 "\$TLS_PEM"
+    TLS_BIND="bind *:443 ssl crt \$TLS_PEM alpn h2,http/1.1"
+    echo "TLS cert found at \$TLS_PEM — enabling HTTPS on :443"
+else
+    TLS_BIND="# bind *:443 ssl crt \$TLS_PEM   # no cert present — HTTPS disabled (drop a combined PEM here to enable)"
+    echo "No TLS cert at \$TLS_PEM — serving HTTP only on :80 (HTTPS not advertised)."
+fi
+
 # Create HAProxy configuration. Single-quoted inner heredoc keeps HAProxy's own
 # \$-free syntax literal; we inject TS_IP / creds via sed right after.
 cat > /tmp/haproxy.cfg << 'HAPROXY_CONFIG'
@@ -1778,15 +1830,17 @@ listen stats
     stats realm HAProxy\ Statistics
     stats auth __STATS_USER__:__STATS_PASS__
 
-# Frontend - public entry point (HTTP/HTTPS). TLS termination should be added
-# here (bind :443 ssl crt /etc/haproxy/certs/site.pem) for production.
+# Frontend - public entry point. Always listens on :80. The :443 line below is
+# injected by sed: a real `bind *:443 ssl crt <combined.pem>` when a cert exists,
+# otherwise a commented-out placeholder (so we never expose a plaintext :443 that
+# masquerades as HTTPS). See the cert-provisioning note above.
 frontend openclaw_frontend
     bind *:80
-    bind *:443
-    
+    __TLS_BIND__
+
     # Health check endpoint (matches the fleet manager's UNAUTHENTICATED /health)
     monitor-uri /health
-    
+
     default_backend openclaw_nodes
 
 # Backend - OpenClaw nodes
@@ -1803,16 +1857,21 @@ backend openclaw_nodes
     # Worker nodes will be added dynamically
 HAPROXY_CONFIG
 
-# Inject the Tailscale IP and stats credentials (use | as the sed delimiter
-# since values contain no pipes; credentials were generated, not hardcoded).
-sed -i "s|__TS_IP__|\${TS_IP}|; s|__STATS_USER__|${STATS_USER}|; s|__STATS_PASS__|${STATS_PASS}|" /tmp/haproxy.cfg
+# Inject the Tailscale IP, stats credentials, and the TLS bind line (use | as the
+# sed delimiter since values contain no pipes; credentials were generated, not
+# hardcoded). __TLS_BIND__ becomes a real ssl bind only when a cert exists.
+sed -i "s|__TS_IP__|\${TS_IP}|; s|__STATS_USER__|${STATS_USER}|; s|__STATS_PASS__|${STATS_PASS}|; s|__TLS_BIND__|\${TLS_BIND}|" /tmp/haproxy.cfg
 
 # Validate the config BEFORE replacing the live one (avoids a broken restart).
 if sudo haproxy -c -f /tmp/haproxy.cfg; then
     sudo mv /tmp/haproxy.cfg /etc/haproxy/haproxy.cfg
     sudo systemctl enable haproxy
     sudo systemctl restart haproxy
-    echo "HAProxy installed and configured (stats on \${TS_IP}:9090, Tailscale only)"
+    if [[ -s "\$TLS_PEM" ]]; then
+        echo "HAProxy installed: HTTP on :80, HTTPS on :443 (cert \$TLS_PEM); stats on \${TS_IP}:9090 (Tailscale only)"
+    else
+        echo "HAProxy installed: HTTP on :80 only (no TLS cert); stats on \${TS_IP}:9090 (Tailscale only)"
+    fi
 else
     echo "HAProxy config invalid — not applying."; exit 1
 fi
@@ -1984,7 +2043,16 @@ echo "HAProxy backend management configured"
 BACKEND_SCRIPT
 
 echo "Load balancer setup complete."
-echo "Public load balancer: http://$PRIMARY_IP  (and https:// once TLS is configured)"
+# Only advertise HTTPS if the combined PEM is actually present on the primary
+# (the same condition the HAProxy config uses to add the :443 ssl bind).
+if ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new "$SSH_USER@$PRIMARY_IP" \
+       "test -s /etc/haproxy/certs/site.pem" 2>/dev/null; then
+    echo "Public load balancer: https://$PRIMARY_IP  (HTTP on http://$PRIMARY_IP)"
+else
+    echo "Public load balancer: http://$PRIMARY_IP"
+    echo "  (HTTPS not enabled — add a combined fullchain+key PEM at"
+    echo "   /etc/haproxy/certs/site.pem on the primary and re-run to serve TLS on :443.)"
+fi
 echo "HAProxy stats (Tailscale only): http://$PRIMARY_TS_IP:9090/haproxy-stats"
 echo "Stats login is in ~/.aleph-deploy/configs/haproxy-stats.env"
 ```
@@ -2612,9 +2680,11 @@ auto_recreate_node() {
     [[ -z "$new_ip" ]] && { log_message "Replacement $node_id got no IP"; return 1; }
 
     # 4. Re-provision over SSH: install OpenClaw + Tailscale, re-register with the primary.
+    #    ITEM_HASH carries the NEW instance hash so the registry stays able to
+    #    delete/recreate this node on the next failure.
     ssh -i /root/.ssh/aleph_ed25519 -o StrictHostKeyChecking=accept-new "root@$new_ip" \
         "NODE_ID='$node_id' PRIMARY_TS_IP='$PRIMARY_TS_IP' FLEET_API_KEY='$FLEET_API_KEY' \
-         TAILSCALE_AUTH_KEY='${TAILSCALE_AUTH_KEY:-}' bash -s" <<'REPROV'
+         TAILSCALE_AUTH_KEY='${TAILSCALE_AUTH_KEY:-}' ITEM_HASH='$new_hash' bash -s" <<'REPROV'
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 apt-get update && apt-get install -y curl jq iproute2
@@ -2626,7 +2696,7 @@ curl -fsSL https://openclaw.ai/install.sh | bash
 TS_IP="$(tailscale ip -4 2>/dev/null || hostname -I | awk '{print $1}')"
 curl -fsS -X POST "http://$PRIMARY_TS_IP:8080/fleet/register" -H "x-api-key: $FLEET_API_KEY" \
   -H 'Content-Type: application/json' \
-  -d "{\"node_id\":\"$NODE_ID\",\"ip_address\":\"$TS_IP\",\"capabilities\":[\"compute\",\"openclaw\"]}"
+  -d "{\"node_id\":\"$NODE_ID\",\"ip_address\":\"$TS_IP\",\"item_hash\":\"${ITEM_HASH:-}\",\"capabilities\":[\"compute\",\"openclaw\"]}"
 REPROV
 
     # 5. Update fleet state atomically: new hash/ip, status active, reset failures.
@@ -3054,8 +3124,10 @@ scale_up() {
         [[ -n "$ip" ]] && break; sleep 10
     done
     [[ -z "$ip" ]] && { log_message "Scale-up: $name got no IP"; return 1; }
+    # ITEM_HASH is passed through so the registry records this instance's hash;
+    # scale_down() reads .item_hash to delete the right instance.
     ssh -i /root/.ssh/aleph_ed25519 -o StrictHostKeyChecking=accept-new "root@$ip" \
-        "NODE_ID='$name' PRIMARY_TS_IP='$PRIMARY_TS_IP' FLEET_API_KEY='$FLEET_API_KEY' TAILSCALE_AUTH_KEY='${TAILSCALE_AUTH_KEY:-}' bash -s" <<'REPROV'
+        "NODE_ID='$name' PRIMARY_TS_IP='$PRIMARY_TS_IP' FLEET_API_KEY='$FLEET_API_KEY' TAILSCALE_AUTH_KEY='${TAILSCALE_AUTH_KEY:-}' ITEM_HASH='$hash' bash -s" <<'REPROV'
 set -euo pipefail; export DEBIAN_FRONTEND=noninteractive
 apt-get update && apt-get install -y curl jq iproute2
 curl -fsSL https://get.docker.com | sh
@@ -3065,7 +3137,7 @@ curl -fsSL https://tailscale.com/install.sh | sh
 curl -fsSL https://openclaw.ai/install.sh | bash
 TS_IP="$(tailscale ip -4 2>/dev/null || hostname -I | awk '{print $1}')"
 curl -fsS -X POST "http://$PRIMARY_TS_IP:8080/fleet/register" -H "x-api-key: $FLEET_API_KEY" \
-  -H 'Content-Type: application/json' -d "{\"node_id\":\"$NODE_ID\",\"ip_address\":\"$TS_IP\",\"capabilities\":[\"compute\",\"openclaw\"]}"
+  -H 'Content-Type: application/json' -d "{\"node_id\":\"$NODE_ID\",\"ip_address\":\"$TS_IP\",\"item_hash\":\"${ITEM_HASH:-}\",\"capabilities\":[\"compute\",\"openclaw\"]}"
 REPROV
     log_message "Scale-up complete: $name ($ip). haproxy-fleet-sync will add it within 60s."
     echo "$(date +%s)" > /tmp/last-scale-action
