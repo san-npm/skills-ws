@@ -1,11 +1,9 @@
 ---
 name: ci-cd-pipeline
-description: "Canonical CI/CD handbook — GitHub Actions reusable workflows, OIDC deploys, SLSA/sigstore provenance, monorepo affected-only builds, testing gates, rollbacks. Use for production pipelines; for short snippets see `cicd-pipelines`."
+description: "End-to-end CI/CD on GitHub Actions: reusable workflows, caching, the testing pyramid, OIDC cloud deploys, SLSA provenance + keyless cosign signing, canary/rollback, reversible DB migrations, monorepo affected builds. Use when designing, hardening, or debugging a production pipeline (Actions YAML, supply-chain attestation, K8s rollouts, releases)."
 ---
 
 # CI/CD Pipeline Engineering
-
-> Canonical handbook. For a quick cheatsheet of patterns see `cicd-pipelines`.
 
 ## Philosophy
 
@@ -47,7 +45,7 @@ on:
     inputs:
       node-version:
         type: string
-        default: '20'
+        default: '22'   # 22 = Active LTS in 2026; 20 went EOL 2026-04-30, 18 EOL 2025-04-30
       working-directory:
         type: string
         default: '.'
@@ -196,7 +194,7 @@ jobs:
           retention-days: 7
 ```
 
-Consume it from any repo:
+Consume it from any repo. Make this local `ci.yml` **itself reusable** (`on: workflow_call`) so your deploy workflow can call it as a gate — without that trigger, `uses: ./.github/workflows/ci.yml` fails to resolve:
 
 ```yaml
 # your-repo/.github/workflows/ci.yml
@@ -207,37 +205,47 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_call:          # REQUIRED so deploy-production.yml can `uses:` this file
+    inputs:
+      run-e2e:
+        type: boolean
+        default: false
+    secrets:
+      NPM_TOKEN:
+        required: false
+      CODECOV_TOKEN:
+        required: false
 
 jobs:
   ci:
-    uses: your-org/.github/.github/workflows/node-ci.yml@main
+    uses: your-org/.github/.github/workflows/node-ci.yml@v1   # pin to a tag/SHA, not @main
     with:
-      node-version: '20'
-      run-e2e: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      node-version: '22'
+      # On workflow_call, inherit the caller's run-e2e; on push/PR, derive it.
+      run-e2e: ${{ inputs.run-e2e || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
     secrets:
       NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 ```
 
+> Pin third-party and org reusable workflows to an immutable tag or full SHA (`@v1`, `@<40-char-sha>`), never `@main` — a moving ref is a supply-chain foothold. Dependabot's `github-actions` ecosystem will bump pinned SHAs for you.
+
 ### Matrix Builds
 
-Use matrices for cross-version testing, but be smart about it:
+Use matrices for cross-version testing, but be smart about it. Test only **supported** runtimes — as of mid-2026 that's the Active LTS (22) and Current (24); 18 (EOL 2025-04-30) and 20 (EOL 2026-04-30) are off the support matrix unless you have a contractual reason to keep them. Check the schedule at https://nodejs.org/en/about/previous-releases:
 
 ```yaml
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false  # Don't cancel other jobs if one fails
       matrix:
-        node-version: [18, 20, 22]
+        node-version: [22, 24]
         os: [ubuntu-latest]
         include:
-          # Only test macOS on latest Node (saves minutes)
+          # Only test macOS on Active LTS (saves minutes; macOS minutes cost 10x)
           - node-version: 22
-            os: macos-latest
-        exclude:
-          - node-version: 18
             os: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -255,17 +263,22 @@ jobs:
 ```yaml
 - uses: actions/setup-node@v4
   with:
-    node-version: '20'
+    node-version: '22'
     cache: 'npm'
 # npm ci uses the cache automatically. Done.
 ```
 
 #### Docker Layer Caching
 
+GHCR push needs `packages: write` — without it the push 403s. Pin to current major action versions (as of mid-2026: `build-push-action@v6`, `setup-buildx-action@v3`, `login-action@v3`; verify at https://github.com/docker/build-push-action/releases). Tag by **full** `github.sha` and reuse that exact tag downstream, so deploy never references an image that was never pushed:
+
 ```yaml
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write   # REQUIRED to push to ghcr.io with GITHUB_TOKEN
     steps:
       - uses: actions/checkout@v4
 
@@ -280,7 +293,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
@@ -330,7 +343,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: '20', cache: 'npm' }
+        with: { node-version: '22', cache: 'npm' }
       - run: npm ci
       - run: npm run test:unit -- --bail
 ```
@@ -345,28 +358,64 @@ jobs:
 ### E2E Tests (Main Branch + Pre-deploy)
 
 - Test 5-10 critical user journeys, not every edge case
-- Use Playwright, not Cypress (faster, more reliable)
-- Shard across multiple workers:
+- Playwright is the usual default in 2026 — native parallelism/sharding, multi-browser (Chromium/Firefox/WebKit), auto-waiting, trace viewer. Cypress is a reasonable choice when your team already has deep investment in its time-travel debugger and component-testing setup. The CI patterns below are Playwright-specific.
+- Shard across multiple workers, then merge the blob reports into one HTML report:
 
 ```yaml
 e2e:
   runs-on: ubuntu-latest
   strategy:
+    fail-fast: false
     matrix:
       shard: [1, 2, 3, 4]
   steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
-      with: { node-version: '20', cache: 'npm' }
+      with: { node-version: '22', cache: 'npm' }
     - run: npm ci
     - run: npx playwright install --with-deps chromium
     - run: npm run build
     - run: npx playwright test --shard=${{ matrix.shard }}/4
+      env:
+        # Each shard emits a machine-readable blob report for later merge
+        PLAYWRIGHT_BLOB_OUTPUT_DIR: blob-report
+    - uses: actions/upload-artifact@v4
+      if: ${{ !cancelled() }}
+      with:
+        name: blob-report-${{ matrix.shard }}
+        path: blob-report
+        retention-days: 1
+
+merge-e2e-reports:
+  needs: e2e
+  if: ${{ !cancelled() }}
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with: { node-version: '22', cache: 'npm' }
+    - run: npm ci
+    - uses: actions/download-artifact@v4
+      with:
+        path: all-blob-reports
+        pattern: blob-report-*
+        merge-multiple: true
+    - run: npx playwright merge-reports --reporter=html ./all-blob-reports
+    - uses: actions/upload-artifact@v4
+      with:
+        name: playwright-html-report
+        path: playwright-report
+        retention-days: 14
 ```
 
 ---
 
 ## Deployment Pipeline: Complete Production Workflow
+
+Two things make `kubectl`/registry steps actually runnable on a GitHub-hosted runner and are missing from most copy-pasted examples:
+
+1. **Auth + tooling on every deploy job.** A hosted runner has no kubeconfig and no cluster network route. You must (a) get cloud credentials — OIDC is preferred over long-lived keys — (b) fetch a kubeconfig (`aws eks update-kubeconfig` / `gcloud container clusters get-credentials` / `az aks get-credentials`), and (c) ensure `kubectl` exists (`azure/setup-kubectl`). The factored-out `_kube-deploy` reusable job below does all three so the example stays DRY.
+2. **One immutable image reference, computed once.** Compute the digest-or-SHA tag in `build` and pass it through job `outputs`; every deploy job consumes that exact string. Never re-derive `:${{ github.sha }}` in a deploy job while `metadata-action` produced a *different* tag (e.g. a short SHA) — that's how you "deploy" a tag that was never pushed.
 
 ```yaml
 # .github/workflows/deploy-production.yml
@@ -380,17 +429,25 @@ concurrency:
   group: production-deploy
   cancel-in-progress: false  # Never cancel a running production deploy
 
+permissions:
+  contents: read
+  packages: write   # push to GHCR
+  id-token: write   # OIDC for cloud auth + keyless cosign
+
 jobs:
   test:
+    # ci.yml MUST declare `on: workflow_call` (see the CI section) or this fails to resolve.
     uses: ./.github/workflows/ci.yml
     with:
       run-e2e: true
+    secrets: inherit
 
   build:
     needs: test
     runs-on: ubuntu-latest
     outputs:
-      image-tag: ${{ steps.meta.outputs.tags }}
+      # The single source of truth for "what we deploy": image@sha256 digest.
+      image: ${{ steps.out.outputs.image }}
     steps:
       - uses: actions/checkout@v4
 
@@ -409,99 +466,233 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository }}
-          tags: type=sha,prefix=
+          tags: |
+            type=sha,format=long,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push
-        uses: docker/build-push-action@v5
+        id: build
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Pin to immutable digest
+        id: out
+        # Prefer the pushed digest over any tag — tags are mutable, digests are not.
+        run: echo "image=ghcr.io/${{ github.repository }}@${{ steps.build.outputs.digest }}" >> "$GITHUB_OUTPUT"
+
+  # ---- Reusable in-cluster deploy job: auth -> kubeconfig -> kubectl. ----
+  # Realistically this lives in your org `.github` repo; shown inline for clarity.
   deploy-staging:
     needs: build
-    runs-on: ubuntu-latest
-    environment: staging
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Deploy to staging
-        run: |
-          kubectl set image deployment/app \
-            app=ghcr.io/${{ github.repository }}:${{ github.sha }} \
-            --namespace=staging
-          kubectl rollout status deployment/app --namespace=staging --timeout=300s
-
-      - name: Smoke tests
-        run: |
-          sleep 10
-          curl -sf https://staging.example.com/healthz || exit 1
-          npm run test:smoke -- --base-url=https://staging.example.com
+    uses: ./.github/workflows/_kube-deploy.yml
+    with:
+      environment: staging
+      namespace: staging
+      deployment: app
+      image: ${{ needs.build.outputs.image }}
+      base-url: https://staging.example.com
+    secrets: inherit
 
   approve-production:
     needs: deploy-staging
     runs-on: ubuntu-latest
-    environment: production  # Requires manual approval in GitHub settings
+    environment: production  # Configure required reviewers under Settings → Environments
     steps:
       - run: echo "Production deployment approved"
 
   deploy-canary:
-    needs: approve-production
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Deploy canary (10% traffic)
-        run: |
-          kubectl set image deployment/app-canary \
-            app=ghcr.io/${{ github.repository }}:${{ github.sha }} \
-            --namespace=production
-          kubectl rollout status deployment/app-canary --namespace=production --timeout=300s
-
-      - name: Monitor canary (5 minutes)
-        run: |
-          for i in $(seq 1 30); do
-            ERROR_RATE=$(curl -s "http://prometheus:9090/api/v1/query" \
-              --data-urlencode "query=rate(http_requests_total{status=~\"5..\",deployment=\"canary\"}[1m]) / rate(http_requests_total{deployment=\"canary\"}[1m])" \
-              | jq -r '.data.result[0].value[1] // "0"')
-
-            if (( $(echo "$ERROR_RATE > 0.05" | bc -l) )); then
-              echo "Canary error rate ${ERROR_RATE} exceeds 5% threshold"
-              kubectl rollout undo deployment/app-canary --namespace=production
-              exit 1
-            fi
-            echo "Canary healthy (error rate: ${ERROR_RATE})"
-            sleep 10
-          done
+    needs: [build, approve-production]
+    uses: ./.github/workflows/_kube-deploy.yml
+    with:
+      environment: production
+      namespace: production
+      deployment: app-canary
+      image: ${{ needs.build.outputs.image }}
+      analyze: true            # gate on metrics before promoting
+    secrets: inherit
 
   deploy-production:
-    needs: deploy-canary
+    needs: [build, deploy-canary]
+    uses: ./.github/workflows/_kube-deploy.yml
+    with:
+      environment: production
+      namespace: production
+      deployment: app
+      image: ${{ needs.build.outputs.image }}
+      base-url: https://app.example.com
+    secrets: inherit
+```
+
+```yaml
+# .github/workflows/_kube-deploy.yml — the reusable deploy unit
+name: kube-deploy
+on:
+  workflow_call:
+    inputs:
+      environment: { type: string, required: true }
+      namespace:   { type: string, required: true }
+      deployment:  { type: string, required: true }
+      image:       { type: string, required: true }   # full image@sha256 digest
+      base-url:    { type: string, default: '' }
+      analyze:     { type: boolean, default: false }
+
+permissions:
+  contents: read
+  id-token: write   # OIDC -> cloud, no stored kube creds
+
+jobs:
+  deploy:
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Full rollout
-        run: |
-          kubectl set image deployment/app \
-            app=ghcr.io/${{ github.repository }}:${{ github.sha }} \
-            --namespace=production
-          kubectl rollout status deployment/app --namespace=production --timeout=600s
+      # 1) Cloud auth via OIDC (EKS example; swap for GKE/AKS as needed).
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Post-deploy smoke tests
-        run: |
-          sleep 15
-          npm run test:smoke -- --base-url=https://app.example.com
+      # 2) kubectl binary + 3) cluster kubeconfig.
+      # Pin kubectl within +/-1 minor of your cluster's control plane (skew policy).
+      - uses: azure/setup-kubectl@v4
+        with: { version: ${{ vars.KUBECTL_VERSION }} }   # e.g. 'v1.33.x' for a 1.32/1.33 cluster
+      - name: Configure kubeconfig
+        run: aws eks update-kubeconfig --name ${{ vars.EKS_CLUSTER }} --region ${{ vars.AWS_REGION }}
+      # GKE alt: google-github-actions/get-gke-credentials@v2
+      # AKS alt: az aks get-credentials --resource-group RG --name CLUSTER
 
-      - name: Auto-rollback on failure
+      - name: Roll out
+        run: |
+          kubectl set image deployment/${{ inputs.deployment }} \
+            app=${{ inputs.image }} --namespace=${{ inputs.namespace }}
+          kubectl rollout status deployment/${{ inputs.deployment }} \
+            --namespace=${{ inputs.namespace }} --timeout=300s
+
+      # Canary metric gate. The runner is OUTSIDE the cluster, so do NOT curl an
+      # in-cluster `http://prometheus:9090`. Use one of:
+      #   - a controller that analyzes for you (Argo Rollouts / Flagger), or
+      #   - your managed/external metrics API (Datadog, Grafana Cloud, AMP), or
+      #   - `kubectl port-forward` to reach in-cluster Prometheus over localhost.
+      - name: Analyze canary (port-forward to in-cluster Prometheus)
+        if: inputs.analyze
+        run: |
+          kubectl -n monitoring port-forward svc/prometheus 9090:9090 &
+          PF_PID=$!; trap 'kill $PF_PID' EXIT
+          for i in $(seq 1 30); do
+            ERROR_RATE=$(curl -s "http://localhost:9090/api/v1/query" \
+              --data-urlencode 'query=sum(rate(http_requests_total{status=~"5..",deployment="canary"}[1m])) / sum(rate(http_requests_total{deployment="canary"}[1m]))' \
+              | jq -r '.data.result[0].value[1] // "0"')
+            if awk "BEGIN{exit !(${ERROR_RATE:-0} > 0.05)}"; then
+              echo "Canary error rate ${ERROR_RATE} exceeds 5% — rolling back"
+              kubectl rollout undo deployment/${{ inputs.deployment }} --namespace=${{ inputs.namespace }}
+              exit 1
+            fi
+            echo "Canary healthy (error rate: ${ERROR_RATE})"; sleep 10
+          done
+
+      - name: Smoke tests
+        if: inputs.base-url != ''
+        run: |
+          curl --retry 5 --retry-all-errors --retry-delay 3 -sf "${{ inputs.base-url }}/healthz"
+          npm ci && npm run test:smoke -- --base-url="${{ inputs.base-url }}"
+
+      - name: Auto-rollback + notify on failure
         if: failure()
         run: |
-          kubectl rollout undo deployment/app --namespace=production
+          kubectl rollout undo deployment/${{ inputs.deployment }} --namespace=${{ inputs.namespace }} || true
           curl -X POST "${{ secrets.SLACK_WEBHOOK }}" \
             -H 'Content-Type: application/json' \
-            -d '{"text":"Production deploy failed — auto-rolled back"}'
+            -d "{\"text\":\"${{ inputs.environment }}/${{ inputs.deployment }} deploy failed — auto-rolled back\"}"
 ```
+
+> **Prefer a progressive-delivery controller over hand-rolled canary bash.** [Argo Rollouts](https://argoproj.github.io/rollouts/) (`Rollout` CRD with `analysis` templates) and [Flagger](https://flagger.app/) automate traffic shifting, metric analysis (Prometheus/Datadog), and automatic rollback in-cluster — so your pipeline just pushes the digest and watches `kubectl argo rollouts status`. The bash gate above is the from-scratch fallback when you have no controller.
+
+---
+
+## Supply-Chain Security: SLSA Provenance + Keyless Signing
+
+By 2026, signing artifacts and attaching verifiable provenance is table stakes, and admission controllers reject unsigned images. GitHub's native [artifact attestations](https://docs.github.com/en/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds) generate SLSA-style provenance and sign it with Sigstore **keyless** (Fulcio short-lived certs tied to the workflow's OIDC identity — no private keys to store or rotate). Targets [SLSA](https://slsa.dev/) Build Level 3 when run from a non-falsifiable build.
+
+### Generate provenance + sign at build time
+
+```yaml
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write       # OIDC identity for keyless signing (Fulcio)
+      attestations: write   # required by attest-build-provenance
+    outputs:
+      image: ${{ steps.out.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with: { registry: ghcr.io, username: ${{ github.actor }}, password: ${{ secrets.GITHUB_TOKEN }} }
+
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
+          # SBOM + provenance attestations emitted straight into the registry
+          sbom: true
+          provenance: mode=max
+
+      # GitHub-native SLSA provenance attestation, signed keyless via Sigstore.
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ghcr.io/${{ github.repository }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+      # Optional explicit cosign signature (interop with non-GitHub verifiers).
+      - uses: sigstore/cosign-installer@v3
+      - run: cosign sign --yes ghcr.io/${{ github.repository }}@${{ steps.build.outputs.digest }}
+
+      - id: out
+        run: echo "image=ghcr.io/${{ github.repository }}@${{ steps.build.outputs.digest }}" >> "$GITHUB_OUTPUT"
+```
+
+### Verify before you deploy (fail-closed gate)
+
+Put this in the deploy job so an unsigned or wrongly-provenanced image is never rolled out:
+
+```yaml
+      # 1) GitHub-native verification (`gh` is preinstalled on hosted runners):
+      - run: |
+          gh attestation verify oci://${{ needs.build.outputs.image }} \
+            --repo ${{ github.repository }} \
+            --predicate-type https://slsa.dev/provenance/v1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 2) cosign verification, asserting the signer identity + issuer:
+      - uses: sigstore/cosign-installer@v3
+      - run: |
+          cosign verify ${{ needs.build.outputs.image }} \
+            --certificate-identity-regexp "^https://github.com/${{ github.repository }}/" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com
+          cosign verify-attestation ${{ needs.build.outputs.image }} \
+            --type slsaprovenance \
+            --certificate-identity-regexp "^https://github.com/${{ github.repository }}/" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com
+```
+
+### Enforce at admission time (not just in CI)
+
+CI checks are advisory; a compromised CI can skip them. Enforce in-cluster so only attested images run:
+- **Sigstore [policy-controller](https://docs.sigstore.dev/policy-controller/overview/)** or **[Kyverno](https://kyverno.io/)** `verifyImages` rules that require a valid Fulcio identity + SLSA provenance predicate before a pod is admitted.
+- For pure source-build SLSA L3 (npm/Go/generic artifacts rather than containers), use the [slsa-framework/slsa-github-generator](https://github.com/slsa-framework/slsa-github-generator) reusable workflow to produce a non-forgeable provenance file, then verify with `slsa-verifier`.
 
 ---
 
@@ -678,12 +869,15 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write     # push version-bump commit / create release
+      id-token: write      # npm Trusted Publishing (OIDC) — no NPM_TOKEN needed
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - uses: actions/setup-node@v4
-        with: { node-version: '20', cache: 'npm' }
+        with: { node-version: '22', cache: 'npm', registry-url: 'https://registry.npmjs.org' }
       - run: npm ci
       - name: Create Release PR or Publish
         uses: changesets/action@v1
@@ -694,8 +888,12 @@ jobs:
           title: 'chore: version packages'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # NPM_TOKEN no longer required: configure Trusted Publishing for the
+          # package on npmjs.com and publish via OIDC (npm CLI >= 11.5). npm then
+          # attaches provenance automatically. Requires `id-token: write` above.
 ```
+
+> **Trusted Publishing.** As of 2026, npm (and PyPI/RubyGems) support OIDC-based "trusted publishing": you register the GitHub repo+workflow as a trusted publisher on the registry, and CI mints a short-lived token at publish time instead of storing a long-lived `NPM_TOKEN`. npm also stamps published packages with provenance linking back to the build. Verify current CLI/flow at https://docs.npmjs.com/trusted-publishers.
 
 ---
 
@@ -716,7 +914,7 @@ jobs:
         with:
           fetch-depth: 0
       - uses: actions/setup-node@v4
-        with: { node-version: '20', cache: 'npm' }
+        with: { node-version: '22', cache: 'npm' }
       - run: npm ci
       - name: Build affected
         run: npx turbo run build test lint --filter=...[origin/main]
@@ -827,22 +1025,28 @@ on:
 4. **No timeout on jobs** — hung processes burn minutes
 5. **Force-pushing over failures** — fix the failure, don't skip gates
 6. **Deploying Friday at 5pm** — your pipeline is fine, your on-call won't be
+7. **Deploying mutable tags (`:latest`, a re-derived `:${{ github.sha }}`)** — pin to the pushed `@sha256` digest so what you tested is what runs
+8. **`uses: org/workflow@main`** — a moving ref is a supply-chain foothold; pin to a tag or full SHA and let Dependabot bump it
+9. **Trusting CI-side signature checks alone** — a compromised runner can skip them; enforce signatures/provenance at admission (Kyverno/policy-controller)
 
 ---
 
 ## Checklist: Production-Ready Pipeline
 
 - [ ] Unit + integration tests on PRs, E2E on main merges
-- [ ] Docker images tagged with commit SHA
+- [ ] Images deployed by immutable `@sha256` digest, computed once and threaded via job outputs
+- [ ] SLSA provenance attached + image signed keyless (cosign/Sigstore); verified before deploy
+- [ ] Signature/provenance enforced at admission (Kyverno / policy-controller), not just in CI
+- [ ] Reusable workflows and third-party actions pinned to a tag or full SHA (not `@main`)
+- [ ] `permissions:` set to least privilege per job (`packages: write`, `id-token: write` only where needed)
+- [ ] Deploy jobs include cloud auth (OIDC) + kubeconfig + `kubectl` setup — not assumed present
 - [ ] Staging deploy with smoke tests before production
-- [ ] Manual approval gate for production
-- [ ] Canary deployment with error rate monitoring
-- [ ] Auto-rollback on failed health checks
+- [ ] Manual approval gate for production (required reviewers on the `production` environment)
+- [ ] Canary with metric-gated promotion + auto-rollback (Argo Rollouts/Flagger, or port-forwarded metrics)
 - [ ] Slack notification on deploy success/failure
 - [ ] Concurrency control prevents parallel deploys
-- [ ] OIDC federation for cloud credentials
-- [ ] Secrets scoped to environments, rotated quarterly
-- [ ] CI completes in under 10 minutes for PRs
-- [ ] Redundant runs cancelled on new pushes
+- [ ] Secrets scoped to environments, rotated quarterly (or replaced by OIDC/trusted publishing)
+- [ ] CI completes in under 10 minutes for PRs; redundant runs cancelled on new pushes
 - [ ] Feature flags for risky changes
-- [ ] Database migrations are reversible
+- [ ] Database migrations are reversible (expand-contract for breaking changes)
+- [ ] Test matrix covers only supported runtimes (Node 22/24 in 2026; drop EOL 18/20)

@@ -26,7 +26,7 @@ Account
 │   ├── Ad Group (Keywords + Targeting)
 │   │   ├── Ad 1 (RSA — 15 headlines, 4 descriptions)
 │   │   ├── Ad 2
-│   │   └── Extensions (sitelinks, callouts, structured snippets)
+│   │   └── Assets (sitelinks, callouts, structured snippets — formerly "extensions")
 │   ├── Ad Group 2
 │   └── Ad Group 3
 ├── Campaign 2
@@ -37,14 +37,18 @@ Account
 
 ### Google Ads Campaign Types
 
-| Type | Best For | Avg CPC Range |
+CPC ranges below are **directional priors (as of Jun 2026)** — actuals vary 5-10x by vertical/geo/competition; verify against your own account.
+
+| Type | Best For | Avg CPC Range (directional) |
 |------|----------|---------------|
-| Search | High-intent queries, bottom-funnel | $1-$8 (varies wildly by vertical) |
+| Search | High-intent queries, bottom-funnel | $1-$8 (insurance/legal/finance run $20-$80+) |
 | Display | Awareness, retargeting | $0.20-$1.50 |
-| Performance Max | Full-funnel, ecommerce | Varies — Google controls placements |
+| Performance Max | Full-funnel, ecommerce + lead gen | Varies — Google controls placements |
 | Shopping | Ecommerce product listings | $0.30-$2.00 |
 | YouTube/Video | Brand awareness, consideration | $0.02-$0.15 per view |
-| Demand Gen | Mid-funnel, visual discovery | $0.50-$3.00 |
+| Demand Gen | Mid-funnel, visual/social discovery | $0.50-$3.00 |
+
+> **Google AI Max (rolling out 2026):** "AI Max for Search campaigns" is Google's opt-in setting that layers PMax-style AI onto *Search* — broad keyword-free matching, automatically created/optimized assets, and AI-driven URL/landing-page selection, while keeping search-term reporting and negative keywords. Treat it as a toggle on top of Search (not a separate campaign type): turn it on for an existing well-tracked Search campaign, keep tight negatives and brand exclusions, and watch search terms closely for query drift. Availability/behavior is still rolling out — verify current capabilities at https://support.google.com/google-ads.
 
 ### Meta Ads Structure
 
@@ -100,12 +104,14 @@ CONVERSION (30-50% of budget)
 
 ### Monthly Budget Minimums (to gather signal)
 
+These are **rules of thumb (as of Jun 2026)**, not platform mandates — the real floor is *enough conversions to exit learning*. Derive it: `min monthly spend ≈ target_CPA × 50 conversions` per ad set/campaign (Meta needs ~50 optimization events/ad set/week; Google smart bidding wants ~30+ conv/30 days). High-CPA verticals need far more than the table.
+
 | Channel | Minimum Monthly | Recommended |
 |---------|----------------|-------------|
 | Google Search | $1,500 | $3,000-$10,000 |
 | Meta Ads | $1,000 | $3,000-$15,000 |
 | LinkedIn Ads | $3,000 | $5,000-$15,000 |
-| Twitter/X Ads | $1,000 | $2,000-$5,000 |
+| X (Twitter) Ads | $1,000 | $2,000-$5,000 |
 
 Below these thresholds you won't gather enough data for meaningful optimization.
 
@@ -277,9 +283,19 @@ Best-performing combos (layer these):
 - **Job Title + Company Size** — most precise
 - **Job Function + Seniority + Industry** — broader reach
 - **Skills + Seniority** — catches non-obvious titles
-- **Matched Audiences** — website retargeting, email list, lookalikes
+- **Member Groups + Seniority** — high-intent communities
 
-Minimum audience size: 50,000 for sponsored content. Below that, delivery stalls.
+**Matched Audiences (current options, as of Jun 2026):**
+- **Website retargeting** — segment by URL visited (needs the Insight Tag firing)
+- **Contact/email list upload** — match against LinkedIn members for targeting or *exclusion* (suppress current customers/closed-lost)
+- **Company list upload** — ABM: upload your target-account list (CSV of up to ~300k companies)
+- **Engagement retargeting** — people who engaged with your single-image/video ads, opened/submitted a Lead Gen Form, viewed your company page or event
+- **Audience Expansion** — opt-in toggle that broadens delivery to members similar to your defined audience (the closest live replacement for the old lookalikes)
+- **Predictive Audiences** — LinkedIn builds a model from a seed (matched audience, conversions, or Lead Gen Form data) to find net-new high-propensity members; verify availability for your account/region at https://www.linkedin.com/help/lms
+
+> **Discontinued:** LinkedIn **Lookalike Audiences were retired on 29 Feb 2024.** Do not promise lookalikes — use **Audience Expansion** or **Predictive Audiences** plus strict profile + matched-audience targeting instead.
+
+Minimum audience size: **300 members** to launch; aim for **50,000+** for sponsored content delivery. Below ~50k, delivery and learning stall.
 
 ---
 
@@ -439,7 +455,33 @@ Refresh creative every 2-4 weeks for prospecting, 4-6 weeks for retargeting.
 
 ## ROAS Benchmarks by Industry
 
-### Google Ads
+> **Use as rough priors, not targets (as of Jun 2026, unsourced/directional).** Public CPC/CPL/ROAS averages are stale the moment they're published and vary 5-10x by vertical, geo, season, auction competition, and account maturity. Always compute *your* break-even from margin and validate with the diagnostic formulas below. For live vertical benchmarks, pull from your own historical data or current vendor reports (e.g., WordStream/LocaliQ, Meta/Google interface comparisons) and date them.
+
+### Diagnostic Formulas (use these instead of trusting static averages)
+
+```
+Break-even ROAS        = 1 / gross_margin%
+   (e.g., 50% margin → break-even ROAS = 2.0; you profit above 2.0)
+
+Break-even CPA         = gross_margin_per_order ($)
+   (max you can pay per conversion before losing money)
+
+Contribution-margin ROAS = (revenue − COGS − variable costs) / ad_spend
+   (the only ROAS that reflects real profit, not top-line)
+
+Target CPA (from LTV)  = LTV × target_CAC%   (e.g., 30% of LTV)
+
+Payback period (months)= CAC / monthly_gross_profit_per_customer
+   (SaaS/subscription: aim < 12 months, ideally < 6)
+
+MER (blended)          = total_revenue / total_ad_spend (all channels)
+   (sanity-check platform-reported ROAS against this)
+
+Incrementality lift %  = (test_conversions − control_conversions) / control_conversions
+   (geo or PSA holdout — the truest measure of ad-driven value)
+```
+
+### Google Ads (directional priors, Jun 2026)
 
 | Industry | Avg ROAS | Good ROAS | Great ROAS |
 |----------|----------|-----------|------------|
@@ -452,7 +494,7 @@ Refresh creative every 2-4 weeks for prospecting, 4-6 weeks for retargeting.
 | Legal | 2:1 | 3:1 | 5:1+ |
 | Real Estate | 2:1 | 4:1 | 8:1+ |
 
-### Meta Ads
+### Meta Ads (directional priors, Jun 2026)
 
 | Industry | Avg ROAS | Good ROAS |
 |----------|----------|-----------|
@@ -462,16 +504,16 @@ Refresh creative every 2-4 weeks for prospecting, 4-6 weeks for retargeting.
 | Info Products | 3:1 | 6:1+ |
 | Apps (install) | Measure CPI vs LTV | CPI < 30% of 90-day LTV |
 
-### LinkedIn Ads
+### LinkedIn Ads (directional priors, Jun 2026 — verify in-platform)
 
 | Metric | Average | Good |
 |--------|---------|------|
-| CPC | $5-$12 | <$5 |
-| CPL | $50-$150 | <$50 |
+| CPC | $8-$15 | <$7 |
+| CPL | $60-$200 | <$60 |
 | CTR | 0.4-0.6% | >0.8% |
-| CPM | $30-$80 | <$30 |
+| CPM | $30-$90 | <$30 |
 
-LinkedIn is expensive — only worth it if LTV justifies it (B2B enterprise, high ACV).
+LinkedIn pricing trends up year over year and skews higher in NA/competitive functions (engineering, finance, exec). Treat these as priors only and confirm against your own auction. LinkedIn is expensive — only worth it if LTV justifies it (B2B enterprise, high ACV).
 
 **Important:** ROAS varies wildly by product price, margin, and sales cycle. For SaaS and B2B, measure blended CAC:LTV ratio (target 1:3+) rather than immediate ROAS.
 
@@ -481,14 +523,18 @@ LinkedIn is expensive — only worth it if LTV justifies it (B2B enterprise, hig
 
 ### Attribution Models
 
-| Model | How It Works | Best For |
-|-------|-------------|----------|
-| Last Click | 100% credit to final touchpoint | Short sales cycles, direct response |
-| First Click | 100% credit to discovery touchpoint | Understanding top-of-funnel |
-| Linear | Equal credit to all touchpoints | Seeing full journey |
-| Time Decay | More credit to recent touchpoints | Long sales cycles |
-| Data-Driven | ML assigns credit by contribution | 300+ conversions/month, Google's default |
-| Position-Based | 40% first, 40% last, 20% middle | Balanced view |
+**Reality check (as of Jun 2026):** Google deprecated first-click, linear, time-decay, and position-based attribution across Google Ads and GA4 in 2023. The only models you can actually *select* for conversions today are **data-driven (default)** and **last click**. The legacy models survive only as analytical lenses in third-party tools (e.g., a CRM, an MMP, or warehouse-native attribution) — never assume you can switch to them inside Google Ads.
+
+| Model | How It Works | Status (Jun 2026) | Best For |
+|-------|-------------|-------------------|----------|
+| Data-Driven (DDA) | ML assigns fractional credit by measured contribution | **Active — Google/GA4 default** | Default for everyone; needs enough conversion volume to model, otherwise silently falls back to last click |
+| Last Click | 100% credit to final ad-clicked touchpoint | **Active in Google Ads/GA4** | Short cycles, direct response, low-volume accounts where DDA can't model |
+| First Click | 100% credit to discovery touchpoint | **Removed from Google** — third-party analytics only | Top-of-funnel analysis outside Google |
+| Linear | Equal credit to all touchpoints | **Removed from Google** — third-party only | Full-journey lens in MMP/warehouse |
+| Time Decay | More credit to recent touchpoints | **Removed from Google** — third-party only | Long-cycle lens in MMP/warehouse |
+| Position-Based (U-shaped) | 40% first, 40% last, 20% middle | **Removed from Google** — third-party only | Balanced lens in MMP/warehouse |
+
+Meta uses its own attribution settings (default **7-day click / 1-day view**) configured per ad set, independent of Google's models. For cross-channel truth, reconcile platform-reported conversions against a single source (GA4, CRM, or an MMP) plus periodic incrementality tests — platforms each over-claim credit for the same conversion.
 
 ### What to Track
 
@@ -527,13 +573,24 @@ Example: `meta_conversions_lal1pct_ugc-testimonial-v2`
 4. **GA4:** Link to Google Ads, import conversions, set up audiences
 5. **CRM integration:** Pass GCLID/FBCLID to CRM for closed-loop attribution
 
-### iOS 14.5+ / Privacy Considerations
+### Privacy & Signal Loss (post-iOS, cookie deprecation, consent)
 
-- **Meta:** Use Conversions API (CAPI) alongside pixel — recovers 15-30% of lost signal
-- **Meta:** Aggregated Event Measurement limits to 8 conversion events per domain — prioritize them
-- **Google:** Enhanced conversions + consent mode recover signal
-- **All platforms:** First-party data (email lists, CRM) is now your most valuable targeting asset
-- **Model:** Expect 20-40% underreporting on Meta. Use incrementality tests to validate.
+The 2021 iOS App Tracking Transparency era was just the start; by 2026 the binding constraints are server-side data quality, consent enforcement, and platform modeling — not the pixel alone.
+
+**Meta:**
+- **Conversions API (CAPI) is mandatory, not optional** — run it alongside the pixel (or via the **Conversions API Gateway**, Meta's self-hosted server-side relay) so server events backstop browser signal loss. Deduplicate with a shared `event_id` on both pixel and CAPI events, or you'll double-count.
+- **Event Match Quality (EMQ)** is the number that matters now — pass hashed email, phone, name, IP, `fbc`/`fbp`, and external ID. Aim for an EMQ of **6.0+/10** per event; low EMQ is the #1 cause of "CAPI didn't help."
+- **Aggregated Event Measurement (AEM)** still caps configurable web events per domain (historically 8, ranked by priority) for users who opted out of tracking — **verify the current limit and your domain's configuration in Events Manager**, since Meta has adjusted AEM rules over time. Rank your most valuable event (e.g., Purchase) highest.
+- **Value optimization & VBO** need clean revenue values on the Purchase event; without them you can't bid to ROAS.
+- **Advantage+** placements/audiences and **Advantage+ Shopping (ASC)** lean on modeled + broad signals — feed them strong server-side conversions and a good product catalog rather than over-narrowing the audience.
+
+**Google:**
+- **Enhanced Conversions** (hashed first-party data) + **Consent Mode v2** (required in the EEA/UK to keep modeling and personalization) recover signal as third-party cookies erode. Without Consent Mode v2, EEA conversion data and remarketing degrade sharply.
+- Server-side tagging (sGTM) improves durability and data control.
+
+**All platforms:**
+- **First-party data** (email/CRM lists, server-side events, logged-in IDs) is now your most valuable targeting and matching asset.
+- **Modeled reporting:** Platform-reported conversions include modeled/estimated conversions — they are *estimates*, not deterministic counts. Expect **20-40% underreporting** of true incremental impact on Meta when only browser-side. Validate with **geo holdout / conversion-lift / incrementality tests**, not last-click dashboards.
 
 ---
 
@@ -544,7 +601,7 @@ Example: `meta_conversions_lal1pct_ugc-testimonial-v2`
 1. Research keywords (Google Keyword Planner, SEMrush, Ahrefs)
 2. Group into tight themes (5-15 keywords per ad group)
 3. Write 1 RSA per ad group (15 headlines, 4 descriptions)
-4. Set up all relevant extensions (sitelinks, callouts, structured snippets, call)
+4. Add all relevant **assets** (Google renamed "extensions" → "assets" in 2022). Current asset types: sitelink, callout, structured snippet, image, business name, business logo, promotion, price, lead form, call, location, app. Set up sitelinks + callouts + structured snippets at minimum.
 5. Start with Maximize Clicks, set a max CPC bid limit
 6. Add negative keywords from starter list
 7. Set up conversion tracking before spending a dollar
@@ -556,7 +613,7 @@ Example: `meta_conversions_lal1pct_ugc-testimonial-v2`
 
 1. Install Pixel + set up Conversions API
 2. Define conversion event (purchase, lead, trial signup)
-3. Create Campaign: Conversions objective, CBO (Campaign Budget Optimization)
+3. Create Campaign: Conversions objective, **Advantage+ Campaign Budget** (Meta's 2023 rename of "CBO" — budget set at campaign level, distributed across ad sets)
 4. Ad Set 1: Broad/Advantage+ targeting (let Meta find the audience)
 5. Ad Set 2: 1% Lookalike of best customers
 6. Ad Set 3: Retargeting (website visitors 30 days)
@@ -607,11 +664,15 @@ Audience signals don't restrict targeting — they guide the algorithm. Provide 
 
 ### PMax Gotchas
 
-- PMax cannibalizes brand search — add brand terms as negative keywords (via Google rep or account-level negatives)
-- You can't see which placements/audiences are working (limited reporting)
-- Run PMax alongside standard search campaigns — don't replace search entirely
-- Asset performance ratings (Low/Good/Best) guide optimization
-- Give it 4-6 weeks and 50+ conversions before major changes
+- **PMax cannibalizes brand search.** Stop it from eating cheap branded clicks (and over-reporting credit) using, in order of preference (as of Jun 2026):
+  - **Brand exclusion lists** — apply a brand list at the *campaign* level to keep PMax off your own + others' brand terms. This is the modern, self-serve replacement for begging a Google rep, available in the campaign settings UI and Google Ads API.
+  - **Account-level negative keywords** — supported self-serve in the UI/API; use to block brand or junk queries account-wide.
+  - **Campaign-level negative keywords for PMax** — Google has been rolling these out; if available in your account, use them for finer control than account-level.
+  - Legacy path: request negatives via a Google rep only if the above aren't yet enabled for you.
+- **Limited placement/audience reporting** — you can't fully see which placements/audiences convert; use the asset-group and (limited) insights reports plus search-term insights.
+- **Run PMax alongside standard Search** — keep a dedicated branded Search campaign and exact-match high-value terms in standard Search; don't let PMax replace Search entirely.
+- Asset performance ratings (Low/Good/Best) guide optimization — replace "Low" assets.
+- Give it 4-6 weeks and 50+ conversions before major changes.
 
 ---
 
@@ -642,12 +703,37 @@ Audience signals don't restrict targeting — they guide the algorithm. Provide 
 - [ ] Negative keyword lists applied
 - [ ] Audience exclusions set (existing customers if needed)
 - [ ] Budget and schedule confirmed
-- [ ] Ad copy reviewed for policy compliance
-- [ ] Extensions/assets complete
+- [ ] Ad copy reviewed for policy compliance (see Ad Policy & Restricted Categories — check Special Ad Category + personalized-attribute rules)
+- [ ] Assets complete (sitelinks, callouts, structured snippets, image, logo, business name — "extensions" in old UI)
 - [ ] Billing method active
 - [ ] Notification settings configured
 
 ---
+
+## Ad Policy & Restricted Categories
+
+Disapprovals and account suspensions usually come from *policy*, not strategy. Check your category before writing copy — restricted verticals have extra rules, limited targeting, and sometimes mandatory certification. **This is not legal advice; the platforms are the source of truth and rules change — verify at Google Ads Policies and Meta Advertising Standards before launch.**
+
+### Categories that trigger extra rules / certification (verify current requirements)
+
+| Category | Typical constraints (as of Jun 2026 — confirm in-platform) |
+|----------|-----------------------------------------------------------|
+| **Credit, housing, employment** | Meta **Special Ad Categories**: forced broad targeting, no age/gender/ZIP/many detailed targeting options, no lookalike-style narrowing. Google has parallel restrictions for these "sensitive" verticals. |
+| **Financial products / financial services** | Disclosures required; many regions need advertiser identity verification/licensing; crypto and CFDs often need explicit certification or are blocked by geo. |
+| **Health, drugs, supplements** | No personalized health claims ("treat your diabetes"), no PII-implying targeting language; pharmacy/telehealth often need certification; before/after imagery restricted. |
+| **Political / social issues / elections** | Identity + location verification, paid-for-by disclaimers, public ad library logging, and per-country eligibility. |
+| **Gambling / betting** | License + certification per geo; age-gating; many regions blocked entirely. |
+| **Crypto / digital assets** | Certification and/or regional bans; "guaranteed returns" language prohibited. |
+| **Alcohol** | Age/geo targeting limits; no targeting minors; some countries blocked. |
+| **Personalized attributes (copy rule)** | Do **not** assert or imply you know the user's race, religion, sexual orientation, health condition, financial status, or membership in a protected class ("Are *you* depressed?", "As a [group], you…"). This is a frequent disapproval cause across platforms. |
+
+### Pre-launch policy guardrails (do this for every campaign)
+
+- Identify if your offer is in a restricted/Special Ad Category; if so, plan for the *reduced* targeting up front (don't build a precise audience you can't use).
+- Strip personalized-attribute language from all copy and creative.
+- Avoid prohibited claims: guaranteed income/returns, miracle cures, "100% approval," sensational/shock imagery, fake countdowns/UI.
+- Confirm landing-page compliance too — destination must match the ad and the category rules (no cloaking, working privacy policy, functional contact info).
+- For regulated verticals, complete any required advertiser verification/certification *before* spending, and keep substantiation for claims on file.
 
 ## Common Mistakes
 

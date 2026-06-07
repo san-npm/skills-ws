@@ -1,6 +1,6 @@
 ---
 name: web-performance
-description: "Core Web Vitals optimization, bundle analysis, caching strategies, and server-side performance for modern web applications."
+description: "Core Web Vitals (LCP/INP/CLS) optimization, bundle analysis, caching, image/font loading, RUM field measurement, and server-side performance for modern web apps. Use when improving page speed, fixing failing Web Vitals, setting performance budgets, or auditing front-end/server perf."
 ---
 
 # Web Performance
@@ -23,22 +23,41 @@ description: "Core Web Vitals optimization, bundle analysis, caching strategies,
 
 ### INP Fixes
 
-1. **Break long tasks:** `yield()` or `scheduler.yield()` after 50ms
+1. **Break long tasks** (>50ms) by yielding to the main thread. There is no standalone `yield()` in browsers — use `scheduler.yield()` where available (Chromium 129+, not yet in Safari/Firefox as of Jun 2026) with a `setTimeout(0)` fallback.
 2. **Defer non-critical JS:** `<script defer>` or dynamic `import()`
-3. **Use `requestIdleCallback`** for analytics/telemetry
+3. **Use `requestIdleCallback`** for analytics/telemetry — but it is unsupported in Safari (use a `setTimeout` shim) and **always pass a `timeout`** so the work runs even if the page never goes idle.
 4. **Debounce input handlers:** 100-150ms for search, immediate for buttons
 
 ```javascript
-// Break long task with yield
+// Yield to the main thread, with feature detection + fallback.
+// scheduler.yield() resumes at high priority (front of queue);
+// setTimeout(0) is the universal fallback (resumes after pending tasks).
+function yieldToMain() {
+  if ('scheduler' in window && 'yield' in scheduler) {
+    return scheduler.yield();
+  }
+  return new Promise(r => setTimeout(r, 0));
+}
+
 async function processItems(items) {
+  let lastYield = performance.now();
   for (const item of items) {
     process(item);
-    if (navigator.scheduling?.isInputPending?.()) {
-      await new Promise(r => setTimeout(r, 0)); // yield to main thread
+    // Yield every ~50ms so input stays responsive.
+    if (performance.now() - lastYield > 50) {
+      await yieldToMain();
+      lastYield = performance.now();
     }
   }
 }
+
+// requestIdleCallback with Safari shim + mandatory timeout.
+const ric = window.requestIdleCallback
+  || ((cb) => setTimeout(() => cb({ didTimeout: true, timeRemaining: () => 0 }), 1));
+ric(() => sendTelemetry(), { timeout: 2000 }); // runs within 2s even if never idle
 ```
+
+> `isInputPending()` (`navigator.scheduling.isInputPending()`) is a separate, Chromium-only API for checking whether input is queued mid-task. It is **not** a yielding primitive and is not needed when you yield on a time budget as above — prefer the `yieldToMain()` pattern for portability.
 
 ### CLS Fixes
 
@@ -80,7 +99,7 @@ npx vite-bundle-visualizer
 npx bundlephobia <package-name>
 ```
 
-**Targets:** JS bundle <200KB gzipped for initial load. Split per route.
+**Targets:** ~150–200KB gzipped JS for the initial load is a reasonable starting budget for a content/marketing route; rich SPAs and dashboards run higher. Treat it as a per-route, per-device-class budget and tune against real-user p75 (especially mid-tier mobile), not a universal hard cap. Split per route and lazy-load below-fold/interaction-only code.
 
 ## Code Splitting & Lazy Loading
 
@@ -106,16 +125,26 @@ const observer = new IntersectionObserver((entries) => {
 | SVG | Icons, logos | N/A (vector) |
 
 ```html
+<!-- Above-fold / LCP hero: eager + high priority, NEVER lazy-load -->
 <picture>
   <source srcset="/hero.avif" type="image/avif">
   <source srcset="/hero.webp" type="image/webp">
   <img src="/hero.jpg" alt="Hero" width="1200" height="600"
+       fetchpriority="high" decoding="async"><!-- no loading=lazy -->
+</picture>
+
+<!-- Below-fold image: lazy-load to save bandwidth -->
+<picture>
+  <source srcset="/gallery.avif" type="image/avif">
+  <source srcset="/gallery.webp" type="image/webp">
+  <img src="/gallery.jpg" alt="Gallery item" width="800" height="600"
        loading="lazy" decoding="async">
 </picture>
 
-<!-- Responsive images -->
+<!-- Responsive below-fold image -->
 <img srcset="img-400.webp 400w, img-800.webp 800w, img-1200.webp 1200w"
-     sizes="(max-width: 600px) 100vw, 50vw" src="img-800.webp" alt="...">
+     sizes="(max-width: 600px) 100vw, 50vw" src="img-800.webp" alt="..."
+     loading="lazy" decoding="async">
 ```
 
 ## Font Loading
@@ -153,15 +182,33 @@ Cache-Control: private, no-cache
 ### Service Worker (Runtime Caching)
 
 ```javascript
-// Stale-while-revalidate with Workbox
+// sw.js — Stale-while-revalidate with Workbox (complete, runnable)
 import { registerRoute } from 'workbox-routing';
-import { StaleWhileRevalidate } from 'workbox-strategies';
+import { StaleWhileRevalidate, CacheFirst } from 'workbox-strategies';
+import { ExpirationPlugin } from 'workbox-expiration';
+import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 
+// Images: serve cached, refresh in background, cap the cache.
 registerRoute(
   ({ request }) => request.destination === 'image',
-  new StaleWhileRevalidate({ cacheName: 'images', plugins: [
-    new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 30 * 24 * 3600 }),
-  ]})
+  new StaleWhileRevalidate({
+    cacheName: 'images',
+    plugins: [
+      new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 30 * 24 * 3600 }),
+    ],
+  })
+);
+
+// Hashed/static assets: cache-first (they're immutable).
+registerRoute(
+  ({ request }) => ['script', 'style', 'font'].includes(request.destination),
+  new CacheFirst({
+    cacheName: 'static-assets',
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      new ExpirationPlugin({ maxEntries: 60, maxAgeSeconds: 365 * 24 * 3600 }),
+    ],
+  })
 );
 ```
 
@@ -185,18 +232,25 @@ registerRoute(
 ## Server-Side Optimization
 
 ```nginx
-# Compression (nginx)
+# Compression (nginx). gzip is built in.
 gzip on;
 gzip_types text/css application/javascript application/json image/svg+xml;
-brotli on;
-brotli_types text/css application/javascript application/json;
 
-# HTTP/2 push is deprecated — use 103 Early Hints instead
-# Enable HTTP/2
-listen 443 ssl http2;
+# Brotli is NOT built into stock nginx — it requires the ngx_brotli module
+# (compile with --add-module, or use a distro/CDN build that bundles it).
+# If your CDN/reverse proxy (Cloudflare, Fastly, etc.) handles Brotli, skip this.
+brotli on;
+brotli_types text/css application/javascript application/json image/svg+xml;
+
+# Enable HTTP/2 — nginx 1.25.1+ uses a separate `http2` directive.
+# The old `listen 443 ssl http2;` form is deprecated and warns on boot.
+listen 443 ssl;
+http2 on;
+
+# HTTP/2 server push is deprecated/removed — use 103 Early Hints instead.
 ```
 
-**Compression priority:** Brotli (best ratio) → gzip (universal fallback).
+**Compression priority:** pre-compress static assets at build time (`.br` + `.gz`) and serve with `gzip_static`/`brotli_static`; otherwise Brotli (best ratio) → gzip (universal fallback). Compress text only — never re-compress images/video.
 
 ## Performance Budget Enforcement
 
@@ -214,7 +268,66 @@ curl -so /dev/null -w '%{size_download}' https://example.com
 npx autocannon -c 100 -d 30 https://example.com/api/data
 ```
 
-## References
+## Field Measurement (RUM)
 
-See `references/` for Lighthouse CI configs, CDN setup guides, and caching decision trees.
+Lighthouse is **lab data** (one synthetic run); Core Web Vitals are graded on **field data** at the **p75** of real users, segmented by device (mobile is almost always the bottleneck). Always measure both — fix in the lab, verify in the field.
+
+- **CrUX** (Chrome UX Report): the public field dataset Google scores you on. Query the [CrUX API](https://developer.chrome.com/docs/crux) or [PageSpeed Insights](https://pagespeed.web.dev/) for p75 LCP/INP/CLS by URL/origin and form factor. Coverage requires enough traffic; otherwise self-collect.
+- **`web-vitals` library** for first-party RUM, including attribution (which element/script caused the bad metric):
+
+```javascript
+import { onLCP, onINP, onCLS } from 'web-vitals/attribution';
+
+function report({ name, value, rating, attribution }) {
+  // rating: 'good' | 'needs-improvement' | 'poor'
+  navigator.sendBeacon('/rum', JSON.stringify({
+    name, value, rating,
+    target: attribution.interactionTarget || attribution.largestShiftTarget,
+  }));
+}
+onLCP(report); onINP(report); onCLS(report); // INP attribution -> the slow handler
+```
+
+- **Segment & alert on p75**, not averages — a good mean hides a slow tail. Split by route, device class, and country. Alert when route p75 crosses a threshold (INP >200ms, LCP >2.5s, CLS >0.1).
+
+## Framework Notes (2026)
+
+- **Next.js (App Router / RSC):** Server Components ship zero client JS by default — keep `"use client"` at the leaves to shrink hydration. Use `next/image` (auto AVIF/WebP, lazy below-fold) and `next/font` (self-hosted, no layout shift). Cache on the edge with route segment config / `revalidate`.
+- **React:** `<Suspense>` + `React.lazy` for code splitting; React 19 streaming SSR improves TTFB. Avoid hydrating static content.
+- **Astro:** ships zero JS by default; use island directives (`client:visible`, `client:idle`) so interactive components hydrate only when needed.
+- **Vite / Rollup:** automatic per-route chunking via dynamic `import()`; inspect with `vite-bundle-visualizer`. Use `build.rollupOptions.output.manualChunks` to split large vendor deps.
+- **Edge caching:** serve HTML with `stale-while-revalidate` from the CDN edge and emit 103 Early Hints for critical assets.
+
+## Lighthouse CI (config)
+
+Gate PRs on performance with Lighthouse CI (`@lhci/cli`):
+
+```json
+// lighthouserc.json
+{
+  "ci": {
+    "collect": { "url": ["https://example.com/"], "numberOfRuns": 3 },
+    "assert": {
+      "assertions": {
+        "categories:performance": ["error", { "minScore": 0.9 }],
+        "largest-contentful-paint": ["error", { "maxNumericValue": 2500 }],
+        "interaction-to-next-paint": ["error", { "maxNumericValue": 200 }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1 }]
+      }
+    },
+    "upload": { "target": "temporary-public-storage" }
+  }
+}
+```
+
+```bash
+npx @lhci/cli autorun   # collect -> assert -> upload; non-zero exit fails CI
+```
+
+### Caching decision tree
+
+- **Hashed/fingerprinted asset** (`app.a1b2c3.js`) → `Cache-Control: public, max-age=31536000, immutable`
+- **HTML / personalized page** → `public, max-age=0, must-revalidate` (or `private, no-cache` if user-specific)
+- **API response that tolerates staleness** → `public, max-age=60, stale-while-revalidate=3600`
+- **Sensitive user data** → `private, no-store`
 

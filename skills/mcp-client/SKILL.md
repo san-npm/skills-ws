@@ -1,815 +1,689 @@
 ---
 name: mcp-client
-description: "Consume MCP servers — connect AI agents to external tools via stdio, SSE (deprecated 2025-03-26), or Streamable HTTP. Covers Claude Desktop/Cursor/Claude Code config, three-tier auth, and common tool patterns. Use when wiring an agent to MCP servers."
+description: "Consume MCP (Model Context Protocol) servers over stdio (local) or Streamable HTTP (remote): initialize handshake, call tools, read resources, get prompts, pagination/timeouts/errors, OAuth/bearer auth, plus Claude Desktop/Code, Cursor, OpenClaw config. Use when wiring an agent to an MCP server or debugging a transport/auth failure."
 ---
 
-# MCP Client — Consuming Model Context Protocol Services
+# MCP Client — Consuming Model Context Protocol Servers
 
-> Transports: prefer **Streamable HTTP** (`StreamableHTTPClientTransport`) per MCP spec 2025-03-26; SSE is deprecated; **stdio** stays for local processes.
+> **Transport policy (MCP spec):** Use **stdio** for local subprocess servers and **Streamable HTTP** (`StreamableHTTPClientTransport`, endpoint usually `/mcp`) for remote servers. The old **HTTP+SSE** transport was deprecated in spec revision `2025-03-26` and superseded by Streamable HTTP; keep it only as a *legacy fallback* for old servers (endpoint usually `/sse`). WebSocket transport was removed. As of Jun 2026 the latest spec revision is `2025-11-25` — verify at https://modelcontextprotocol.io/specification.
 
-> Connect AI agents to external MCP services for web intelligence, blockchain data, document processing, and more. Production patterns for authentication, payments, and multi-tool workflows.
+This skill makes an agent expert at being an **MCP client**: discovering a server's capabilities, calling its tools, reading its resources, using its prompts, and doing so safely with auth, timeouts, retries, and cost control. It is provider-agnostic; one specific public server (`mcp.skills.ws`) appears only as an optional worked example at the end.
 
-## Overview
+For building the *server* side, see the sibling skill `mcp-server-builder`. For agent orchestration around these tool calls, see `ai-agent-building`. For wallet/payment flows (x402), see `wallet-integration` and `defi-integration`.
 
-MCP (Model Context Protocol) lets AI agents call external tools through a standardized interface. Instead of building every capability from scratch, agents connect to MCP services that provide specialized tools — screenshots, DNS lookups, blockchain queries, OCR, and more.
+## What this skill covers
 
-This skill teaches you to:
-1. Connect to MCP services via SSE or stdio transport
-2. Authenticate across three tiers: free, API key, and x402 micropayments
-3. Build multi-tool workflows combining several MCP tools
-4. Handle errors, retries, and cost optimization
-5. Configure popular AI clients (Claude Desktop, Claude Code, Cursor)
-
-## Why External MCP Services?
-
-**Build vs. consume decision matrix:**
-
-| Factor | Build Your Own | Use MCP Service |
-|--------|---------------|-----------------|
-| Time to value | Days–weeks | Minutes |
-| Infrastructure | Your servers, your ops | Managed |
-| Cost at low volume | High (fixed costs) | Free tier available |
-| Cost at high volume | Lower marginal | Pay-per-call |
-| Customization | Full control | Limited to API |
-| Reliability | Your SLA | Provider's SLA |
-
-**When to consume:** You need web screenshots, DNS/WHOIS lookups, SSL checks, OCR, or blockchain data. These are commodity capabilities — don't rebuild them.
-
-**When to build:** You need proprietary data access, custom business logic, or sub-millisecond latency.
+1. Transports: stdio (local) vs Streamable HTTP (remote), with a Streamable-HTTP-then-SSE fallback for legacy servers.
+2. Connection lifecycle: `initialize` handshake, protocol-version negotiation, capability discovery, clean shutdown.
+3. Primitives: tools (`tools/list`, `tools/call`), resources (`resources/list`, `resources/read`, templates, subscriptions), prompts (`prompts/list`, `prompts/get`), and client-provided capabilities (roots, sampling, elicitation).
+4. Robustness: cursor pagination, progress notifications, cancellation, timeouts, JSON-RPC error codes, retries with backoff.
+5. Auth: OAuth 2.1 (the spec's standard for remote HTTP servers) plus provider-specific bearer/API-key headers; token storage and least privilege.
+6. Client configuration for Claude Desktop, Claude Code, Cursor, and OpenClaw (stdio + Streamable HTTP).
+7. Cost, caching, and security best practices.
 
 ---
 
-## Connecting to MCP Services
+## 1. Transports
 
-### Transport Types
+MCP is JSON-RPC 2.0 messages over a transport. You pick the transport based on *where the server runs*.
 
-**SSE (Server-Sent Events)** — HTTP-based, works across networks:
-```
-Endpoint: https://mcp.skills.ws/mcp/sse
-Protocol: HTTP GET (SSE stream) + HTTP POST (tool calls)
-```
+| Transport | Use for | Endpoint shape | SDK class (TS) | SDK helper (Py) |
+|-----------|---------|----------------|----------------|-----------------|
+| **stdio** | Local subprocess (a CLI you spawn) | command + args | `StdioClientTransport` | `stdio_client` |
+| **Streamable HTTP** | Remote server over the network (preferred) | `https://host/mcp` | `StreamableHTTPClientTransport` | `streamablehttp_client` |
+| HTTP+SSE *(legacy)* | Old remote servers built pre-2025-03-26 | `https://host/sse` | `SSEClientTransport` | `sse_client` |
 
-**stdio** — Local process, used for CLI tools:
-```
-Command: npx @mcp/some-local-server
-Protocol: JSON-RPC over stdin/stdout
-```
+**stdio** — the server is a process you launch; messages flow over stdin/stdout, framed as newline-delimited JSON-RPC. Most "install an MCP server" instructions (`npx @scope/server`, `uvx some-server`) are stdio. Logging must go to **stderr** — never stdout (stdout is the protocol channel).
 
-For remote services, SSE is the standard transport.
+**Streamable HTTP** — a single HTTP endpoint (commonly `/mcp`). The client `POST`s JSON-RPC requests; the server may answer with a single `application/json` body or upgrade to an SSE stream (`text/event-stream`) for streaming/server-initiated messages. After the `initialize` response, the client must echo the negotiated version on every request via the `MCP-Protocol-Version` header, and persist any `Mcp-Session-Id` the server returns. This replaces the deprecated two-endpoint SSE transport.
 
-### Health Check
+**Legacy SSE** — two endpoints (a GET SSE stream + a POST channel). Only for servers that predate Streamable HTTP. Detect-and-fallback (see §2.3); don't build new clients on it.
 
-Always verify a service is up before configuring:
+### Choosing and detecting
 
-```bash
-curl -s https://mcp.skills.ws/health
-# {"status":"ok","services":["screenshot","whois","blockchain"]}
-```
+- If you control the launch command → **stdio**.
+- If you have a URL → try **Streamable HTTP** first, fall back to **SSE** only if the server rejects it (HTTP 400/404/405 on the `initialize` POST).
+- Public server registries (the MCP registry `server.json`) list `remotes[]` entries typed `streamable-http` or `sse`; prefer the `streamable-http` entry.
 
 ---
 
-## Available Tools — mcp.skills.ws
+## 2. Programmatic client (official SDK)
 
-A production MCP service providing web intelligence and blockchain tools.
+Install: `npm i @modelcontextprotocol/sdk` (TypeScript) or `pip install mcp` / `uv add mcp` (Python). The TypeScript SDK uses subpath imports under `@modelcontextprotocol/sdk/...`. (As of Jun 2026; check the current import paths and package name at https://github.com/modelcontextprotocol/typescript-sdk and https://github.com/modelcontextprotocol/python-sdk before pinning.)
 
-### Screenshot — Capture Any Webpage
+### 2.1 Connect to a remote server (Streamable HTTP) — TypeScript
 
-```bash
-# Response is JSON with base64 image — extract and decode to get the PNG
-curl -s "https://mcp.skills.ws/api/screenshot?url=https://example.com" \
-  | jq -r '.image' | sed 's|data:image/png;base64,||' | base64 -d > screenshot.png
+```typescript
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+
+const client = new Client(
+  { name: 'my-agent', version: '1.0.0' },
+  // Advertise the client capabilities you actually implement (see §3.4).
+  { capabilities: { /* roots: { listChanged: true }, sampling: {}, elicitation: {} */ } }
+);
+
+const transport = new StreamableHTTPClientTransport(
+  new URL('https://api.example.com/mcp'),
+  {
+    // Provider-specific static headers (API key, etc.). For OAuth, prefer authProvider — see §5.
+    requestInit: {
+      headers: new Headers({ Authorization: `Bearer ${process.env.MCP_TOKEN}` }),
+    },
+  }
+);
+
+await client.connect(transport); // performs the initialize handshake for you
+// ... use the client (see §3) ...
+await client.close();
 ```
 
-Parameters:
-- `url` (required) — URL to capture
-- `width` — Viewport width (default: 1280)
-- `height` — Viewport height (default: 800)
-- `fullPage` — Capture full scrollable page (default: false)
-- `format` — `png` or `jpeg` (default: png)
+`client.connect()` runs the full `initialize` exchange: it sends the client's protocol version + capabilities + `clientInfo`, receives the server's negotiated version + capabilities + `serverInfo`, and sends the `notifications/initialized` ack. You don't hand-roll JSON-RPC.
 
-### WHOIS — Domain Registration Data
+### 2.2 Connect to a local server (stdio) — TypeScript
 
-```bash
-curl -s "https://mcp.skills.ws/api/whois?domain=example.com"
+```typescript
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+
+const transport = new StdioClientTransport({
+  command: 'npx',
+  args: ['-y', '@scope/some-mcp-server'],
+  env: { ...process.env, SOME_API_KEY: process.env.SOME_API_KEY ?? '' }, // pass only what's needed
+});
+
+const client = new Client({ name: 'my-agent', version: '1.0.0' });
+await client.connect(transport);
 ```
 
-Returns: registrar, creation/expiry dates, nameservers, registrant info (when available).
+Secrets reach a local server via its **environment**, not the command line (args are visible in `ps`). Pass an explicit `env` allowlist rather than leaking your whole environment.
 
-### DNS — Record Lookups
+### 2.3 Streamable HTTP with SSE fallback (support old + new servers)
 
-```bash
-curl -s "https://mcp.skills.ws/api/dns?domain=example.com&type=A"
-```
+This is the canonical compatibility pattern from the SDK docs:
 
-Parameters:
-- `domain` (required)
-- `type` — `A`, `AAAA`, `MX`, `NS`, `TXT`, `CNAME`, `SOA` (default: A)
+```typescript
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 
-### SSL — Certificate Analysis
-
-```bash
-curl -s "https://mcp.skills.ws/api/ssl?domain=example.com"
-```
-
-Returns: issuer, validity dates, SANs, certificate chain, protocol support.
-
-### OCR — Extract Text from Images
-
-```bash
-curl -s "https://mcp.skills.ws/api/ocr?url=https://example.com/receipt.png"
-```
-
-### Blockchain — On-Chain Queries
-
-```bash
-# Native token balance
-curl -s "https://mcp.skills.ws/api/chain/balance?address=0x...&chain=celo"
-
-# ERC20 token balance
-curl -s "https://mcp.skills.ws/api/chain/erc20?address=0x...&token=0xTOKEN_ADDRESS&chain=base"
-
-# Transaction details
-curl -s "https://mcp.skills.ws/api/chain/tx?hash=0x...&chain=ethereum"
-```
-
-Supported chains: Ethereum, Base, Arbitrum, Optimism, Polygon, Celo.
-
----
-
-## Authentication Tiers
-
-### Tier 1: Free (No Auth Required)
-
-10 API calls per day per IP address. No signup needed.
-
-```bash
-# Just call it — no headers required
-curl -s "https://mcp.skills.ws/api/dns?domain=example.com"
-```
-
-Rate limit headers in response:
-```
-X-RateLimit-Limit: 10
-X-RateLimit-Remaining: 7
-```
-
-When exhausted:
-```json
-{
-  "error": "Daily free limit reached",
-  "limit": 10,
-  "upgrade": {
-    "stripe": "POST /billing/checkout for unlimited API key ($9/mo)",
-    "x402": {
-      "price": 0.005,
-      "currency": "USD",
-      "receiver": "0x087ae921CE8d07a4dE6BdacAceD475e9080B2aDF",
-      "networks": ["base", "celo"],
-      "accepts": ["USDC", "USDT"]
-    }
+async function connectRemote(url: string) {
+  const baseUrl = new URL(url);
+  try {
+    // Preferred: modern Streamable HTTP
+    const client = new Client({ name: 'my-agent', version: '1.0.0' });
+    const transport = new StreamableHTTPClientTransport(baseUrl);
+    await client.connect(transport);
+    return { client, transport };
+  } catch {
+    // Legacy fallback: old HTTP+SSE servers (deprecated 2025-03-26)
+    const client = new Client({ name: 'my-agent', version: '1.0.0' });
+    const transport = new SSEClientTransport(baseUrl);
+    await client.connect(transport);
+    return { client, transport };
   }
 }
 ```
 
-### Tier 2: API Key ($9/month)
-
-Unlimited calls with a subscription API key.
-
-**Get a key:**
-```bash
-# Create checkout session
-curl -s -X POST "https://mcp.skills.ws/billing/checkout" | jq .url
-# Opens Stripe checkout → pay → receive API key
-```
-
-**Use the key:**
-```bash
-curl -s "https://mcp.skills.ws/api/whois?domain=example.com" \
-  -H "X-Api-Key: mcp_your_key_here"
-```
-
-### Tier 3: x402 Pay-Per-Call ($0.005/call)
-
-Pay with stablecoins per request — no subscription needed. Ideal for AI agents with crypto wallets.
-
-**Supported:**
-- Networks: Base, Celo
-- Tokens: USDC, USDT
-- Price: $0.005 per call
-- Receiver: `0x087ae921CE8d07a4dE6BdacAceD475e9080B2aDF`
-
-**Payment header format:**
-
-```javascript
-const payment = {
-  network: "base",           // "base" or "celo"
-  token: "USDC",             // "USDC" or "USDT"
-  txHash: "0xabc123...",     // Transaction hash proving payment
-  amount: "0.005",           // USD amount (must be >= 0.005)
-  receiver: "0x087ae921CE8d07a4dE6BdacAceD475e9080B2aDF"
-};
-
-const header = Buffer.from(JSON.stringify(payment)).toString('base64');
-```
-
-**Making a paid call:**
-
-```bash
-# After sending $0.005 USDC to the receiver address:
-PAYMENT=$(echo -n '{"network":"base","token":"USDC","txHash":"0xYOUR_TX_HASH","amount":"0.005","receiver":"0x087ae921CE8d07a4dE6BdacAceD475e9080B2aDF"}' | base64)
-
-curl -s "https://mcp.skills.ws/api/dns?domain=example.com" \
-  -H "X-Payment: $PAYMENT"
-```
-
-**x402 flow in JavaScript:**
-
-```javascript
-import { encodeFunctionData, parseUnits } from 'viem';
-import { base } from 'viem/chains';
-
-const USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
-const RECEIVER = '0x087ae921CE8d07a4dE6BdacAceD475e9080B2aDF';
-const PRICE = parseUnits('0.005', 6); // USDC has 6 decimals
-
-// 1. Send USDC payment
-const txHash = await walletClient.sendTransaction({
-  to: USDC_BASE,
-  data: encodeFunctionData({
-    abi: [{
-      name: 'transfer',
-      type: 'function',
-      inputs: [
-        { name: 'to', type: 'address' },
-        { name: 'amount', type: 'uint256' }
-      ],
-      outputs: [{ type: 'bool' }]
-    }],
-    args: [RECEIVER, PRICE]
-  }),
-  chain: base
-});
-
-// 2. Build payment proof
-const payment = Buffer.from(JSON.stringify({
-  network: 'base',
-  token: 'USDC',
-  txHash,
-  amount: '0.005',
-  receiver: RECEIVER
-})).toString('base64');
-
-// 3. Make authenticated API call
-const res = await fetch('https://mcp.skills.ws/api/screenshot?url=https://example.com', {
-  headers: { 'X-Payment': payment }
-});
-```
-
-**x402 flow in Python:**
+### 2.4 Python client (Streamable HTTP, with stdio + legacy SSE shown)
 
 ```python
-import base64, json, requests
+import asyncio
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+from mcp.client.streamable_http import streamablehttp_client  # preferred for remote
+# from mcp.client.sse import sse_client                       # legacy fallback only
 
-payment = {
-    "network": "base",
-    "token": "USDC",
-    "txHash": "0xYOUR_TX_HASH",
-    "amount": "0.005",
-    "receiver": "0x087ae921CE8d07a4dE6BdacAceD475e9080B2aDF"
-}
+async def remote():
+    # Provider-specific auth headers; for OAuth see the SDK auth helpers (§5).
+    headers = {"Authorization": "Bearer <token>"}
+    async with streamablehttp_client(
+        "https://api.example.com/mcp", headers=headers, timeout=30
+    ) as (read, write, _get_session_id):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            tools = await session.list_tools()
+            print("tools:", [t.name for t in tools.tools])
+            result = await session.call_tool("dns_lookup", {"domain": "example.com"})
+            print(result.content)
 
-header = base64.b64encode(json.dumps(payment).encode()).decode()
+async def local():
+    params = StdioServerParameters(command="uvx", args=["some-mcp-server"], env=None)
+    async with stdio_client(params) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            print((await session.list_tools()).tools)
 
-response = requests.get(
-    "https://mcp.skills.ws/api/dns",
-    params={"domain": "example.com"},
-    headers={"X-Payment": header}
-)
-print(response.json())
+asyncio.run(remote())
 ```
+
+> SDK note (Jun 2026): newer Python SDK releases also expose a `streamable_http_client(url, http_client=httpx.AsyncClient(...))` form where you configure headers/timeout/auth on an `httpx.AsyncClient` (set `follow_redirects=True`). Use whichever your installed `mcp` version documents — `python -c "import mcp; print(mcp.__version__)"` then check that version's `docs/`.
 
 ---
 
-## Client Configuration
+## 3. Using server capabilities
 
-### Claude Desktop
+After `initialize`, only call primitives the server actually advertised in its capabilities. Calling a method the server didn't declare returns a JSON-RPC error (`-32601 Method not found`).
 
-Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+### 3.1 Tools — discover and call
+
+```typescript
+// List (paginate — never assume one page; see §3.5)
+const { tools } = await client.listTools();
+console.log(tools.map(t => `${t.name}: ${t.description}`));
+// Each tool has a JSON Schema `inputSchema`; validate arguments against it before calling.
+
+// Call
+const result = await client.callTool({
+  name: 'dns_lookup',
+  arguments: { domain: 'example.com', type: 'MX' },
+});
+
+// Read structured + unstructured output. `content` is an array of typed blocks.
+for (const block of result.content) {
+  if (block.type === 'text') console.log(block.text);
+  // other block types: 'image' (data+mimeType), 'resource', 'resource_link', 'audio'
+}
+// Tools signal failures via result.isError === true (NOT a transport/JSON-RPC error).
+// Modern servers may also return `result.structuredContent` (typed JSON) — prefer it when present.
+if (result.isError) {
+  throw new Error('Tool reported an error: ' + JSON.stringify(result.content));
+}
+```
+
+**Two error channels — keep them straight:**
+- **Protocol errors** (bad params, unknown method, transport down) → thrown as an `McpError` carrying a JSON-RPC code (v1 SDK; v2 splits this into local `SdkError` vs server-side `ProtocolError`).
+- **Tool execution errors** (the DNS lookup failed, the API 500'd) → returned *successfully* with `result.isError === true` and a human-readable message in `content`. The model is meant to see and react to these, so don't mask them.
+
+### 3.2 Resources — list, read, templates, subscribe
+
+```typescript
+// List concrete resources (paginate on nextCursor)
+const { resources } = await client.listResources();
+// Read one by URI
+const { contents } = await client.readResource({ uri: 'config://app/settings' });
+for (const item of contents) {
+  // item.uri, item.mimeType, and either item.text or item.blob (base64)
+  console.log(item.uri, item.mimeType);
+}
+
+// Resource templates (RFC 6570 URI templates) for parameterized reads
+const { resourceTemplates } = await client.listResourceTemplates();
+// e.g. uriTemplate: "github://repos/{owner}/{repo}/issues/{id}"
+
+// If the server's resources capability advertises `subscribe: true`:
+await client.subscribeResource({ uri: 'log://app/today' });
+client.setNotificationHandler(
+  /* ResourceUpdatedNotificationSchema */ undefined as any,
+  (n) => console.log('resource changed:', n.params.uri)
+);
+```
+
+Resources are **app-controlled context** (read-only data the host chooses to feed the model), distinct from tools (model-invoked actions). Don't treat a `resources/read` as a side-effecting call.
+
+### 3.3 Prompts — list and fill
+
+```typescript
+const { prompts } = await client.listPrompts(); // each has name + argument schema
+const { messages } = await client.getPrompt({
+  name: 'review-code',
+  arguments: { code: 'console.log("hello")' },
+});
+// `messages` is a ready-to-send array of {role, content} you forward to the model.
+```
+
+Prompts are **user-controlled** templates (often surfaced as slash commands / menu items). Let the user pick them; don't auto-invoke silently.
+
+### 3.4 Client-provided capabilities (the reverse direction)
+
+A server can call *back* into your client if you advertised the capability in `initialize`:
+- **roots** — you expose filesystem roots the server may operate within (register a `ListRootsRequest` handler).
+- **sampling** — the server asks *your* model to generate text (`sampling/createMessage`). Gate this behind user approval and a token/cost budget; a malicious server could otherwise drive your LLM spend.
+- **elicitation** — the server asks the user for structured input mid-call (you render a form from a JSON Schema and return the answer). Never auto-fill secrets; show the user what's being requested.
+
+Only advertise what you actually implement and intend to honor.
+
+### 3.5 Pagination, progress, cancellation, timeouts
+
+```typescript
+// Pagination: list endpoints return nextCursor; loop until it's undefined.
+const allTools = [];
+let cursor: string | undefined;
+do {
+  const page = await client.listTools({ cursor });
+  allTools.push(...page.tools);
+  cursor = page.nextCursor;
+} while (cursor);
+
+// Per-call timeout (default is 60s). On timeout the SDK sends a cancellation to the server.
+// v1 SDK (npm i @modelcontextprotocol/sdk): McpError + ErrorCode from .../sdk/types.js.
+// v2 renamed these — local errors become `SdkError`/`SdkErrorCode` and protocol errors
+// `ProtocolError`/`ProtocolErrorCode`, both imported from `@modelcontextprotocol/client`.
+// Check your installed major version and import accordingly.
+import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
+try {
+  const r = await client.callTool(
+    { name: 'slow-operation', arguments: {} },
+    { timeout: 120_000 } // override default 60s
+  );
+} catch (e) {
+  if (e instanceof McpError && e.code === ErrorCode.RequestTimeout) {
+    console.error('timed out');
+  } else { throw e; }
+}
+
+// Progress + long-running work: pass onprogress; reset the timeout as progress arrives,
+// but cap total wall-clock with maxTotalTimeout so a stalled server can't hang forever.
+await client.callTool(
+  { name: 'long-operation', arguments: {} },
+  {
+    onprogress: ({ progress, total }) => console.log(`${progress}/${total ?? '?'}`),
+    resetTimeoutOnProgress: true,
+    maxTotalTimeout: 600_000,
+  }
+);
+
+// Manual cancellation via AbortSignal:
+const ac = new AbortController();
+const p = client.callTool({ name: 'x', arguments: {} }, { signal: ac.signal });
+// ac.abort();  // sends notifications/cancelled to the server
+```
+
+### 3.6 JSON-RPC / SDK error codes
+
+| Code | Name | Typical cause | Client action |
+|------|------|---------------|---------------|
+| `-32700` | Parse error | Malformed JSON on the wire | Bug in transport/serialization; report |
+| `-32600` | Invalid request | Bad JSON-RPC envelope | Fix request shape |
+| `-32601` | Method not found | Called a capability the server didn't advertise | Check `initialize` capabilities first |
+| `-32602` | Invalid params | Arguments fail the tool's `inputSchema` | Validate args against the schema |
+| `-32603` | Internal error | Server-side exception | Retry with backoff; if persistent, report |
+| `-32002` | Resource not found | Bad/expired resource URI | Re-list resources |
+| `-32001` | Request timeout (SDK) | No response within `timeout` | Backoff/retry; raise timeout for slow tools |
+
+Distinguish these (protocol failures) from `result.isError === true` (the tool ran but failed). Retry only idempotent operations; never blindly retry a tool that may have side effects.
+
+---
+
+## 4. Configuring AI clients
+
+Below: **local (stdio)** and **remote (Streamable HTTP)** for each client. Auth on remote servers is provider-specific — use OAuth (the client opens a browser flow) where the server supports it, or inject a bearer/API-key header. CLIs and config schemas change; verify against each tool's current docs (links inline).
+
+### 4.1 Claude Desktop
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows). Claude Desktop primarily launches **stdio** servers:
 
 ```json
 {
   "mcpServers": {
-    "skills-ws": {
-      "url": "https://mcp.skills.ws/mcp/sse",
-      "headers": {
-        "X-Api-Key": "mcp_your_key_here"
-      }
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/me/projects"]
+    },
+    "my-remote": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://api.example.com/mcp", "--header", "Authorization: Bearer ${MCP_TOKEN}"],
+      "env": { "MCP_TOKEN": "..." }
     }
   }
 }
 ```
 
-For free tier (no key needed):
-```json
-{
-  "mcpServers": {
-    "skills-ws": {
-      "url": "https://mcp.skills.ws/mcp/sse"
-    }
-  }
-}
-```
+> Native remote (Streamable HTTP / OAuth) support in Claude Desktop has shipped via Connectors/Settings rather than this JSON file; for a remote URL without native support, bridge it with the `mcp-remote` stdio adapter as above. Verify current options at https://modelcontextprotocol.io/docs/develop/connect-local-servers (as of Jun 2026).
 
-### Claude Code
+### 4.2 Claude Code
 
 ```bash
-# Add as MCP server
-claude mcp add skills-ws https://mcp.skills.ws/mcp/sse
+# Local stdio server
+claude mcp add filesystem -- npx -y @modelcontextprotocol/server-filesystem ~/projects
 
-# With API key
-claude mcp add skills-ws https://mcp.skills.ws/mcp/sse --header "X-Api-Key: mcp_your_key_here"
+# Remote Streamable HTTP server (preferred for URLs)
+claude mcp add --transport http my-remote https://api.example.com/mcp \
+  --header "Authorization: Bearer ${MCP_TOKEN}"
+
+# Legacy SSE server (only if it doesn't support Streamable HTTP)
+claude mcp add --transport sse old-remote https://legacy.example.com/sse
+
+# Manage
+claude mcp list
+claude mcp get my-remote
+claude mcp remove my-remote
 ```
 
-Or in `.claude/settings.json`:
+Equivalent `.mcp.json` (project-scoped, commit-safe if it contains no secrets):
+
 ```json
 {
   "mcpServers": {
-    "skills-ws": {
-      "type": "sse",
-      "url": "https://mcp.skills.ws/mcp/sse",
-      "headers": {
-        "X-Api-Key": "mcp_your_key_here"
-      }
-    }
+    "my-remote": {
+      "type": "http",
+      "url": "https://api.example.com/mcp",
+      "headers": { "Authorization": "Bearer ${MCP_TOKEN}" }
+    },
+    "old-remote": { "type": "sse", "url": "https://legacy.example.com/sse" }
   }
 }
 ```
 
-### Cursor
+Use `"type": "http"` for Streamable HTTP. Keep `"type": "sse"` only for legacy servers. Reference: https://docs.claude.com/en/docs/claude-code/mcp (verify flags/keys for your version).
 
-In Cursor settings → MCP Servers:
+### 4.3 Cursor
+
+`~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (project):
+
 ```json
 {
-  "skills-ws": {
-    "url": "https://mcp.skills.ws/mcp/sse",
-    "headers": {
-      "X-Api-Key": "mcp_your_key_here"
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/me/projects"]
+    },
+    "my-remote": {
+      "url": "https://api.example.com/mcp",
+      "headers": { "Authorization": "Bearer ${MCP_TOKEN}" }
     }
   }
 }
 ```
 
-### OpenClaw
+A `url` entry is treated as remote (Streamable HTTP, SSE as fallback). Cursor also supports OAuth login for servers that advertise it. Docs: https://docs.cursor.com/context/mcp (verify, as of Jun 2026).
 
-In `openclaw.json`:
+### 4.4 OpenClaw
+
+`openclaw.json`:
+
 ```json
 {
   "mcp": {
     "servers": {
-      "skills-ws": {
+      "filesystem": {
+        "transport": "stdio",
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/me/projects"]
+      },
+      "my-remote": {
+        "transport": "http",
+        "url": "https://api.example.com/mcp",
+        "headers": { "Authorization": "Bearer ${MCP_TOKEN}" }
+      },
+      "old-remote": {
         "transport": "sse",
-        "url": "https://mcp.skills.ws/mcp/sse",
-        "headers": {
-          "X-Api-Key": "mcp_your_key_here"
-        }
+        "url": "https://legacy.example.com/sse"
       }
     }
   }
 }
 ```
 
+Prefer `"transport": "http"` (Streamable HTTP); reserve `"sse"` for legacy servers. Confirm exact keys against the OpenClaw version you run.
+
+**Secrets in configs:** reference env vars (`${MCP_TOKEN}`) rather than pasting tokens; keep any file that contains a literal secret out of git.
+
 ---
 
-## Error Handling
+## 5. Authentication
 
-### HTTP Status Codes
+There are two worlds:
+
+1. **OAuth 2.1** — the MCP spec's standard for remote HTTP servers. The server is an OAuth *resource server*; you obtain a token from its authorization server and send `Authorization: Bearer <token>`.
+2. **Provider-specific headers** — many real servers just want a static API-key header (`Authorization: Bearer ...`, `X-Api-Key: ...`). Simpler, but the key is long-lived — store and scope it carefully.
+
+### 5.1 OAuth 2.1 discovery flow (spec)
+
+1. Client hits the MCP endpoint with no token → server returns **`401 Unauthorized`** with a `WWW-Authenticate: Bearer ... resource_metadata="https://server/.well-known/oauth-protected-resource"` header.
+2. Client fetches that **Protected Resource Metadata (PRM)** doc to learn the authorization server(s).
+3. Client fetches the authorization server's metadata (`/.well-known/oauth-authorization-server`), runs an **Authorization Code + PKCE** flow (Dynamic Client Registration if supported), and gets an access token (+ refresh token).
+4. Client retries with `Authorization: Bearer <access_token>` and includes the resource indicator so the token is audience-bound to this server.
+5. On `401`/expiry, refresh; on `403` you lack scope.
+
+### 5.2 OAuth in the TypeScript SDK
+
+The SDK handles the dance if you pass an `authProvider`. For servers that mint tokens out-of-band, the minimal form just supplies the token:
+
+```typescript
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+
+// Minimal: provide a token; a 401 surfaces as UnauthorizedError.
+const transport = new StreamableHTTPClientTransport(new URL('https://api.example.com/mcp'), {
+  authProvider: { token: async () => process.env.MCP_TOKEN! },
+});
+```
+
+For full interactive OAuth (PKCE, redirect, token persistence), implement `OAuthClientProvider` (redirect URL, client metadata, `tokens()`/`saveTokens()`, `redirectToAuthorization()`, code-verifier storage) and call `transport.finishAuth(authorizationCode)` after the redirect returns. Check the current interface at https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/client.md — the auth API evolves.
+
+### 5.3 Provider-specific header auth
+
+```typescript
+const transport = new StreamableHTTPClientTransport(new URL('https://api.example.com/mcp'), {
+  requestInit: { headers: new Headers({ 'X-Api-Key': process.env.SERVICE_API_KEY! }) },
+});
+```
+
+### 5.4 Token hygiene
+
+- **Never** hardcode tokens in source or commit them in config; read from env / a secret manager.
+- **Never** put secrets in URLs or stdio `args` (they leak to logs / `ps`); use headers or `env`.
+- Prefer **short-lived** access tokens + refresh; rotate long-lived API keys on a schedule.
+- Request **least privilege** scopes; use a distinct key per app/environment so one leak is contained.
+- Treat a server as untrusted: it can return prompt-injection-laden tool output. Don't auto-execute server-suggested shell/SQL; gate sampling/elicitation behind user approval.
+
+---
+
+## 6. Robustness patterns
+
+### 6.1 Retry with backoff (transport-level)
+
+```typescript
+async function withRetry<T>(fn: () => Promise<T>, max = 3): Promise<T> {
+  for (let i = 0; i < max; i++) {
+    try {
+      return await fn();
+    } catch (e: any) {
+      const code = e?.code;                 // JSON-RPC / SDK error code
+      const retriable = code === -32603      // internal error
+        || code === -32001                   // timeout
+        || e?.status === 429 || e?.status === 503;
+      if (!retriable || i === max - 1) throw e;
+      await new Promise(r => setTimeout(r, Math.min(1000 * 2 ** i, 30_000) + Math.random() * 250));
+    }
+  }
+  throw new Error('unreachable');
+}
+
+// Only wrap idempotent calls. A non-idempotent tool (e.g. "send_email") must NOT be auto-retried.
+const tools = await withRetry(() => client.listTools());
+```
+
+### 6.2 HTTP status handling (when calling a raw HTTP/REST endpoint, not via the SDK)
+
+Some "MCP" providers also expose plain REST endpoints. For those, map status codes:
 
 | Code | Meaning | Action |
 |------|---------|--------|
-| 200 | Success | Process response |
-| 400 | Bad request | Fix parameters |
-| 401 | Invalid API key | Check/regenerate key |
-| 402 | Payment required | x402 payment invalid or insufficient |
-| 429 | Rate limited | Wait or upgrade tier |
-| 500 | Server error | Retry with backoff |
-| 503 | Service unavailable | Retry later |
+| 200 | OK | Process |
+| 400 | Bad request | Fix params |
+| 401 | Unauthenticated | Refresh token / fix key |
+| 402 | Payment required | See §8 (handle the 402 challenge) |
+| 403 | Forbidden | Insufficient scope |
+| 429 | Rate limited | Honor `Retry-After`; backoff |
+| 5xx | Server error | Backoff + retry (idempotent only) |
 
-### Retry Pattern (JavaScript)
+### 6.3 Caching (avoid redundant calls)
 
-```javascript
-async function mcpCall(url, headers = {}, maxRetries = 3) {
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      const res = await fetch(url, { headers });
-      
-      if (res.status === 429) {
-        const waitMs = Math.min(1000 * Math.pow(2, i), 30000);
-        console.log(`Rate limited. Waiting ${waitMs}ms...`);
-        await new Promise(r => setTimeout(r, waitMs));
-        continue;
-      }
-      
-      if (res.status === 402) {
-        const body = await res.json();
-        console.log('Payment required:', body.x402);
-        throw new Error('x402 payment needed');
-      }
-      
-      if (res.status === 401) {
-        throw new Error('Invalid API key');
-      }
-      
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${await res.text()}`);
-      }
-      
-      return await res.json();
-    } catch (err) {
-      if (i === maxRetries - 1) throw err;
-      await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i)));
-    }
-  }
-}
-
-// Usage
-const dns = await mcpCall(
-  'https://mcp.skills.ws/api/dns?domain=example.com',
-  { 'X-Api-Key': 'mcp_your_key_here' }
-);
-```
-
-### Retry Pattern (Python)
-
-```python
-import time
-import requests
-
-def mcp_call(url, headers=None, max_retries=3):
-    for i in range(max_retries):
-        try:
-            res = requests.get(url, headers=headers or {}, timeout=30)
-            
-            if res.status_code == 429:
-                wait = min(2 ** i, 30)
-                print(f"Rate limited. Waiting {wait}s...")
-                time.sleep(wait)
-                continue
-            
-            if res.status_code == 402:
-                print("Payment required:", res.json().get("x402"))
-                raise Exception("x402 payment needed")
-            
-            if res.status_code == 401:
-                raise Exception("Invalid API key")
-            
-            res.raise_for_status()
-            return res.json()
-        except requests.exceptions.RequestException as e:
-            if i == max_retries - 1:
-                raise
-            time.sleep(2 ** i)
-
-# Usage
-dns = mcp_call(
-    "https://mcp.skills.ws/api/dns?domain=example.com",
-    headers={"X-Api-Key": "mcp_your_key_here"}
-)
-```
-
----
-
-## Multi-Tool Workflows
-
-### Website Audit (DNS + SSL + Screenshot)
-
-```javascript
-async function auditWebsite(domain, apiKey) {
-  const headers = { 'X-Api-Key': apiKey };
-  const base = 'https://mcp.skills.ws/api';
-  
-  const [dns, ssl, whois] = await Promise.all([
-    mcpCall(`${base}/dns?domain=${domain}&type=A`, headers),
-    mcpCall(`${base}/ssl?domain=${domain}`, headers),
-    mcpCall(`${base}/whois?domain=${domain}`, headers),
-  ]);
-  
-  // Take screenshot after DNS resolves
-  const screenshot = await fetch(
-    `${base}/screenshot?url=https://${domain}&fullPage=true`,
-    { headers }
-  );
-  
-  return {
-    domain,
-    dns: dns.records,
-    ssl: {
-      issuer: ssl.certificate.issuer,
-      validUntil: ssl.certificate.validUntil,
-      daysRemaining: ssl.certificate.daysUntilExpiry,
-    },
-    whois: {
-      registrar: whois.whois?.registrar,
-      expires: whois.whois?.expiryDate,  // field names vary by registrar/TLD
-    },
-    screenshot: await screenshot.arrayBuffer(),
-  };
-}
-```
-
-### Receipt Processing (Screenshot + OCR)
-
-```javascript
-async function processReceipt(imageUrl, apiKey) {
-  const headers = { 'X-Api-Key': apiKey };
-
-  // Extract text from receipt image
-  const ocr = await fetch(
-    `https://mcp.skills.ws/api/ocr?url=${encodeURIComponent(imageUrl)}`,
-    { headers }
-  );
-
-  const { text } = await ocr.json();
-
-  // Parse extracted text for amounts, dates, vendor
-  return {
-    rawText: text,
-    // Further parsing with regex or LLM
-  };
-}
-```
-
-### Domain Portfolio Monitor
-
-```javascript
-async function monitorDomains(domains, apiKey) {
-  const headers = { 'X-Api-Key': apiKey };
-  const base = 'https://mcp.skills.ws/api';
-  const alerts = [];
-  
-  for (const domain of domains) {
-    const [ssl, whois] = await Promise.all([
-      mcpCall(`${base}/ssl?domain=${domain}`, headers),
-      mcpCall(`${base}/whois?domain=${domain}`, headers),
-    ]);
-    
-    // Alert if SSL expires within 30 days
-    if (ssl.certificate.daysUntilExpiry < 30) {
-      alerts.push({
-        domain,
-        type: 'ssl_expiry',
-        message: `SSL expires in ${ssl.certificate.daysUntilExpiry} days`,
-      });
-    }
-
-    // Alert if domain expires within 60 days (field names vary by registrar)
-    const domainDays = Math.floor(
-      (new Date(whois.whois?.expiryDate) - Date.now()) / 86400000
-    );
-    if (domainDays < 60) {
-      alerts.push({
-        domain,
-        type: 'domain_expiry',
-        message: `Domain expires in ${domainDays} days`,
-      });
-    }
-  }
-  
-  return alerts;
-}
-```
-
-### Blockchain Wallet Dashboard
-
-```javascript
-async function walletDashboard(address, chains, apiKey) {
-  const headers = { 'X-Api-Key': apiKey };
-  const base = 'https://mcp.skills.ws/api/chain';
-
-  const balances = await Promise.all(
-    chains.map(chain =>
-      mcpCall(`${base}/balance?address=${address}&chain=${chain}`, headers)
-        .then(data => ({ chain, ...data }))
-    )
-  );
-
-  return {
-    address,
-    balances,
-  };
-}
-```
-
----
-
-## Best Practices
-
-### Caching
-
-Cache responses for data that doesn't change frequently:
-
-```javascript
-const cache = new Map();
-const CACHE_TTL = {
-  dns: 300000,      // 5 minutes
-  whois: 86400000,  // 24 hours
-  ssl: 3600000,     // 1 hour
-  screenshot: 60000, // 1 minute
-};
-
-async function cachedMcpCall(tool, params, headers) {
-  const key = `${tool}:${JSON.stringify(params)}`;
-  const cached = cache.get(key);
-  
-  if (cached && Date.now() - cached.time < (CACHE_TTL[tool] || 60000)) {
-    return cached.data;
-  }
-  
-  const query = new URLSearchParams(params).toString();
-  const data = await mcpCall(
-    `https://mcp.skills.ws/api/${tool}?${query}`,
-    headers
-  );
-  
-  cache.set(key, { data, time: Date.now() });
+```typescript
+const cache = new Map<string, { data: unknown; at: number }>();
+const TTL: Record<string, number> = { dns: 300_000, whois: 86_400_000, ssl: 3_600_000 };
+async function cached(tool: string, args: Record<string, unknown>, fn: () => Promise<unknown>) {
+  const key = `${tool}:${JSON.stringify(args)}`;
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.at < (TTL[tool] ?? 60_000)) return hit.data;
+  const data = await fn();
+  cache.set(key, { data, at: Date.now() });
   return data;
 }
 ```
 
-### Cost Optimization
+Cache read-only/slow-changing results (DNS, WHOIS, SSL). Never cache anything user/auth-scoped under a shared key, and never cache side-effecting calls.
 
-1. **Start with free tier** — 10 calls/day is enough for development
-2. **Cache aggressively** — DNS and WHOIS data rarely changes
-3. **Batch related calls** — Use `Promise.all()` for parallel requests
-4. **Use API key for production** — $9/mo is cheaper than x402 at 1800+ calls/month
-5. **Use x402 for burst traffic** — Pay only for what you use, no commitment
+### 6.4 Safe local fallback (no command injection)
 
-**Break-even calculation:**
-- API key: $9/mo = unlimited calls
-- x402: $0.005/call × 1,800 calls = $9
-- If you make >1,800 calls/month → API key is cheaper
-- If you make <1,800 calls/month → x402 is cheaper
+If you fall back to a local shell when an MCP call fails, **never interpolate user input into a shell string**. Resolve DNS with the runtime resolver, or use `execFile` with an argument array and validate input:
 
-### Security
+```typescript
+import { resolve4 } from 'node:dns/promises';
 
-1. **Never expose API keys in client-side code** — Use server-side proxies
-2. **Rotate keys periodically** — Use `POST /admin/keys` (requires admin secret) to generate a new key, then `POST /admin/revoke` to revoke the old one
-3. **Monitor usage** — Track calls per key to detect abuse
-4. **Validate responses** — Don't trust MCP responses blindly in security-critical flows
-
-### Fallback Patterns
-
-```javascript
-async function resilientDnsLookup(domain) {
+async function resilientDns(domain: string) {
+  if (!/^[a-z0-9.-]{1,253}$/i.test(domain)) throw new Error('invalid domain');
   try {
-    // Primary: MCP service
-    return await mcpCall(
-      `https://mcp.skills.ws/api/dns?domain=${domain}`,
-      { 'X-Api-Key': API_KEY }
-    );
-  } catch (err) {
-    // Fallback: local dig command
-    const { execSync } = await import('child_process');
-    const result = execSync(`dig +short ${domain} A`).toString().trim();
-    return { records: result.split('\n').filter(Boolean) };
+    return await client.callTool({ name: 'dns', arguments: { domain, type: 'A' } });
+  } catch {
+    // Safe: no shell, argument is validated and passed to a resolver API (not a shell string).
+    const records = await resolve4(domain);
+    return { content: [{ type: 'text', text: JSON.stringify({ records }) }], isError: false };
   }
 }
 ```
 
+> Anti-pattern: ``execSync(`dig +short ${domain} A`)`` — a `domain` of `"x; rm -rf ~"` executes arbitrary commands. Don't do this.
+
 ---
 
-## Programmatic MCP Client (SDK)
+## 7. Cost control
 
-For building agents that dynamically discover and call MCP tools:
+- **Cache** read-only results (§6.3) — biggest single lever.
+- **Batch** independent calls with `Promise.all` to cut latency (not necessarily cost).
+- **Set timeouts** so a hung server doesn't stall the whole agent (§3.5).
+- **Cap LLM-side spend** if you grant the server `sampling` — set a per-session token/dollar budget and require approval (§3.4).
+- **Pick the pricing model** that fits volume: most providers offer a free tier, a flat subscription, and/or pay-per-call. Subscriptions win above the break-even call volume; pay-per-call/x402 wins for spiky low volume. Confirm the *current* numbers on the provider's pricing page before optimizing — prices and quotas drift.
 
-```javascript
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+---
 
-// Connect to MCP service
-const transport = new SSEClientTransport(
-  new URL('https://mcp.skills.ws/mcp/sse'),
-  {
-    requestInit: {
-      headers: { 'X-Api-Key': 'mcp_your_key_here' }
-    }
-  }
+## 8. Pay-per-call (x402) — handle the challenge safely
+
+Some HTTP MCP/API providers gate calls behind **x402** (HTTP `402 Payment Required` + onchain micropayment). x402 is **provider-specific and still evolving** (as of Jun 2026), so do **not** hardcode a price, token, chain, or receiver — read them from the server's 402 challenge each time.
+
+**Correct flow:** call the endpoint → on `402`, parse the challenge the server returns (it specifies `accepts`: scheme(s), network/chain-id, token contract, amount, `payTo` receiver, and a nonce/validity window) → pay *exactly that*, audience/chain-bound → resend the request with the payment proof header the scheme defines → the server (or its facilitator) verifies and serves the response.
+
+```typescript
+// Pseudocode — adapt to the provider's documented x402 scheme; the server dictates the terms.
+async function x402Fetch(url: string, opts: RequestInit = {}) {
+  let res = await fetch(url, opts);
+  if (res.status !== 402) return res;
+
+  const challenge = await res.json(); // { accepts: [{ scheme, network, asset, amount, payTo, nonce, expiresAt }] }
+  const terms = challenge.accepts[0];
+
+  // ---- MANDATORY GUARDRAILS before spending money ----
+  assertAllowlisted(terms.network, terms.asset, terms.payTo);   // chain/token/receiver allowlist
+  assertWithinSpendLimit(terms.asset, terms.amount);            // per-call + rolling budget cap
+  if (Date.now() > Date.parse(terms.expiresAt)) throw new Error('challenge expired');
+  await confirmWithUser(terms);                                 // explicit human approval (skip only in dev)
+  if (process.env.X402_MODE !== 'mainnet') terms.network = TESTNET_FOR(terms.network); // default to testnet
+
+  const proof = await buildAndSignPayment(terms);  // sign per the scheme; bind to chain-id + nonce (replay-safe)
+  return fetch(url, { ...opts, headers: { ...opts.headers, 'X-Payment': proof } });
+}
+```
+
+**Guardrails (non-negotiable for money-moving code):**
+- **Allowlist** the receiver, chain-id, and token contract; reject anything the challenge proposes that isn't pre-approved (a compromised server could swap in its own receiver).
+- **Spend limits**: enforce a per-call max *and* a rolling session/day budget; abort on breach.
+- **Explicit user confirmation** for every payment outside an automated dev/testnet context.
+- **Default to testnet**; require an explicit `mainnet` opt-in env flag before real funds move.
+- **Replay safety**: bind the payment to the challenge's nonce + chain-id + expiry; never reuse a proof.
+- **No hardcoded receiver/price.** These come from the live challenge, not the skill.
+- This is unaudited financial automation — verify the provider's scheme and your wallet handling, and treat keys per `wallet-integration` / `security-hardening`.
+
+KYC/jurisdiction/tax: moving stablecoins may have tax and regulatory implications in your jurisdiction — keep records and consult a professional.
+
+---
+
+## 9. Optional worked example — `mcp.skills.ws`
+
+A public MCP/HTTP service for web-intelligence and onchain reads (screenshots, WHOIS, DNS, SSL, OCR, balances). Shown only to make the generic patterns above concrete. **All prices, quotas, supported chains, and receiver addresses below are commercial facts that drift — treat them as illustrative and confirm live values from the service's own responses/pricing page before relying on them.**
+
+**Connect (Streamable HTTP, preferred):**
+
+```bash
+# Health
+curl -s https://mcp.skills.ws/health
+```
+
+```bash
+# Claude Code, as a remote Streamable HTTP MCP server
+claude mcp add --transport http skills-ws https://mcp.skills.ws/mcp \
+  --header "X-Api-Key: ${SKILLS_WS_KEY}"
+```
+
+```typescript
+// SDK
+const transport = new StreamableHTTPClientTransport(
+  new URL('https://mcp.skills.ws/mcp'),
+  { requestInit: { headers: new Headers({ 'X-Api-Key': process.env.SKILLS_WS_KEY ?? '' }) } }
 );
-
 const client = new Client({ name: 'my-agent', version: '1.0.0' });
 await client.connect(transport);
-
-// Discover available tools
 const { tools } = await client.listTools();
-console.log('Available tools:', tools.map(t => t.name));
-
-// Call a tool
-const result = await client.callTool({
-  name: 'dns',
-  arguments: { domain: 'example.com', type: 'MX' }
-});
-console.log('DNS result:', result.content[0].text);
-
-// Cleanup
-await client.close();
+const r = await client.callTool({ name: 'dns', arguments: { domain: 'example.com', type: 'MX' } });
 ```
 
-### Python MCP Client
+**Auth tiers (illustrative — verify current values):**
+- *Free*: small per-IP daily quota, no signup; watch `X-RateLimit-Remaining` and back off on `429`.
+- *API key (subscription)*: send `X-Api-Key: <key>`; obtain via the service's billing checkout. Read the *current* price from the upgrade prompt in a `402`/`429` body, not from this doc.
+- *x402 pay-per-call*: handle the `402` challenge per §8 — read the price/token/network/receiver from the live challenge; do **not** hardcode them.
 
-```python
-from mcp import ClientSession
-from mcp.client.sse import sse_client
+**Example tools (parameters as advertised by `tools/list`):** `screenshot` (`url`,`width`,`height`,`fullPage`,`format`), `whois` (`domain`), `dns` (`domain`,`type`), `ssl` (`domain`), `ocr` (`url`), `chain.balance`/`chain.erc20`/`chain.tx` (`address`/`token`/`hash` + `chain`). Always trust the server's `inputSchema` from `tools/list` over any list here.
 
-async def main():
-    headers = {"X-Api-Key": "mcp_your_key_here"}
-    
-    async with sse_client("https://mcp.skills.ws/mcp/sse", headers=headers) as (read, write):
-        async with ClientSession(read, write) as session:
-            await session.initialize()
-            
-            # List tools
-            tools = await session.list_tools()
-            for tool in tools.tools:
-                print(f"  {tool.name}: {tool.description}")
-            
-            # Call a tool
-            result = await session.call_tool("whois", {"domain": "example.com"})
-            print(result)
+**Worked multi-tool flow — website audit (via the SDK, parallel):**
 
-import asyncio
-asyncio.run(main())
-```
-
----
-
-## Monitoring Your Usage
-
-### Check Current Status
-
-```bash
-# Free tier — check remaining calls via response headers
-curl -sI "https://mcp.skills.ws/api/dns?domain=test.com" | grep RateLimit
-# X-RateLimit-Limit: 10
-# X-RateLimit-Remaining: 6
-```
-
-### Admin Stats (if you have admin access)
-
-```bash
-curl -s "https://mcp.skills.ws/admin/stats" \
-  -H "X-Admin-Secret: your_admin_secret" | jq .
-```
-
-Returns:
-```json
-{
-  "freeUsers": 42,
-  "totalFreeRequests": 156,
-  "keys": { "total": 5, "active": 4, "revoked": 1 },
-  "requests": { "free": 156, "apikey": 1203, "x402": 47, "blocked": 12 },
-  "freeLimit": 10,
-  "x402Price": 0.005
+```typescript
+async function auditWebsite(client: Client, domain: string) {
+  const [dns, ssl, whois] = await Promise.all([
+    client.callTool({ name: 'dns', arguments: { domain, type: 'A' } }),
+    client.callTool({ name: 'ssl', arguments: { domain } }),
+    client.callTool({ name: 'whois', arguments: { domain } }),
+  ]);
+  for (const r of [dns, ssl, whois]) if (r.isError) console.warn('tool error', r.content);
+  const shot = await client.callTool({ name: 'screenshot', arguments: { url: `https://${domain}`, fullPage: true } });
+  return { dns, ssl, whois, shot }; // parse each result.structuredContent / content as needed
 }
 ```
 
 ---
 
-## Common Issues
+## 10. Troubleshooting
 
-### "Daily free limit reached" (429)
-Upgrade to API key ($9/mo) or use x402 pay-per-call.
-
-### "Invalid API key" (401)
-Key may have been revoked (subscription cancelled). Generate a new one via `/billing/checkout`.
-
-### "Payment required" (402)
-x402 payment header is malformed, amount is too low, or txHash was already used (replay prevention).
-
-### SSE connection drops
-Reconnect with exponential backoff. SSE connections may timeout after extended idle periods.
-
-### Slow responses
-Screenshots take 3-10s depending on page complexity. DNS/WHOIS/SSL are typically <1s. Use timeouts appropriately.
+| Symptom | Likely cause | Fix |
+|---------|--------------|-----|
+| `connect()` hangs or 404/405 on remote URL | Server is SSE-only (legacy) or wrong path | Use the Streamable-HTTP-then-SSE fallback (§2.3); try `/mcp` then `/sse` |
+| `-32601 Method not found` | Calling a capability the server didn't advertise | Inspect server capabilities from `initialize`; only call what's offered |
+| `-32602 Invalid params` | Args don't match the tool's `inputSchema` | Validate args against the schema from `tools/list` |
+| `401` on every request | No/expired/wrong-audience token | Run the OAuth flow (§5.1) or fix the API-key header; ensure token is bound to this resource |
+| `403` | Token lacks scope | Re-consent with the needed scopes |
+| Works once, fails after idle | HTTP/SSE stream timed out | Reconnect with backoff; re-`initialize`; persist `Mcp-Session-Id` |
+| Garbled stdio / server "won't start" | Server logged to **stdout** (protocol channel) | Ensure the server logs to stderr; check the launch command/args |
+| `result.isError === true` but no exception | Tool ran but failed | Read `content`; surface it to the model/user; retry only if idempotent |
+| Calls hang forever | No timeout set | Set `timeout` + `maxTotalTimeout` (§3.5) |
+| `402 Payment Required` | Pay-per-call gate | Handle the challenge with guardrails (§8) — never hardcode the receiver/price |
 
 ---
 
-## Quick Reference
+## Quick reference
 
-| Endpoint | Method | Auth | Description |
-|----------|--------|------|-------------|
-| `/health` | GET | None | Service status |
-| `/mcp/sse` | GET | Optional | MCP SSE transport |
-| `/api/screenshot` | GET | Any tier | Webpage capture |
-| `/api/pdf` | GET | Any tier | PDF generation |
-| `/api/html2md` | GET | Any tier | URL to Markdown |
-| `/api/whois` | GET | Any tier | Domain WHOIS |
-| `/api/dns` | GET | Any tier | DNS records |
-| `/api/ssl` | GET | Any tier | SSL certificate |
-| `/api/ocr` | GET | Any tier | Image text extraction |
-| `/api/chain/balance` | GET | Any tier | Native token balance |
-| `/api/chain/erc20` | GET | Any tier | ERC20 token balance |
-| `/api/chain/tx` | GET | Any tier | Transaction details |
-| `/billing/checkout` | POST | None | Get API key ($9/mo) |
-| `/billing/success` | GET | None | Retrieve key after payment |
+**Decision tree**
+- Local subprocess? → **stdio** (`StdioClientTransport` / `stdio_client`), secrets via `env`.
+- Remote URL? → **Streamable HTTP** (`StreamableHTTPClientTransport` / `streamablehttp_client`, endpoint `/mcp`); fall back to **SSE** only if it 400/404/405s.
+- Auth? → OAuth 2.1 (browser flow) where supported; else provider bearer/API-key header. Never commit tokens.
+- Slow tool? → `timeout` + `onprogress` + `maxTotalTimeout`.
+- Many results? → loop on `nextCursor`.
+- Tool failed? → check `result.isError` (not just exceptions).
+- Money (x402)? → handle the live `402` challenge with allowlist + spend cap + user confirm + testnet default; no hardcoded receiver.
 
-**Default service endpoint:** `https://mcp.skills.ws`
+**Key facts (verify against current spec/SDK — Jun 2026)**
+- Latest spec revision: `2025-11-25` (https://modelcontextprotocol.io/specification).
+- Streamable HTTP replaced HTTP+SSE in `2025-03-26`; SSE is legacy-fallback only.
+- Send `MCP-Protocol-Version: <negotiated>` on every HTTP request after `initialize`; persist `Mcp-Session-Id`.
+- TS package `@modelcontextprotocol/sdk` (subpath imports); Python package `mcp` (`pip install mcp`).
+- Default per-call timeout: 60s (override per call).
 
+**Related skills:** `mcp-server-builder` (build the server), `ai-agent-building` (orchestrate tool calls), `wallet-integration` / `defi-integration` (x402 payments), `auth-implementation` (OAuth flows), `security-hardening` (key handling, injection), `onchain-analytics` (consuming chain-data tools).

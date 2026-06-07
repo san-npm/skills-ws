@@ -1,6 +1,6 @@
 ---
 name: api-design
-description: "Production API design — REST conventions, pagination, error handling, versioning, rate limiting, authentication, idempotency, and OpenAPI specs."
+description: "Production HTTP API design — REST conventions, pagination, error models, versioning, rate limiting, auth, and idempotency. Use when designing or reviewing public/internal HTTP APIs, OpenAPI contracts, pagination, error models, rate limits, auth, or idempotent write endpoints."
 ---
 
 # API Design
@@ -148,12 +148,25 @@ SELECT * FROM users
 WHERE (created_at, id) < ('2024-06-15 10:30:00', 12345)
 ORDER BY created_at DESC, id DESC
 LIMIT 20;
--- Always O(1) with the right index, regardless of how deep you paginate
+-- Avoids O(offset) scans entirely: one indexed seek to the cursor position,
+-- then reads O(limit) rows — cost stays flat no matter how deep you paginate.
+-- The trailing id is the tie-breaker: include a unique column in BOTH the
+-- WHERE comparison and ORDER BY, or rows sharing a created_at can be skipped
+-- or duplicated across pages.
 ```
 
 ---
 
-## Error Handling: RFC 7807 Problem Details
+## Error Handling: RFC 9457 Problem Details
+
+RFC 9457 (2023) obsoletes RFC 7807 — the wire format is unchanged, so the
+object is still universally called "Problem Details" and uses the same
+`application/problem+json` media type. Set that content type on error
+responses so generic clients and gateways can parse them:
+
+```typescript
+res.type('application/problem+json');
+```
 
 ### Standard Error Response
 
@@ -280,8 +293,9 @@ app.post('/api/v1/users', async (req, res) => {
 
 ### Error Response Examples
 
+`404 Not Found`:
+
 ```json
-// 404
 {
   "type": "https://api.example.com/errors/resource_not_found",
   "title": "resource not found",
@@ -291,8 +305,11 @@ app.post('/api/v1/users', async (req, res) => {
   "code": "RESOURCE_NOT_FOUND",
   "traceId": "req-xyz-789"
 }
+```
 
-// 422 with field-level errors
+`422 Unprocessable Entity` with field-level errors:
+
+```json
 {
   "type": "https://api.example.com/errors/validation_error",
   "title": "validation error",
@@ -340,9 +357,9 @@ function deprecationWarning(sunset: string, alternative: string) {
   };
 }
 
-// Usage
+// Usage — Sunset must be an HTTP-date (RFC 8594 / RFC 7231), in the future
 app.get('/api/v1/users',
-  deprecationWarning('2025-06-01', '/api/v2/users'),
+  deprecationWarning('Wed, 01 Jul 2026 00:00:00 GMT', '/api/v2/users'),
   v1UserHandler,
 );
 ```
@@ -357,7 +374,14 @@ v1 released → v2 released → v1 deprecated (6 month warning) → v1 sunset (r
 
 ## Rate Limiting
 
-### Token Bucket with Redis (Production)
+### Sliding Window Log with Redis (Production)
+
+A sorted set stores one member per request, scored by timestamp. Each call
+trims entries older than the window, adds the current request, and counts
+what remains — giving an exact rolling count with no fixed-window burst
+seam. Cost is O(log N) per request and memory is O(requests-in-window) per
+key, so for very high-volume limits prefer a token-bucket / GCRA counter
+(constant memory) — see the atomic Lua variant below.
 
 ```typescript
 import Redis from 'ioredis';
@@ -420,12 +444,21 @@ function rateLimit(maxRequests: number, windowSeconds: number) {
 
     const result = await checkRateLimit(key, maxRequests, windowSeconds);
 
+    // Standardized headers (RFC 9333). `RateLimit-Reset` is seconds-until-reset
+    // (a delta), not an epoch timestamp — that's the key difference from the
+    // legacy `X-RateLimit-Reset` convention below.
+    const resetDelta = Math.max(0, result.resetAt - Math.floor(Date.now() / 1000));
+    res.setHeader('RateLimit-Limit', maxRequests);
+    res.setHeader('RateLimit-Remaining', result.remaining);
+    res.setHeader('RateLimit-Reset', resetDelta);
+
+    // Legacy headers — keep for older clients; `X-RateLimit-Reset` is an epoch.
     res.setHeader('X-RateLimit-Limit', maxRequests);
     res.setHeader('X-RateLimit-Remaining', result.remaining);
     res.setHeader('X-RateLimit-Reset', result.resetAt);
 
     if (!result.allowed) {
-      res.setHeader('Retry-After', result.retryAfter!);
+      res.setHeader('Retry-After', result.retryAfter!);  // seconds (RFC 7231)
       throw new RateLimitError(result.retryAfter!);
     }
 
@@ -439,6 +472,68 @@ app.use('/api/v1/', rateLimit(100, 60));           // 100/min general
 app.use('/api/v1/search', rateLimit(30, 60));      // 30/min for search
 ```
 
+### Atomic Token Bucket (Lua) — constant memory, allows bursts
+
+The sliding-window pipeline above is two round-trips and stores one key per
+request. A token bucket runs as a single atomic Lua script (no race between
+read and write under concurrency), uses O(1) memory per key, and naturally
+permits short bursts up to `capacity` while enforcing a steady refill rate.
+
+```typescript
+// Refills `refillRate` tokens/sec up to `capacity`; each request costs 1 token.
+// KEYS[1] = bucket key. ARGV: capacity, refillRate, now (sec, fractional), cost.
+const TOKEN_BUCKET = `
+local key        = KEYS[1]
+local capacity   = tonumber(ARGV[1])
+local refillRate = tonumber(ARGV[2])
+local now        = tonumber(ARGV[3])
+local cost       = tonumber(ARGV[4])
+
+local state   = redis.call('HMGET', key, 'tokens', 'ts')
+local tokens  = tonumber(state[1])
+local ts      = tonumber(state[2])
+if tokens == nil then tokens = capacity; ts = now end
+
+-- Refill based on elapsed time, cap at capacity
+tokens = math.min(capacity, tokens + (now - ts) * refillRate)
+
+local allowed = 0
+if tokens >= cost then
+  allowed = 1
+  tokens = tokens - cost
+end
+
+redis.call('HSET', key, 'tokens', tokens, 'ts', now)
+-- Expire when the bucket would be full again (idle reclaim)
+redis.call('EXPIRE', key, math.ceil(capacity / refillRate) + 1)
+
+-- Seconds until enough tokens for one request (0 if allowed now)
+local retry = 0
+if allowed == 0 then retry = (cost - tokens) / refillRate end
+return { allowed, tostring(tokens), tostring(retry) }
+`;
+
+const sha = await redis.script('LOAD', TOKEN_BUCKET);
+
+async function checkTokenBucket(
+  key: string, capacity: number, refillRate: number, cost = 1,
+): Promise<RateLimitResult> {
+  const now = Date.now() / 1000;
+  const [allowed, tokensStr, retryStr] = (await redis.evalsha(
+    sha, 1, key, capacity, refillRate, now, cost,
+  )) as [number, string, string];
+  const remaining = Math.floor(parseFloat(tokensStr));
+  const retryAfter = Math.ceil(parseFloat(retryStr));
+  return {
+    allowed: allowed === 1,
+    remaining,
+    resetAt: Math.floor(now) + Math.ceil((capacity - remaining) / refillRate),
+    ...(allowed === 1 ? {} : { retryAfter }),
+  };
+}
+// e.g. checkTokenBucket('ratelimit:user:42', 100, 100 / 60) → 100 burst, refills to 100/min
+```
+
 ---
 
 ## Authentication Patterns
@@ -446,7 +541,7 @@ app.use('/api/v1/search', rateLimit(30, 60));      // 30/min for search
 ### JWT Access + Refresh Token (Fastify)
 
 ```typescript
-import Fastify from 'fastify';
+import Fastify, { FastifyRequest, FastifyReply } from 'fastify';
 import jwt from '@fastify/jwt';
 
 const app = Fastify();
@@ -455,6 +550,44 @@ await app.register(jwt, {
   secret: process.env.JWT_SECRET!,
   sign: { expiresIn: '15m' },  // Short-lived access tokens
 });
+
+// Decorate the `authenticate` preHandler used by protected routes below.
+// Without this decorator the `preHandler: [app.authenticate]` example throws.
+app.decorate('authenticate', async (request, reply) => {
+  try {
+    await request.jwtVerify();  // populates request.user from the Bearer token
+  } catch {
+    throw new AppError(401, 'UNAUTHENTICATED', 'Missing or invalid access token');
+  }
+});
+
+// TypeScript: augment Fastify so `app.authenticate` and `request.user` type-check.
+declare module 'fastify' {
+  interface FastifyInstance {
+    authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+  }
+}
+declare module '@fastify/jwt' {
+  interface FastifyJWT {
+    payload: { sub: string; role: string };  // sign() input
+    user: { sub: string; role: string };     // request.user shape
+  }
+}
+
+// Refresh tokens use a SELECTOR.SECRET design so lookup is a single indexed
+// query, never a scan over every active hash:
+//   - selector: random id, stored in plaintext, UNIQUE-indexed — used to find the row
+//   - secret:   random, stored only as an argon2 hash — verified in constant time
+//   - familyId: groups every token descended from one login, so reuse of a
+//               rotated token can revoke the whole family (theft detection)
+// Wire format handed to the client is `${selector}.${secret}`.
+function issueRefreshToken(userId: string, familyId: string) {
+  const selector = crypto.randomBytes(16).toString('base64url');
+  const secret = crypto.randomBytes(32).toString('base64url');
+  return { token: `${selector}.${secret}`, selector, secret, familyId, userId };
+}
+
+const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 // Login
 app.post('/api/v1/auth/login', async (req, reply) => {
@@ -466,43 +599,59 @@ app.post('/api/v1/auth/login', async (req, reply) => {
   }
 
   const accessToken = app.jwt.sign({ sub: user.id, role: user.role });
-  const refreshToken = crypto.randomUUID();
+  const familyId = crypto.randomUUID();
+  const rt = issueRefreshToken(user.id, familyId);
 
-  // Store refresh token in DB (hashed)
   await db.storeRefreshToken({
-    token: await argon2.hash(refreshToken),
-    userId: user.id,
-    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+    selector: rt.selector,
+    secretHash: await argon2.hash(rt.secret),  // never store the raw secret
+    userId: rt.userId,
+    familyId: rt.familyId,
+    expiresAt: new Date(Date.now() + REFRESH_TTL_MS),
   });
 
-  reply.send({ accessToken, refreshToken, expiresIn: 900 });
+  reply.send({ accessToken, refreshToken: rt.token, expiresIn: 900 });
 });
 
-// Refresh
+// Refresh — rotate, and detect reuse of an already-rotated token
 app.post('/api/v1/auth/refresh', async (req, reply) => {
   const { refreshToken } = req.body as { refreshToken: string };
+  const [selector, secret] = (refreshToken ?? '').split('.');
+  if (!selector || !secret) {
+    throw new AppError(401, 'INVALID_TOKEN', 'Malformed refresh token');
+  }
 
-  const stored = await db.findActiveRefreshTokens(/* all for user */);
-  const match = await findMatchingToken(stored, refreshToken);
-
-  if (!match) {
+  // Single indexed lookup by selector — O(1), no hash scan.
+  const row = await db.findRefreshTokenBySelector(selector);
+  if (!row || !await argon2.verify(row.secretHash, secret)) {
     throw new AppError(401, 'INVALID_TOKEN', 'Invalid refresh token');
   }
 
-  // Rotate: invalidate old, issue new
-  await db.revokeRefreshToken(match.id);
+  // Reuse detection: a token that's already been consumed/revoked but is
+  // presented again means it was likely stolen → kill the whole family.
+  if (row.consumedAt || row.revokedAt || row.expiresAt < new Date()) {
+    await db.revokeRefreshTokenFamily(row.familyId);
+    throw new AppError(401, 'TOKEN_REUSE_DETECTED', 'Refresh token reuse detected; session revoked');
+  }
 
-  const user = await db.findUser(match.userId);
-  const accessToken = app.jwt.sign({ sub: user.id, role: user.role });
-  const newRefreshToken = crypto.randomUUID();
-
-  await db.storeRefreshToken({
-    token: await argon2.hash(newRefreshToken),
-    userId: user.id,
-    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+  // Rotate atomically: mark this token consumed and insert its successor in
+  // one transaction so a crash can't leave the user with zero valid tokens.
+  const rt = issueRefreshToken(row.userId, row.familyId);
+  await db.rotateRefreshToken({
+    consumeSelector: selector,
+    next: {
+      selector: rt.selector,
+      secretHash: await argon2.hash(rt.secret),
+      userId: rt.userId,
+      familyId: rt.familyId,
+      expiresAt: new Date(Date.now() + REFRESH_TTL_MS),
+    },
   });
 
-  reply.send({ accessToken, refreshToken: newRefreshToken, expiresIn: 900 });
+  const user = await db.findUser(row.userId);
+  const accessToken = app.jwt.sign({ sub: user.id, role: user.role });
+
+  reply.send({ accessToken, refreshToken: rt.token, expiresIn: 900 });
 });
 
 // Protected route
@@ -553,50 +702,111 @@ async function apiKeyAuth(req: Request, res: Response, next: NextFunction) {
 
 ### Idempotency Keys for Safe Retries
 
+Design rules this middleware enforces:
+
+- **Bind the cache to the full request, not just the key.** Cache under a
+  hash of `method + route + authenticated principal + request-body`. Reusing
+  one key across two different POSTs (or with a changed body) must NOT replay
+  the first response — return `422` on a key/body mismatch instead.
+- **Release the lock on every exit path** (`finish`, `close`, and errors),
+  not only inside a `res.json` patch — otherwise thrown errors, non-JSON or
+  streaming responses, and crashes strand the lock until its short TTL.
+- **Cache outcomes intentionally.** Persist deterministic results — `2xx`
+  and client errors (`4xx`, e.g. validation) — so retries are stable. Do NOT
+  cache `5xx`/timeouts: those are transient and the client should be able to
+  retry into a fresh attempt.
+- **Two TTLs.** A short *lock* TTL (seconds, in case the process dies mid-flight)
+  and a longer *result* TTL (hours/days) for the cached response.
+
 ```typescript
 // middleware/idempotency.ts
+import { createHash } from 'crypto';
+
+const LOCK_TTL = 60;          // seconds — bounds a crash that strands the lock
+const RESULT_TTL = 24 * 3600; // seconds — replay window for a completed request
+
+// Endpoints where a missing key is a hard error (money-moving / side-effectful).
+const REQUIRE_KEY = [/^\/api\/v1\/payments/, /^\/api\/v1\/transfers/];
+
+function fingerprint(req: Request, key: string): string {
+  const principal = (req as any).user?.id ?? (req as any).apiKey?.id ?? 'anon';
+  const body = createHash('sha256').update(JSON.stringify(req.body ?? {})).digest('hex');
+  // route (not originalUrl) so query strings don't fragment the key
+  const route = (req as any).route?.path ?? req.path;
+  return createHash('sha256')
+    .update([req.method, route, principal, key, body].join('\n'))
+    .digest('hex');
+}
+
 async function idempotency(req: Request, res: Response, next: NextFunction) {
   if (req.method !== 'POST') return next();
 
-  const idempotencyKey = req.headers['idempotency-key'] as string;
-  if (!idempotencyKey) return next();  // Optional — proceed without
+  const idempotencyKey = req.headers['idempotency-key'] as string | undefined;
+  if (!idempotencyKey) {
+    if (REQUIRE_KEY.some((re) => re.test(req.path))) {
+      throw new AppError(400, 'IDEMPOTENCY_KEY_REQUIRED',
+        'Idempotency-Key header is required for this endpoint');
+    }
+    return next();  // optional elsewhere
+  }
 
-  // Check for existing result
-  const cached = await redis.get(`idempotency:${idempotencyKey}`);
+  const fp = fingerprint(req, idempotencyKey);
+  const resultKey = `idem:res:${fp}`;
+  const lockKey = `idem:lock:${fp}`;
+  // Detects "same key, different request" → reject rather than replay.
+  const keyGuard = `idem:key:${idempotencyKey}`;
+
+  const cached = await redis.get(resultKey);
   if (cached) {
     const { statusCode, body } = JSON.parse(cached);
+    res.setHeader('Idempotent-Replayed', 'true');
     return res.status(statusCode).json(body);
   }
 
-  // Lock to prevent concurrent duplicate processing
-  const lockKey = `idempotency:lock:${idempotencyKey}`;
-  const locked = await redis.set(lockKey, '1', 'EX', 60, 'NX');
-  if (!locked) {
-    return res.status(409).json({
-      type: 'https://api.example.com/errors/concurrent_request',
-      title: 'Concurrent request',
-      status: 409,
-      detail: 'A request with this idempotency key is already being processed',
-    });
+  // Reject reuse of the same key with a different method/route/body.
+  const priorFp = await redis.set(keyGuard, fp, 'EX', RESULT_TTL, 'NX', 'GET') as string | null;
+  if (priorFp && priorFp !== fp) {
+    throw new AppError(422, 'IDEMPOTENCY_KEY_REUSED',
+      'This Idempotency-Key was already used with a different request');
   }
 
-  // Intercept response to cache it
+  const locked = await redis.set(lockKey, '1', 'EX', LOCK_TTL, 'NX');
+  if (!locked) {
+    throw new AppError(409, 'REQUEST_IN_PROGRESS',
+      'A request with this idempotency key is already being processed');
+  }
+
+  // Capture the final payload, then persist + unlock on ANY terminal event.
+  let captured: { statusCode: number; body: unknown } | undefined;
   const originalJson = res.json.bind(res);
-  res.json = (body: any) => {
-    redis.set(
-      `idempotency:${idempotencyKey}`,
-      JSON.stringify({ statusCode: res.statusCode, body }),
-      'EX', 86400,  // Cache for 24 hours
-    );
-    redis.del(lockKey);
+  res.json = (body: unknown) => {
+    captured = { statusCode: res.statusCode, body };
     return originalJson(body);
   };
+
+  let settled = false;
+  const settle = async () => {
+    if (settled) return;
+    settled = true;
+    // Cache deterministic outcomes (2xx + client errors); never cache 5xx.
+    if (captured && captured.statusCode < 500) {
+      await redis.set(resultKey, JSON.stringify(captured), 'EX', RESULT_TTL);
+    } else {
+      await redis.del(keyGuard);  // let the client retry a failed attempt cleanly
+    }
+    await redis.del(lockKey);     // always release, even on error/stream/abort
+  };
+  res.on('finish', settle);  // response fully sent
+  res.on('close', settle);   // client aborted before finish
 
   next();
 }
 
 app.use('/api/v1', idempotency);
 ```
+
+> Note: the `SET ... GET` option requires Redis ≥ 7.0. On older servers,
+> replace the `keyGuard` step with a `GET` then a `SET ... NX`.
 
 Client usage:
 ```typescript
@@ -821,7 +1031,16 @@ components:
         Retry-After:
           schema:
             type: integer
-        X-RateLimit-Limit:
+        RateLimit-Limit:        # RFC 9333 standardized headers
+          schema:
+            type: integer
+        RateLimit-Remaining:
+          schema:
+            type: integer
+        RateLimit-Reset:        # seconds until reset (delta), not epoch
+          schema:
+            type: integer
+        X-RateLimit-Limit:      # legacy, optional
           schema:
             type: integer
         X-RateLimit-Remaining:
@@ -884,7 +1103,7 @@ interface ApiResponse<T> {
 // Always wrap in { data: ... }
 // Single item:  { "data": { "id": "123", "name": "John" } }
 // List:         { "data": [...], "pagination": { "next_cursor": "...", "has_more": true } }
-// Error:        RFC 7807 (no data wrapper)
+// Error:        RFC 9457 Problem Details (no data wrapper)
 
 // Why? Consistent parsing, easy to add metadata, forward-compatible
 ```
@@ -895,9 +1114,9 @@ interface ApiResponse<T> {
 
 - [ ] Consistent URL patterns (plural nouns, max 2 levels nesting)
 - [ ] Cursor pagination for list endpoints
-- [ ] RFC 7807 error responses with field-level errors
-- [ ] Rate limiting with proper headers (X-RateLimit-*)
-- [ ] Idempotency keys for POST endpoints
+- [ ] RFC 9457 Problem Details error responses (`application/problem+json`) with field-level errors
+- [ ] Rate limiting with standardized `RateLimit-*` headers (RFC 9333), optionally legacy `X-RateLimit-*`
+- [ ] Idempotency keys for POST endpoints (required for money-moving writes; bound to method+route+body+principal)
 - [ ] Request validation from OpenAPI spec
 - [ ] API versioning with deprecation/sunset headers
 - [ ] Authentication (JWT for users, API keys for services)

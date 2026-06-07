@@ -1,858 +1,599 @@
 ---
 name: content-strategy
-description: "Content strategy — topic clusters, pillar/cluster model, scoring matrix, editorial calendar, gap analysis, repurposing framework, and audit checklist for AI-era discovery (AI Overviews, ChatGPT Search, Perplexity). Use when planning a content program or auditing an existing one."
+description: "Content program strategy — topic clusters, entity-first briefs, 0-5 scoring rubrics, editorial calendar operating model, gap analysis, repurposing, and AI-era discovery (AI Overviews, ChatGPT Search, Perplexity). Use when planning a content program, writing briefs, prioritizing a backlog, or auditing content for organic + AI search."
 ---
 
-# Content Strategy v2.0: Topic Clusters & Editorial Planning
+# Content Strategy
 
-Comprehensive framework for strategic content planning, topic cluster architecture, content scoring, and systematic editorial operations.
+A content *program* discipline: decide what to publish, brief it so it actually ranks and gets cited, schedule it, score it, and prune it. This skill owns clusters, briefs, the calendar operating model, scoring, gap analysis, repurposing, and AI-search discovery for content.
+
+For the technical SEO layer (schema/JSON-LD, Core Web Vitals, hreflang, indexing, robots) see the `seo-geo` sibling skill — do not re-derive it here. For programmatic page generation at scale see `programmatic-seo`. For the writing craft itself see `copywriting`; for CMS/blog plumbing see `blog-engine`; for the analytics wiring referenced below see `search-console` and `google-analytics`.
+
+> **Data hygiene rule (read first).** Never present a keyword volume, difficulty score, or industry statistic as a fixed fact. Volumes differ across Ahrefs / Semrush / Google Keyword Planner, by country, by device, and by month. Every number you record must carry **source + market + retrieval date** (e.g. `1,900/mo · Ahrefs · US · 2026-06`). Pull fresh before any planning session; do not copy numbers from this document — the examples below use the placeholder form on purpose.
+
+---
 
 ## Table of Contents
 
-1. [Topic Cluster Architecture](#topic-cluster-architecture)
-2. [Pillar & Cluster Content Model](#pillar--cluster-content-model)
-3. [Content Scoring Matrix](#content-scoring-matrix)
-4. [Editorial Calendar Framework](#editorial-calendar-framework)
-5. [Content Gap Analysis](#content-gap-analysis)
-6. [Content Repurposing System](#content-repurposing-system)
-7. [Content Audit Checklist](#content-audit-checklist)
+1. [Topic Cluster Architecture](#1-topic-cluster-architecture)
+2. [Entity-First Content Briefs](#2-entity-first-content-briefs)
+3. [AI-Era Discovery (AI Overviews, ChatGPT Search, Perplexity)](#3-ai-era-discovery)
+4. [Content Scoring Rubric (0-5 per dimension)](#4-content-scoring-rubric)
+5. [Editorial Calendar Operating Model](#5-editorial-calendar-operating-model)
+6. [Content Gap Analysis](#6-content-gap-analysis)
+7. [Content Repurposing System](#7-content-repurposing-system)
+8. [Content Audit & Maintenance](#8-content-audit--maintenance)
+9. [Measurement: organic + AI-search](#9-measurement)
 
 ---
 
-## Topic Cluster Architecture
+## 1. Topic Cluster Architecture
 
-### Cluster Strategy Framework
+A cluster is one **pillar** (broad, high-intent hub) plus **spokes** (specific, long-tail articles) that all interlink. The pillar earns authority; spokes capture specific queries and pass relevance/links to the pillar.
 
-**Core Cluster Structure:**
 ```
-Pillar Content (Hub)
-├── Primary Keyword Target
-├── 3,000+ word comprehensive guide
-├── High search volume & commercial intent
-├── Links to all cluster content
-└── Updated quarterly
-
-Supporting Cluster Content (Spokes)
-├── Long-tail keyword targets
-├── 1,500-2,500 word focused articles
-├── Specific subtopics within pillar theme
-├── Link back to pillar content
-└── Updated as needed
+Pillar (hub)            — broad head term, commercial/navigational intent, 2,500-4,000 words,
+  │                       links DOWN to every spoke, refreshed quarterly
+  ├── Spoke (how-to)    — long-tail, informational, 1,200-2,000 words, links UP to pillar
+  ├── Spoke (comparison)— "X vs Y", "best X for Z", mid-funnel
+  ├── Spoke (template)  — "X template/checklist", lead-magnet attached
+  └── Spoke (case study)— proof + data, bottom-funnel, links to product
 ```
 
-**Cluster Mapping Template:**
+### Cluster mapping template
+
+Keep one row per page. Volumes are placeholders — fill from your own tool with source/market/date.
+
 ```yaml
-Pillar: "Content Marketing Strategy"
-Primary Keyword: "content marketing strategy" (8,100/month)
-URL: /content-marketing-strategy/
+pillar:
+  topic: "Content marketing strategy"
+  primary_kw: "content marketing strategy"
+  volume: "<vol/mo · Ahrefs · US · YYYY-MM>"
+  difficulty: "<KD · same source>"
+  intent: commercial-investigation     # informational | commercial | transactional | navigational
+  url: /content-marketing-strategy/
+  refresh: quarterly
 
-Cluster Topics:
-  1. Content Planning:
-     - "content marketing plan template" (1,200/month)
-     - "content marketing planning process" (800/month)
-     - URL: /content-marketing-plan/
-  
-  2. Editorial Calendar:
-     - "editorial calendar template" (2,400/month)
-     - "content calendar best practices" (600/month)
-     - URL: /editorial-calendar-guide/
-  
-  3. Content Distribution:
-     - "content distribution strategy" (1,800/month)
-     - "content promotion channels" (400/month)
-     - URL: /content-distribution-strategy/
-
-  4. Performance Measurement:
-     - "content marketing metrics" (1,600/month)
-     - "content marketing ROI" (900/month)
-     - URL: /content-marketing-metrics/
+spokes:
+  - topic: "Content marketing plan"
+    primary_kw: "content marketing plan template"
+    secondary_kw: ["content marketing planning process"]
+    intent: informational
+    url: /content-marketing-plan/
+    internal_links_up: ["/content-marketing-strategy/"]
+  - topic: "Editorial calendar"
+    primary_kw: "editorial calendar template"
+    secondary_kw: ["content calendar best practices"]
+    intent: informational
+    url: /editorial-calendar-guide/
+  - topic: "Content distribution"
+    primary_kw: "content distribution strategy"
+    intent: commercial-investigation
+    url: /content-distribution-strategy/
+  - topic: "Content metrics"
+    primary_kw: "content marketing metrics"
+    secondary_kw: ["content marketing roi"]
+    intent: informational
+    url: /content-marketing-metrics/
 ```
 
-### Cluster Research & Validation
+### Cluster validation — go/no-go checklist
 
-**Keyword Research for Clusters:**
-```python
-def analyze_topic_cluster(pillar_keyword, related_keywords):
-    """Analyze keyword relationships for cluster potential"""
-    
-    cluster_data = {
-        'pillar': {
-            'keyword': pillar_keyword,
-            'search_volume': get_search_volume(pillar_keyword),
-            'difficulty': get_keyword_difficulty(pillar_keyword),
-            'intent': classify_intent(pillar_keyword)
-        },
-        'clusters': []
-    }
-    
-    for keyword in related_keywords:
-        cluster_data['clusters'].append({
-            'keyword': keyword,
-            'search_volume': get_search_volume(keyword),
-            'difficulty': get_keyword_difficulty(keyword),
-            'semantic_relationship': calculate_semantic_similarity(pillar_keyword, keyword),
-            'content_gap': analyze_content_gap(keyword)
-        })
-    
-    return prioritize_cluster_opportunities(cluster_data)
+A candidate spoke ships only if it clears all of these:
 
-# Example usage
-pillar = "content marketing strategy"
-related = [
-    "content marketing plan",
-    "editorial calendar",
-    "content distribution",
-    "content marketing metrics",
-    "content repurposing"
-]
+| Gate | Threshold | How to check |
+|---|---|---|
+| Topical fit | Same entity/subtopic as pillar, not a tangent | Would a reader of the pillar click it? |
+| Demand | Real query demand (any non-zero volume **or** clear PAA/forum demand) | Tool volume + Google "People also ask" + Reddit/forum threads |
+| Winnability | KD below your domain's proven ceiling | Compare to KD of terms you already rank top-10 for |
+| Intent match | One dominant intent you can satisfy | Inspect the live SERP — what format dominates? |
+| Differentiation | A clear "10x" angle (data, tool, depth, POV) vs current top 3 | Read the 3 ranking pages; what's missing? |
+| Business value | Maps to a funnel stage and a CTA | Assign TOFU/MOFU/BOFU + the conversion event |
 
-cluster_analysis = analyze_topic_cluster(pillar, related)
-```
-
-**Cluster Validation Criteria:**
-```
-✓ Semantic relationship to pillar topic (>70% relevance)
-✓ Search volume potential (>500 monthly searches)
-✓ Manageable keyword difficulty (<50 for new domains)
-✓ Clear search intent alignment
-✓ Content differentiation opportunity
-✓ Business objective alignment
-✓ Resource availability for quality execution
-```
+> **Build clusters from live SERPs, not just volume.** Open the SERP for the head term. If Google shows an AI Overview, a "People also ask" block, and 8 forum/Reddit results, the *intent and format* of those results define your brief far more than the raw volume number.
 
 ---
 
-## Pillar & Cluster Content Model
+## 2. Entity-First Content Briefs
 
-### Pillar Content Framework
+The brief is where ranking and AI-citation are won or lost. Modern ranking and AI answer engines reward content that **covers the entities and questions** a topic implies, states facts plainly, and is verifiably authored. Write briefs around entities and questions, not keyword density.
 
-**Pillar Page Structure:**
+### Brief template (copy per article)
+
 ```markdown
-# Ultimate Guide to [Pillar Topic]
-## Table of Contents (with jump links)
+# Brief: <working title>
 
-## Quick Navigation
-- [Subtopic 1] → Link to cluster content
-- [Subtopic 2] → Link to cluster content  
-- [Subtopic 3] → Link to cluster content
-- [Resources & Tools]
+## 1. Target & intent
+- Primary query: <kw>  (vol/source/market/date)
+- Secondary queries: <kw>, <kw>
+- Search intent: informational | commercial | transactional
+- Funnel stage: TOFU | MOFU | BOFU
+- Conversion event: <newsletter | demo | download | purchase>
 
-## Introduction
-- Problem/opportunity definition
-- What readers will learn
-- Why this matters now
+## 2. SERP & AI-answer reality (fill by inspecting the live results)
+- Top 3 URLs + their angle/format/word count:
+- SERP features present: [ ] AI Overview  [ ] Featured snippet  [ ] PAA  [ ] Video  [ ] Images
+- The snippet/AIO currently cites: <which sources, what claim>
+- Our 10x angle (why ours deserves the click/citation):
 
-## Core Sections (3-5 major sections)
-### Section 1: Foundation Knowledge
-- Comprehensive explanation
-- Examples and case studies
-- Link to related cluster content: "Learn more about [specific aspect]"
+## 3. Entities to cover (the "must-mention" list)
+# Pull from: the top 3 ranking pages, Google "People also ask",
+# Wikipedia/Wikidata for the head entity, and your own product knowledge.
+- Core entity: <e.g. "topic cluster">  — define it in one sentence early
+- Related entities: <pillar page, internal linking, semantic SEO, EEAT, ...>
+- Named tools/standards/people a credible author would reference:
 
-### Section 2: Strategic Framework  
-- Step-by-step methodology
-- Templates and tools
-- Link to cluster content for deeper dives
+## 4. Questions to answer verbatim (one H2/H3 each)
+# These map to PAA + "how/what/why/when/cost/vs" variants.
+- What is <topic>?            → 40-60 word direct answer in first paragraph under the H2
+- How do you <do topic>?      → numbered steps
+- <topic> vs <alternative>?   → comparison table
+- How much / how long ...?    → specific number with a date
+- Common mistakes?            → list
 
-### Section 3: Implementation Guide
-- Practical steps and tactics
-- Common mistakes to avoid
-- Links to supporting cluster content
+## 5. Format requirements
+- Word count target: <derived from top-3 average, not arbitrary>
+- Must include: [ ] comparison table  [ ] checklist  [ ] original data/screenshot
+  [ ] FAQ block  [ ] 1 expert quote  [ ] author byline w/ credentials
+- Internal links: UP to pillar <url>; ACROSS to <related spokes>
+- Schema: see `seo-geo` (Article + FAQPage + Breadcrumb as applicable)
 
-### Section 4: Measurement & Optimization
-- Key metrics and KPIs
-- Optimization strategies
-- Link to metrics-focused cluster content
-
-## Key Takeaways
-- 5-7 bullet point summary
-- Next steps and recommendations
-
-## Related Resources
-- Links to all cluster content
-- External tools and resources
-- Downloadable templates
-
-## FAQ Section
-- 8-10 common questions
-- Schema markup for featured snippets
+## 6. E-E-A-T signals (required, not optional — see §3 and §4)
+- Author: <real person, bio, credentials, link to about page>
+- First-hand experience shown how: <screenshots, original test, dataset, "we ran...">
+- Sources cited (primary, dated): <links>
+- Last-reviewed date + reviewer:
 ```
 
-**Pillar Content Example:**
+### How to build the entity/question list fast
+
+1. **Scrape PAA + "related searches"** for the primary query — these *are* the questions to answer.
+2. **Read the top 3 ranking pages** and list every subtopic/entity they cover; your brief must cover the union, plus your differentiator.
+3. **Check Wikipedia/Wikidata** for the head entity to get the canonical related entities and correct names.
+4. **Add product/first-hand entities** competitors can't: your data, your screenshots, your customers' results.
+
+> Coverage beats density. There is no keyword-density target. Mention the entity once, naturally, near the top; then answer the questions thoroughly. Thin "SEO content" that restates the keyword is exactly what AI Overviews summarize away.
+
+---
+
+## 3. AI-Era Discovery
+
+Discovery in 2026 is split across classic blue links **and** generative answer surfaces: **Google AI Overviews / AI Mode**, **Bing Copilot**, **ChatGPT Search**, **Perplexity**, **Claude**, and **Gemini**. They synthesize an answer and cite a handful of sources. Your goal shifts from "rank #1" to "**be one of the cited sources**." This section is content-strategy-specific; for the technical/schema substrate (JSON-LD types, Core Web Vitals, indexing, `llms.txt` placement) defer to the `seo-geo` sibling.
+
+### What actually gets cited (content levers you control)
+
+| Lever | What to do | Why it matters for AI answers |
+|---|---|---|
+| **Direct answers** | Put a 40-60 word, self-contained answer in the first paragraph under each H2, phrased as a complete sentence. | Answer engines extract passages; a clean, quotable passage is far likelier to be lifted and cited. |
+| **Extractable structure** | Use descriptive H2/H3 phrased as questions; tables for comparisons; numbered steps for processes; an FAQ block. | Structured chunks are easier to retrieve and attribute than walls of prose. |
+| **Entity clarity** | Name entities explicitly (don't rely on "it"/"this"); keep one canonical definition; use consistent naming across the cluster. | Retrieval and answer synthesis are entity-driven; ambiguous referents get dropped. |
+| **Freshness & dates** | Show a visible "Last updated YYYY-MM"; date every statistic; refresh pillars quarterly. | Answer engines prefer—and often label—recent sources; undated claims are low-trust. |
+| **Source transparency / E-E-A-T** | Real author + bio + credentials; cite primary sources with links; show first-hand experience (original data, screenshots, tests). | Trust signals raise both classic ranking and citation probability; experience is the part AI can't synthesize. |
+| **Statistics & original data** | Publish one genuinely original, citable number or dataset per pillar (a survey, a benchmark, your own results). | Answer engines love a quotable stat with a clear source — original data is the highest-leverage citation magnet. |
+| **Retrievability** | Ensure the page is crawlable, fast, and not gated; keep the key answer above the fold and in HTML (not lazy-loaded JS). | If a crawler/retriever can't fetch the passage cleanly, it can't cite you. (Mechanics → `seo-geo`.) |
+
+### Page pattern optimized for both SERP snippets and AI answers
+
 ```html
-<!-- Content Marketing Strategy Pillar -->
 <article>
-  <h1>Content Marketing Strategy: Complete Guide for 2024</h1>
-  
-  <div class="pillar-nav">
-    <h2>Quick Navigation</h2>
-    <ul>
-      <li><a href="#content-planning">Content Planning</a> 
-          → <a href="/content-marketing-plan/">Detailed Planning Guide</a></li>
-      <li><a href="#editorial-calendar">Editorial Calendar</a> 
-          → <a href="/editorial-calendar-guide/">Calendar Templates</a></li>
-      <li><a href="#distribution">Content Distribution</a> 
-          → <a href="/content-distribution-strategy/">Distribution Playbook</a></li>
-    </ul>
-  </div>
+  <h1>{Specific, current title — include the year only if the topic is time-bound}</h1>
+  <p class="updated">Last updated {Mon YYYY} · Reviewed by {Author, credential}</p>
 
-  <section id="content-planning">
-    <h2>Content Planning Framework</h2>
-    <p>Strategic content planning involves audience research, competitive analysis, 
-       and systematic topic development...</p>
-    <div class="cluster-link">
-      🔗 <strong>Deep Dive:</strong> <a href="/content-marketing-plan/">
-         Complete Content Planning Template and Process</a>
-    </div>
-  </section>
+  <h2>What is {entity}?</h2>
+  <p><!-- 40-60 words, complete sentence, no "as mentioned above" --></p>
+
+  <h2>How to {do the thing}</h2>
+  <ol><li>…</li></ol>
+
+  <h2>{Option A} vs {Option B}</h2>
+  <table><!-- explicit comparison rows --></table>
+
+  <h2>Frequently asked questions</h2>
+  <!-- Q as <h3>, 40-60 word answer each; mirror PAA wording -->
 </article>
+<!-- JSON-LD (Article + FAQPage + author/Organization sameAs) → see `seo-geo` -->
 ```
 
-### Cluster Content Strategy
+### Query-class test prompts (run before and after publishing)
 
-**Cluster Content Types:**
-```
-How-To Guides:
-- "How to create a content marketing plan"
-- "How to build an editorial calendar"
-- Step-by-step instructions
-- 1,500-2,000 words
+Pick the queries your page targets, then probe each answer engine. Record whether your domain is **cited**, **mentioned**, or **absent**, and which competitor is cited instead.
 
-Comparison Articles:
-- "Content marketing vs. traditional marketing"
-- "Best content calendar tools comparison"
-- Feature comparisons and recommendations
-- 1,200-1,800 words
-
-Template/Resource Posts:
-- "Content marketing plan template"
-- "Editorial calendar templates"
-- Downloadable resources
-- 800-1,200 words + resource
-
-Case Studies:
-- "How [Company] increased traffic 300% with content clusters"
-- Real examples and data
-- 1,000-1,500 words
+```text
+# Definitional
+"what is {your topic}"
+# Procedural
+"how do I {task your page solves}"
+# Comparative
+"{your product/approach} vs {top competitor}"
+# Recommendation / commercial
+"best {category} for {audience/use-case}"
+# Long-tail / specific
+"{specific question from your FAQ block, verbatim}"
 ```
 
-**Cluster Interlinking Strategy:**
-```html
-<!-- Cluster page linking back to pillar -->
-<div class="pillar-reference">
-  <p>This guide is part of our comprehensive 
-     <a href="/content-marketing-strategy/">Content Marketing Strategy</a> 
-     resource. For the complete framework, start with our pillar guide.</p>
-</div>
+For each: note the cited sources and the *exact claim* the engine made. If a competitor is cited and you're not, diff your page against theirs on the levers above (usually missing direct answer, missing original data, weaker author signals, or stale dates). Re-test after the page is re-crawled.
 
-<!-- Pillar page linking to clusters -->
-<div class="cluster-links">
-  <h3>Related Guides in This Series:</h3>
-  <ul>
-    <li><a href="/content-marketing-plan/">Content Planning Template</a></li>
-    <li><a href="/editorial-calendar-guide/">Editorial Calendar Guide</a></li>
-    <li><a href="/content-distribution-strategy/">Distribution Strategy</a></li>
-  </ul>
-</div>
+> **Don't fabricate to chase citations.** Original "data" must be real and reproducible, author credentials must be true, and review dates must reflect actual reviews. Manufactured stats and fake bylines are the fastest way to lose trust with both readers and answer engines.
+
+---
+
+## 4. Content Scoring Rubric
+
+Score on a **0-5 scale per dimension** so two people grade a page the same way. Multiply by the weight, sum, and act on the band. Five dimensions, separated so a page strong on classic SEO but invisible to AI answers (or weak on trust) is flagged, not hidden inside one blended number.
+
+**Bands:** `>= 80` keep & promote · `60-79` optimize (quick wins) · `40-59` consolidate or rewrite · `< 40` prune / redirect / no-index (see §8).
+
+### Dimension 1 — Classic SEO (weight 20)
+
+| 0-1 | 2-3 | 4-5 |
+|---|---|---|
+| Wrong intent vs SERP; no internal links; title not matching query | Right intent; basic title/meta; a few internal links; some optimization | Intent matches dominant SERP format; descriptive title+meta; links UP to pillar + ACROSS to siblings; clean URL/headers; valid schema (per `seo-geo`) |
+
+### Dimension 2 — AI-search retrievability (weight 20)
+
+| 0-1 | 2-3 | 4-5 |
+|---|---|---|
+| Wall of prose; no direct answers; entities referred to as "it"; gated/JS-only | Some headers; partial direct answers; inconsistent entity naming | First-paragraph 40-60 word answers under question H2s; tables/steps/FAQ; explicit entity names; crawlable HTML; passes query-class test (cited or mentioned) |
+
+### Dimension 3 — Trust / E-E-A-T (weight 20)
+
+| 0-1 | 2-3 | 4-5 |
+|---|---|---|
+| No author; no sources; no evidence of first-hand use; undated | Named author; some links; a date somewhere | Credentialed author + bio; primary sources cited & dated; demonstrable first-hand experience (original data/screenshots/test); visible last-reviewed date + reviewer |
+
+### Dimension 4 — Conversion (weight 20)
+
+| 0-1 | 2-3 | 4-5 |
+|---|---|---|
+| No CTA, or CTA mismatched to funnel stage | Generic CTA present; weak relevance | One clear primary CTA matched to the page's funnel stage; logical next step (related spoke/pillar); lead capture where appropriate; measurable conversion event wired |
+
+### Dimension 5 — Maintenance / decay risk (weight 20)
+
+| 0-1 | 2-3 | 4-5 |
+|---|---|---|
+| Traffic/clicks declining; facts/screenshots stale; broken links | Flat; partially dated | Stable or growing impressions/clicks (GSC); facts current; links healthy; on a refresh cadence appropriate to volatility |
+
+**Worked example (illustrative):** a 2,000-word guide that ranks page-2, has clean SEO (4), but is a prose wall with no author and is two years stale would score roughly: SEO 4·20=80 → but AI-retrievability 1, trust 1, maintenance 1, conversion 2. Normalized to 100 that lands in the **40-59 "rewrite"** band — and the rubric tells you exactly *why*: add direct answers + author + refresh, not "write more words."
+
+> The rubric does not need code. If you want to automate inputs, pull the measurable ones (clicks/impressions/position from GSC, internal-link counts from a crawl, presence of `author`/`datePublished` in the page's JSON-LD) and score the judgment dimensions by hand.
+
+---
+
+## 5. Editorial Calendar Operating Model
+
+The calendar is an operating system, not a spreadsheet of dates. Define the **states**, **owners**, **WIP limits**, and **definition of done** — then any tool (Airtable, Notion, Linear, a sheet) works.
+
+### Status workflow (the only states that matter)
+
+```
+Backlog  →  Briefed  →  Drafting  →  Editing  →  SEO/QA  →  Scheduled  →  Published  →  In-refresh
+```
+
+| Status | Owner | Exit criteria (definition of done for the stage) |
+|---|---|---|
+| **Backlog** | Strategist | Cluster + intent + funnel stage + rough volume captured |
+| **Briefed** | Strategist | §2 brief complete (entities, questions, 10x angle, schema, E-E-A-T reqs) |
+| **Drafting** | Writer | Draft covers all brief questions; internal links placed; sources cited |
+| **Editing** | Editor | Structure/clarity/brand voice; direct answers present under each H2 |
+| **SEO/QA** | SEO owner | Title/meta, schema valid (`seo-geo`), links resolve, images have alt, mobile/CWV ok |
+| **Scheduled** | Editor | Publish date set; distribution + repurposing tasks created (§7) |
+| **Published** | — | Live, indexed (submit/inspect in `search-console`), tracking wired (§9) |
+| **In-refresh** | Strategist | On a cadence; re-enters Editing when decay detected (§4 D5) |
+
+**WIP limits** keep throughput honest: cap "Drafting" + "Editing" to ~2× the number of writers; if it backs up, stop adding to Backlog. Cycle time (Briefed → Published) is the metric to watch.
+
+### Field schema (tool-agnostic)
+
+Use these exact fields in whatever tool you pick:
+
+```yaml
+fields:
+  title:            text
+  status:           select        # the 8 states above
+  cluster:          select        # which pillar it belongs to
+  funnel_stage:     select        # TOFU | MOFU | BOFU
+  primary_kw:       text
+  kw_source:        text          # "Ahrefs · US · YYYY-MM"  (data hygiene rule)
+  intent:           select
+  brief_url:        url           # link to the §2 brief
+  author:           person
+  editor:           person
+  publish_date:     date
+  conversion_event: select        # what success looks like for THIS page
+  internal_links:   text          # up/across targets
+  last_reviewed:    date          # drives §8 refresh cadence
+  status_metric:    text          # latest clicks/impressions/position (GSC)
+```
+
+### Calendar example (use a forward, relative date)
+
+Plan against the **current quarter**, not a fixed past month. Pattern for any given month:
+
+```yaml
+month: "<current quarter, e.g. Q3 2026>"
+theme: "Editorial systems"
+goal: "+X qualified signups attributed to content"
+
+week_1:
+  - title: "Content marketing plan template"
+    cluster: "content-marketing-strategy"
+    funnel_stage: TOFU
+    type: template
+    primary_kw: "content marketing plan template"
+    author: "<writer>"
+    distribution: [blog, newsletter, linkedin]
+    conversion_event: "template download"
+  - title: "5 content planning mistakes"
+    funnel_stage: TOFU
+    type: listicle
+    conversion_event: "newsletter signup"
+  - title: "Case study: how <customer> doubled organic clicks"
+    funnel_stage: BOFU
+    type: case-study
+    distribution: [blog, linkedin]
+    conversion_event: "demo request"
+
+repurposing_queue:     # auto-created when an item hits "Scheduled" (see §7)
+  - source: "week_1 template"   -> [carousel, newsletter section]
+  - source: "week_1 case study" -> [short video, quote cards]
+```
+
+### Production workflow
+
+```
+Idea → Cluster fit check (§1) → Brief (§2) → Draft → Edit → SEO/QA (seo-geo)
+     → Schedule → Publish → Distribute + Repurpose (§7) → Measure (§9) → Refresh (§8)
 ```
 
 ---
 
-## Content Scoring Matrix
+## 6. Content Gap Analysis
 
-### Content Evaluation Framework
+Find what competitors rank/get-cited for that you don't, then prioritize by winnability × value. This is an analyst workflow with real tools, not a black-box function.
 
-**Content Quality Scoring (100 points total):**
-```yaml
-SEO Optimization (25 points):
-  - Keyword optimization: 5 points
-  - Meta tags and headers: 5 points  
-  - Internal linking: 5 points
-  - Technical SEO: 5 points
-  - Schema markup: 5 points
+### Inputs
 
-Content Quality (30 points):
-  - Depth and comprehensiveness: 10 points
-  - Originality and uniqueness: 8 points
-  - Examples and case studies: 7 points
-  - Actionable insights: 5 points
+- **Your ranking keywords + positions** — Search Console (`search-console` skill) or Ahrefs/Semrush "Organic keywords".
+- **Competitor ranking keywords** — Ahrefs/Semrush "Site Explorer" per competitor; export to CSV.
+- **AI-answer gaps** — run the §3 query-class prompts for your money topics; log where a competitor is cited and you're absent.
+- **SERP feature gaps** — for your target terms, note which features (AIO, snippet, video, PAA) you're missing.
 
-User Experience (20 points):
-  - Readability and structure: 8 points
-  - Visual elements: 6 points
-  - Loading speed: 3 points
-  - Mobile optimization: 3 points
+### Runnable: keyword gap from CSV exports
 
-Engagement Potential (15 points):
-  - Social sharing elements: 5 points
-  - Call-to-action clarity: 5 points
-  - Email capture integration: 5 points
+This uses your own exported CSVs (no fictional API). Export "Organic keywords" for yourself and each competitor from your SEO tool, then:
 
-Business Alignment (10 points):
-  - Brand voice consistency: 5 points
-  - Strategic objective support: 5 points
-```
-
-**Content Scoring Template:**
 ```python
-def score_content(content_item):
-    """Score content across multiple dimensions"""
-    
-    score = {
-        'seo': {
-            'keyword_optimization': score_keyword_optimization(content_item),
-            'meta_tags': score_meta_tags(content_item), 
-            'internal_links': score_internal_linking(content_item),
-            'technical_seo': score_technical_elements(content_item),
-            'schema_markup': score_schema_implementation(content_item)
-        },
-        'quality': {
-            'depth': score_content_depth(content_item),
-            'originality': score_content_originality(content_item),
-            'examples': score_examples_case_studies(content_item),
-            'actionability': score_actionable_insights(content_item)
-        },
-        'user_experience': {
-            'readability': score_readability(content_item),
-            'visual_elements': score_visual_design(content_item),
-            'loading_speed': score_page_speed(content_item),
-            'mobile_optimization': score_mobile_experience(content_item)
-        },
-        'engagement': {
-            'social_elements': score_social_integration(content_item),
-            'cta_clarity': score_call_to_action(content_item),
-            'email_capture': score_lead_generation(content_item)
-        },
-        'business_alignment': {
-            'brand_voice': score_brand_consistency(content_item),
-            'strategic_fit': score_business_objectives(content_item)
-        }
-    }
-    
-    total_score = calculate_weighted_total(score)
-    recommendations = generate_improvement_recommendations(score)
-    
-    return {
-        'total_score': total_score,
-        'category_scores': score,
-        'grade': assign_letter_grade(total_score),
-        'recommendations': recommendations
-    }
+#!/usr/bin/env python3
+"""Keyword gap analysis from Ahrefs/Semrush CSV exports.
+Usage: python gap.py ours.csv comp1.csv comp2.csv ...
+Each CSV must contain columns: Keyword, Volume, KD (Difficulty), Current position (theirs).
+Column names below match Ahrefs 'Organic keywords' export; adjust if using Semrush."""
+import csv, sys
+
+KW, VOL, KD, POS = "Keyword", "Volume", "KD", "Current position"
+
+def load(path):
+    with open(path, newline="", encoding="utf-8-sig") as f:
+        return list(csv.DictReader(f))
+
+ours = {r[KW].strip().lower() for r in load(sys.argv[1])}
+gaps = {}
+for comp_path in sys.argv[2:]:
+    for r in load(comp_path):
+        kw = r[KW].strip().lower()
+        if kw in ours or not kw:
+            continue
+        try:
+            pos = float(r.get(POS) or 999)
+        except ValueError:
+            pos = 999
+        if pos > 10:                      # only count where they actually rank
+            continue
+        vol = int((r.get(VOL) or "0").replace(",", "") or 0)
+        kd  = int((r.get(KD) or "100").replace(",", "") or 100)
+        # winnability: high volume, low difficulty rises to the top
+        score = round(vol / (kd + 1), 1)
+        cur = gaps.get(kw)
+        if not cur or score > cur["score"]:
+            gaps[kw] = {"keyword": kw, "volume": vol, "kd": kd,
+                        "best_competitor_pos": pos, "score": score,
+                        "source": comp_path}
+
+for g in sorted(gaps.values(), key=lambda x: -x["score"])[:50]:
+    print(f"{g['score']:>8}  {g['keyword'][:45]:45}  vol={g['volume']:<6} kd={g['kd']:<3} "
+          f"theirpos={g['best_competitor_pos']:<4} ({g['source']})")
 ```
 
-### Content Performance Metrics
+> The `score = volume / (kd+1)` heuristic is a *starting* sort, not gospel. Re-rank the top 50 by intent match and business value before committing — a KD-12 term with no commercial relevance loses to a KD-35 term that sells your product.
 
-**Primary Performance Indicators:**
-```yaml
-Traffic Metrics:
-  - Organic search traffic
-  - Direct traffic
-  - Referral traffic
-  - Social media traffic
+### Prioritization framework
 
-Engagement Metrics:
-  - Average time on page
-  - Bounce rate
-  - Pages per session
-  - Social shares
-  - Comments and interactions
+| Tier | Criteria | Action |
+|---|---|---|
+| **P1 (do now)** | Non-trivial demand · KD below your proven ceiling · clear intent you can satisfy · maps to a CTA · a competitor already ranks/cited | Brief this quarter |
+| **P2 (queue)** | Moderate demand/difficulty · mixed intent · tangential business fit | Next quarter / batch |
+| **P3 (later)** | Thin demand · KD above ceiling · unclear intent or weak business value | Park; revisit if authority grows |
 
-Conversion Metrics:
-  - Email signups
-  - Download completions
-  - Contact form submissions
-  - Product demo requests
-
-SEO Performance:
-  - Keyword ranking positions
-  - SERP feature appearances
-  - Click-through rates
-  - Backlink acquisition
-
-Business Impact:
-  - Lead quality scores
-  - Sales attribution
-  - Customer acquisition cost
-  - Lifetime value influence
-```
+> Treat **AI-answer gaps** as their own P1 list: if you already rank but aren't *cited*, the fix is usually a §3 content edit (direct answer, original data, author signals), which is far cheaper than net-new content.
 
 ---
 
-## Editorial Calendar Framework
+## 7. Content Repurposing System
 
-### Calendar Structure & Planning
+One substantial asset feeds many channels. Atomize by extracting the parts that already exist (key insights, steps, stats, quotes) — don't write net-new for each channel.
 
-**Monthly Editorial Calendar Template:**
+### Atomization map
+
 ```yaml
-Month: March 2024
-Theme: Content Marketing Mastery
-Business Goal: Generate 200 qualified leads
+pillar (2,500+ words):
+  - 5-7 short-form posts (one key insight each)        # LinkedIn / X / Threads / Bluesky
+  - 1 newsletter issue (summary + best CTA)
+  - 3-4 LinkedIn text or document posts (section deep-dives)
+  - 1 short-form video script (Shorts / Reels / TikTok, 30-60s) per key step
+  - 1 long-form video / webinar outline
+  - 4-6 quote/stat cards (the original data from §3)
+  - 2-3 guest-post / digital-PR angles (pitch the original data)
 
-Week 1 (Mar 1-7):
-  Monday:
-    Content: "Content Marketing Plan Template"
-    Type: Resource/Template
-    Target Keyword: "content marketing plan template"
-    Author: Sarah Johnson
-    Distribution: Blog, Email, LinkedIn, Twitter
-    CTA: Download planning worksheet
-    
-  Wednesday:
-    Content: "5 Content Planning Mistakes to Avoid"
-    Type: List Article
-    Target Keyword: "content planning mistakes"
-    Author: Mike Chen
-    Distribution: Blog, Social Media
-    CTA: Subscribe to newsletter
-    
-  Friday:
-    Content: "Content Planning Case Study: How Acme Corp Doubled Traffic"
-    Type: Case Study
-    Author: Sarah Johnson
-    Distribution: Blog, LinkedIn Article
-    CTA: Schedule consultation
+blog post (1,200-1,800 words):
+  - 3-4 short-form posts
+  - 1 newsletter section
+  - 1 short video / reel
+  - 2-3 stat cards
+  - 1 podcast talking-point set
 
-Week 2 (Mar 8-14):
-  [Similar structure continues...]
-
-Repurposing Schedule:
-  - Week 1 template → Social media graphics (4 posts)
-  - Week 1 template → Email newsletter section
-  - Week 2 case study → Podcast episode topic
-  - Week 2 case study → Video summary
+case study:
+  - result-led short-form posts (the headline number)
+  - data-viz graphics + client quote cards
+  - 1 short video testimonial cut
+  - 1 sales-enablement one-pager
 ```
 
-**Content Production Workflow:**
-```mermaid
-graph LR
-    A[Idea Generation] --> B[Topic Research]
-    B --> C[Keyword Analysis]
-    C --> D[Content Brief Creation]
-    D --> E[Writing Assignment]
-    E --> F[First Draft]
-    F --> G[Internal Review]
-    G --> H[Revision & Editing]
-    H --> I[SEO Optimization]
-    I --> J[Visual Asset Creation]
-    J --> K[Final Review]
-    K --> L[Publication]
-    L --> M[Distribution]
-    M --> N[Performance Monitoring]
-```
+> Repurposing is a calendar trigger, not a side project: when an item reaches **Scheduled** (§5), auto-create its repurposing tasks so distribution ships with the article, not weeks later.
 
-### Editorial Calendar Tools & Systems
+### Channel guidance (current as of Jun 2026 — verify limits at each platform's docs)
 
-**Airtable Editorial Calendar Setup:**
-```javascript
-// Airtable base structure for editorial calendar
-const editorialCalendarFields = {
-  'Content Title': 'Single line text',
-  'Publication Date': 'Date',
-  'Status': 'Single select', // Idea, Brief, Draft, Review, Complete, Published
-  'Content Type': 'Single select', // Blog post, Email, Social, Video, etc.
-  'Target Keywords': 'Multiple select',
-  'Author': 'Single select',
-  'Editor': 'Single select',
-  'Topic Cluster': 'Single select',
-  'Target Audience': 'Single select',
-  'Business Goal': 'Single select',
-  'Content Brief': 'Long text',
-  'Word Count': 'Number',
-  'SEO Score': 'Number',
-  'Performance Metrics': 'Long text',
-  'Distribution Channels': 'Multiple select',
-  'Call to Action': 'Single line text',
-  'Related Content': 'Link to another record',
-  'Assets Needed': 'Multiple select' // Images, Graphics, Videos
-};
+| Channel | Format that works | Hard limits / notes |
+|---|---|---|
+| **LinkedIn** | Professional POV; native **document/carousel** posts perform well; lead with a hook line | ~3,000-char post limit; first ~2 lines show before "see more"; 3-5 hashtags; native video/document over external links |
+| **X (Twitter)** | Threads for processes; one idea per post; visuals lift reach | **280 characters** for standard posts; paid (X Premium) tiers allow much longer posts — don't design around the old 140/240 limits |
+| **Threads / Bluesky** | Same atomized insights as X; conversational | Threads ~500 chars; Bluesky 300 chars — re-cut, don't copy-paste |
+| **YouTube** | Long-form how-to + **Shorts** for the atomized steps | SEO title/description; chapters/timestamps; auto-captions; end screens |
+| **TikTok / Reels / Shorts** | 30-60s single-tip videos from each step | Hook in first 2s; on-screen captions; one CTA |
+| **Email newsletter** | Value-first summary + the one CTA; scannable | Mobile-first; one primary CTA; segment when possible |
+| **Podcast** | Pillar as an episode outline; reuse the brief's questions | Publish a transcript page (also a citable, indexable asset) |
 
-// Example record
-const contentRecord = {
-  'Content Title': 'Complete Guide to Editorial Calendars',
-  'Publication Date': '2024-03-15',
-  'Status': 'Draft',
-  'Content Type': 'Pillar Content',
-  'Target Keywords': ['editorial calendar', 'content calendar template'],
-  'Author': 'Sarah Johnson',
-  'Topic Cluster': 'Content Marketing Strategy',
-  'Business Goal': 'Lead Generation',
-  'Word Count': 3200,
-  'Distribution Channels': ['Blog', 'Email Newsletter', 'LinkedIn'],
-  'Call to Action': 'Download Editorial Calendar Template'
-};
-```
+> **Retired/repositioned channels.** SlideShare's strategic value has collapsed; do **not** make it a default output. If you have decks, post them as LinkedIn **document** posts and as an indexable HTML page on your own domain instead. Re-evaluate any "default channel" list yearly — platform relevance shifts fast.
 
 ---
 
-## Content Gap Analysis
+## 8. Content Audit & Maintenance
 
-### Gap Identification Process
+Audit to decide, per URL: **keep / optimize / consolidate / rewrite / prune**. Pull inventory + metrics, score with §4, act by band.
 
-**Systematic Gap Analysis:**
+### Build the inventory (real tools, real steps)
+
+1. **URL list** — `sitemap.xml`, or crawl with Screaming Frog (free up to 500 URLs) / Sitebulb to also capture titles, word count, status codes, indexability.
+2. **Performance** — Search Console "Pages" (clicks, impressions, position) and GA4 (engaged sessions, conversions). Pull a 16-month GSC window to see trend, not a snapshot.
+3. **Indexation** — flag URLs not indexed (GSC URL Inspection / Pages report); decide index vs no-index vs redirect.
+4. **Score** — apply the §4 rubric; sort by band.
+
+### Runnable: join a crawl export with GSC clicks to triage
+
 ```python
-def content_gap_analysis(competitor_urls, target_keywords):
-    """Identify content gaps vs competitors"""
-    
-    gap_analysis = {
-        'keyword_gaps': [],
-        'content_format_gaps': [],
-        'topic_depth_gaps': [],
-        'serp_feature_gaps': []
-    }
-    
-    for competitor in competitor_urls:
-        competitor_content = analyze_competitor_content(competitor)
-        
-        # Keyword gaps
-        their_keywords = set(competitor_content['ranking_keywords'])
-        our_keywords = set(get_our_ranking_keywords())
-        keyword_gaps = their_keywords - our_keywords
-        
-        gap_analysis['keyword_gaps'].extend([
-            {
-                'keyword': kw,
-                'competitor': competitor,
-                'search_volume': get_search_volume(kw),
-                'difficulty': get_keyword_difficulty(kw),
-                'their_ranking': competitor_content['rankings'].get(kw)
-            }
-            for kw in keyword_gaps
-        ])
-        
-        # Content format gaps
-        their_formats = set(competitor_content['content_formats'])
-        our_formats = set(get_our_content_formats())
-        format_gaps = their_formats - our_formats
-        
-        gap_analysis['content_format_gaps'].extend([
-            {
-                'format': fmt,
-                'competitor': competitor,
-                'performance': competitor_content['format_performance'][fmt]
-            }
-            for fmt in format_gaps
-        ])
-    
-    return prioritize_gaps(gap_analysis)
+#!/usr/bin/env python3
+"""Triage a content inventory: crawl export (Screaming Frog) + GSC pages export.
+Outputs a keep/optimize/consolidate/prune recommendation per URL.
+- crawl.csv  : Screaming Frog 'Internal > HTML' export (cols: Address, Word Count, Indexability)
+- gsc.csv    : Search Console 'Pages' export (cols: Top pages/Page, Clicks, Impressions, Position)
+"""
+import csv, sys
 
-# Content format analysis
-def analyze_content_formats(url_list):
-    """Analyze content formats across competitor set"""
-    
-    formats = {
-        'how_to_guides': 0,
-        'listicles': 0,
-        'case_studies': 0,
-        'templates_tools': 0,
-        'comparison_articles': 0,
-        'ultimate_guides': 0,
-        'video_content': 0,
-        'infographics': 0,
-        'podcasts': 0
-    }
-    
-    for url in url_list:
-        content_analysis = analyze_page_content(url)
-        detected_formats = classify_content_format(content_analysis)
-        
-        for format_type in detected_formats:
-            formats[format_type] += 1
-    
-    return formats
+def load(p):
+    with open(p, newline="", encoding="utf-8-sig") as f:
+        return list(csv.DictReader(f))
+
+def num(x, d=0):
+    try: return float(str(x).replace(",", ""))
+    except (TypeError, ValueError): return d
+
+crawl = {r["Address"].rstrip("/"): r for r in load(sys.argv[1])}
+gsc = {}
+for r in load(sys.argv[2]):
+    url = (r.get("Page") or r.get("Top pages") or "").rstrip("/")
+    if url:
+        gsc[url] = r
+
+for url, c in crawl.items():
+    g = gsc.get(url, {})
+    clicks = num(g.get("Clicks"))
+    impr   = num(g.get("Impressions"))
+    pos    = num(g.get("Position"), 999)
+    words  = num(c.get("Word Count"))
+    # Screaming Frog emits exactly "Indexable" / "Non-Indexable" — match exactly,
+    # NOT substring (`"indexable" in "non-indexable"` is True and would mis-pass).
+    indexable = c.get("Indexability", "").strip().lower() == "indexable"
+
+    if not indexable:
+        rec = "review-indexation"
+    elif clicks == 0 and impr < 50:
+        rec = "PRUNE/redirect (no demand, no clicks)"
+    elif impr >= 100 and pos > 10:
+        rec = "OPTIMIZE (demand exists, ranking page 2+)"   # quick win
+    elif clicks > 0 and words < 600:
+        rec = "EXPAND/REWRITE (thin but converting)"
+    elif clicks > 0:
+        rec = "KEEP (refresh on cadence)"
+    else:
+        rec = "CONSOLIDATE candidate (low signal)"
+    print(f"{rec:42}  clk={clicks:<5.0f} impr={impr:<6.0f} pos={pos:<5.0f} w={words:<5.0f} {url}")
 ```
 
-**Gap Prioritization Framework:**
-```yaml
-High Priority Gaps:
-  - High search volume keywords (>1K monthly)
-  - Low competition difficulty (<40)
-  - Strong commercial intent
-  - Multiple competitors ranking well
-  - Aligns with business objectives
+> "Quick wins" = URLs with impressions but position 11-20: small edits (better title/intro answer, internal links, refreshed facts) often move them onto page 1. The `search-console` skill's quick-win detection automates surfacing these.
 
-Medium Priority Gaps:
-  - Medium search volume (500-1K monthly)
-  - Moderate competition
-  - Mixed intent signals
-  - Some competitor success
-  - Tangential business alignment
+### Maintenance cadence
 
-Low Priority Gaps:
-  - Low search volume (<500 monthly)
-  - High competition difficulty (>70)
-  - Unclear commercial intent
-  - Limited competitor success
-  - Weak business alignment
-```
+| Cadence | Tasks |
+|---|---|
+| **Weekly** | Watch new-post performance; ship scheduled distribution/repurposing; fix broken links on recent posts; reply to comments |
+| **Monthly** | Review GSC/GA4 trends; promote quick-win URLs (pos 11-20); refresh CTAs/offers; re-run §3 query-class tests for money topics |
+| **Quarterly** | Full audit (score every URL with §4); refresh every pillar (dates, stats, screenshots, last-reviewed); competitor + AI-citation gap pass (§6); consolidate/prune the `<40` band |
+| **Annually** | Full inventory recategorization; cluster restructure; channel-relevance review (kill dead channels); content ROI/attribution review |
 
 ---
 
-## Content Repurposing System
+## 9. Measurement
 
-### Repurposing Framework
+Track classic organic **and** AI-search visibility. Separate the two — a page can lose clicks to an AI Overview while its impressions rise, which is a content-edit signal, not a failure.
 
-**Content Atomization Strategy:**
+### What to pull, from where
+
+| Question | Source | Specifics |
+|---|---|---|
+| Are we ranking / trending? | Search Console | Clicks, impressions, avg position by page & query; 16-month window for trend |
+| Engagement & conversion | GA4 | Engaged sessions, key events (your conversion_event per page), conversions, attribution |
+| Are we cited by AI engines? | Manual §3 prompts + AI-visibility tooling | Log cited/mentioned/absent per money query, per engine, monthly |
+| Indexation health | Search Console | URL Inspection / Pages report; non-indexed reasons |
+
+### GSC quick pull (CLI, for a recurring report)
+
+If you have the `search-console` MCP/skill wired, query it there. As a raw fallback, the Search Analytics API (free, OAuth) returns top pages/queries:
+
+```bash
+# Top pages by clicks, last 28 days (requires an OAuth access token for the property).
+# See `search-console` for token setup; do not hardcode credentials.
+curl -s -X POST \
+  "https://www.googleapis.com/webmasters/v3/sites/$(python3 -c 'import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1],safe=""))' "$SITE_URL")/searchAnalytics/query" \
+  -H "Authorization: Bearer $GSC_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"startDate":"2026-05-10","endDate":"2026-06-07","dimensions":["page"],"rowLimit":25}'
+```
+
+### AI-search measurement (do this manually if nothing else)
+
+Once a month, run the §3 query-class prompts across the engines your audience uses and fill:
+
 ```yaml
-Pillar Content (3,000+ words):
-  Atomic Content Pieces:
-    - 5-7 social media posts (key insights)
-    - 1 email newsletter (summary + CTA)
-    - 3-4 LinkedIn articles (sections expanded)
-    - 10-12 Twitter threads (step-by-step processes)
-    - 1 podcast episode (audio version)
-    - 1 video summary (5-7 minutes)
-    - 4-6 infographic elements
-    - 1 SlideShare presentation
-    - 2-3 guest post angles
-
-Blog Post (1,500 words):
-  Atomic Content Pieces:
-    - 3-4 social media posts
-    - 1 email newsletter section
-    - 1-2 LinkedIn updates
-    - 6-8 Twitter posts
-    - 1 short video/reel
-    - 2-3 infographic stats
-    - 1 podcast segment idea
-
-Case Study:
-  Atomic Content Pieces:
-    - Success story social posts
-    - Data visualization graphics
-    - Quote cards from clients
-    - Video testimonials
-    - Podcast interview
-    - Conference presentation
-    - Sales enablement material
+query: "best <category> for <audience>"
+date: 2026-06-07
+results:
+  google_ai_overview: cited        # cited | mentioned | absent
+  chatgpt_search:      mentioned
+  perplexity:          absent       # -> competitor X cited; diff our page (§3)
+  gemini:              cited
+action: "Add original benchmark + author bio to /our-page/ ; re-test next cycle"
 ```
 
-**Repurposing Automation:**
-```python
-def create_repurposing_plan(original_content):
-    """Generate automated repurposing recommendations"""
-    
-    content_analysis = analyze_content_structure(original_content)
-    
-    repurposing_plan = {
-        'social_media': {
-            'linkedin': extract_linkedin_insights(content_analysis),
-            'twitter': create_twitter_threads(content_analysis),
-            'facebook': generate_facebook_posts(content_analysis)
-        },
-        'email': {
-            'newsletter_section': summarize_for_email(content_analysis),
-            'dedicated_email': create_email_version(content_analysis)
-        },
-        'visual': {
-            'infographics': extract_visual_data(content_analysis),
-            'quote_cards': extract_quotable_moments(content_analysis),
-            'carousel_posts': create_carousel_content(content_analysis)
-        },
-        'video': {
-            'summary_video': create_video_script(content_analysis),
-            'talking_points': extract_speaking_points(content_analysis)
-        },
-        'audio': {
-            'podcast_outline': create_podcast_outline(content_analysis),
-            'voice_summary': generate_audio_script(content_analysis)
-        }
-    }
-    
-    return schedule_repurposed_content(repurposing_plan)
-
-# Example implementation
-original_post = {
-    'title': 'Complete Guide to Content Marketing Strategy',
-    'word_count': 3200,
-    'main_points': [
-        'Define clear content objectives',
-        'Research your target audience',
-        'Develop topic clusters',
-        'Create editorial calendar',
-        'Measure and optimize performance'
-    ],
-    'key_statistics': [
-        '91% of B2B companies use content marketing',
-        'Content marketing costs 62% less than traditional marketing',
-        '47% of buyers consume 3-5 pieces of content before engaging sales'
-    ]
-}
-
-repurposing_output = create_repurposing_plan(original_post)
-```
-
-### Cross-Platform Distribution
-
-**Platform-Specific Optimization:**
-```yaml
-LinkedIn:
-  - Professional tone and insights
-  - Industry-specific angles
-  - Thought leadership positioning
-  - 1,300-1,700 characters optimal
-  - Include relevant hashtags (3-5)
-  - Tag industry influencers when appropriate
-
-Twitter:
-  - Conversational and engaging tone
-  - Thread format for detailed content
-  - 240 characters per tweet
-  - Include visuals when possible
-  - Use relevant hashtags (1-2 per tweet)
-  - Engage with replies and retweets
-
-Email Newsletter:
-  - Value-first approach
-  - Clear subject lines
-  - Scannable formatting
-  - Strong CTAs
-  - Mobile optimization
-  - Personalization when possible
-
-YouTube:
-  - SEO-optimized titles and descriptions
-  - Engaging thumbnails
-  - Clear video structure with timestamps
-  - Include transcripts for accessibility
-  - End screens and cards for engagement
-  - Consistent branding and intro/outro
-```
+> Tie content to revenue, not vanity metrics. The headline number for a content program is **qualified conversions attributed to organic/AI-referred content** (GA4 key events), not pageviews. Pageviews justify nothing on their own.
 
 ---
 
-## Content Audit Checklist
+## Cross-links
 
-### Comprehensive Content Audit Framework
-
-**Technical Content Audit:**
-```yaml
-URL Structure & SEO:
-  ✓ Clean, descriptive URLs
-  ✓ Proper meta titles and descriptions
-  ✓ Header tag hierarchy (H1, H2, H3)
-  ✓ Internal linking structure
-  ✓ Image alt text optimization
-  ✓ Schema markup implementation
-  ✓ Page loading speed
-  ✓ Mobile responsiveness
-  ✓ HTTPS security
-
-Content Quality Assessment:
-  ✓ Content depth and comprehensiveness
-  ✓ Accuracy and fact-checking
-  ✓ Originality and uniqueness
-  ✓ Readability and clarity
-  ✓ Visual elements and formatting
-  ✓ Call-to-action presence and clarity
-  ✓ Brand voice consistency
-  ✓ Legal compliance (disclaimers, etc.)
-
-Performance Evaluation:
-  ✓ Organic search traffic trends
-  ✓ Keyword ranking positions
-  ✓ User engagement metrics
-  ✓ Conversion performance
-  ✓ Social sharing activity
-  ✓ Backlink acquisition
-  ✓ Email subscription generation
-  ✓ Lead quality and attribution
-```
-
-**Content Audit Automation:**
-```python
-def comprehensive_content_audit(content_inventory):
-    """Automated content audit across multiple dimensions"""
-    
-    audit_results = {}
-    
-    for content_item in content_inventory:
-        url = content_item['url']
-        
-        # Technical SEO audit
-        technical_score = audit_technical_seo(url)
-        
-        # Content quality analysis
-        quality_score = analyze_content_quality(url)
-        
-        # Performance evaluation
-        performance_data = get_performance_metrics(url)
-        
-        # Business impact assessment
-        business_impact = calculate_business_value(url, performance_data)
-        
-        audit_results[url] = {
-            'technical_score': technical_score,
-            'quality_score': quality_score,
-            'performance_metrics': performance_data,
-            'business_impact': business_impact,
-            'overall_grade': calculate_overall_grade(
-                technical_score, quality_score, performance_data, business_impact
-            ),
-            'recommendations': generate_improvement_recommendations(
-                technical_score, quality_score, performance_data
-            ),
-            'action_priority': determine_action_priority(audit_results)
-        }
-    
-    return generate_audit_report(audit_results)
-
-# Content audit report generation
-def generate_audit_report(audit_data):
-    """Generate comprehensive audit report with recommendations"""
-    
-    report = {
-        'executive_summary': {
-            'total_content_pieces': len(audit_data),
-            'average_technical_score': calculate_average(audit_data, 'technical_score'),
-            'average_quality_score': calculate_average(audit_data, 'quality_score'),
-            'high_priority_actions': count_high_priority_items(audit_data),
-            'quick_wins_identified': identify_quick_wins(audit_data)
-        },
-        'performance_overview': {
-            'top_performing_content': get_top_performers(audit_data, 10),
-            'underperforming_content': get_underperformers(audit_data, 10),
-            'content_gaps': identify_content_gaps(audit_data),
-            'optimization_opportunities': find_optimization_opportunities(audit_data)
-        },
-        'action_plan': {
-            'immediate_fixes': get_immediate_action_items(audit_data),
-            'short_term_improvements': get_short_term_projects(audit_data),
-            'long_term_strategy': get_strategic_recommendations(audit_data)
-        }
-    }
-    
-    return report
-```
-
-### Content Maintenance Schedule
-
-**Ongoing Content Maintenance:**
-```yaml
-Weekly:
-  ✓ Monitor new content performance
-  ✓ Update social media promotion
-  ✓ Respond to comments and engagement
-  ✓ Check for broken links on recent posts
-
-Monthly:
-  ✓ Review content performance metrics
-  ✓ Update editorial calendar based on results
-  ✓ Audit technical SEO elements
-  ✓ Refresh call-to-actions and offers
-  ✓ Update author bios and contact information
-
-Quarterly:
-  ✓ Comprehensive content audit
-  ✓ Competitive content analysis
-  ✓ Topic cluster performance review
-  ✓ Content format effectiveness analysis
-  ✓ Strategic content planning session
-
-Annually:
-  ✓ Complete content inventory and categorization
-  ✓ Brand voice and messaging alignment review
-  ✓ Content ROI and attribution analysis
-  ✓ Editorial process optimization
-  ✓ Content team skills assessment and training
-```
-
-This comprehensive content strategy framework enables systematic content planning, creation, optimization, and performance management across all content marketing initiatives.
+- Technical SEO, schema/JSON-LD, Core Web Vitals, indexing, `llms.txt`: **`seo-geo`**
+- Generating pages at scale from a dataset/template: **`programmatic-seo`**
+- Writing craft, headlines, hooks, voice: **`copywriting`**
+- CMS / blog implementation: **`blog-engine`**
+- Search Console wiring, quick-win detection, sitemaps: **`search-console`**
+- GA4 events, attribution, reports: **`google-analytics`**
+- Per-channel organic playbooks: **`social-media-growth`**
+- Competitor SERP/keyword teardown: **`competitor-intelligence`**

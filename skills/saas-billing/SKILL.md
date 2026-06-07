@@ -18,16 +18,18 @@ description: "Express/Node SaaS billing with Stripe — subscriptions, usage bil
 2. [Billing Models](#billing-models)
 3. [Stripe Products & Prices](#stripe-products--prices)
 4. [Checkout Sessions](#checkout-sessions)
-5. [Subscription Lifecycle](#subscription-lifecycle)
-6. [Webhook Handling](#webhook-handling)
-7. [API Key Provisioning](#api-key-provisioning)
-8. [Customer Portal](#customer-portal)
-9. [Metered / Usage-Based Billing](#metered--usage-based-billing)
-10. [Dunning & Failed Payments](#dunning--failed-payments)
-11. [Security](#security)
-12. [Testing](#testing)
-13. [Common Mistakes](#common-mistakes)
-14. [Complete Express.js Server Example](#complete-expressjs-server-example)
+5. [Stripe Tax](#stripe-tax)
+6. [Adaptive Pricing (Local-Currency Checkout)](#adaptive-pricing-local-currency-checkout)
+7. [Subscription Lifecycle](#subscription-lifecycle)
+8. [Webhook Handling](#webhook-handling)
+9. [API Key Provisioning](#api-key-provisioning)
+10. [Customer Portal](#customer-portal)
+11. [Metered / Usage-Based Billing](#metered--usage-based-billing)
+12. [Dunning & Failed Payments](#dunning--failed-payments)
+13. [Security](#security)
+14. [Testing](#testing)
+15. [Common Mistakes](#common-mistakes)
+16. [Complete Express.js Server Example](#complete-expressjs-server-example)
 
 ---
 
@@ -48,8 +50,13 @@ Customer
 ### Required Dependencies
 
 ```bash
-npm install stripe express body-parser crypto dotenv
+npm install stripe express dotenv express-rate-limit
+# Note: `crypto` is a Node.js core module — do NOT `npm install crypto`
+# (that installs an abandoned, deprecated userland package). `require('crypto')` works out of the box.
+# `body-parser` is unnecessary — Express 4.16+/5 ship `express.raw()` and `express.json()` built in.
 ```
+
+Pin the Stripe SDK to a known major (`npm install stripe@^19`); the SDK major and the pinned `apiVersion` evolve together.
 
 ### Environment Variables
 
@@ -71,6 +78,8 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY, {
 ```
 
 **Always pin your API version.** Stripe changes behavior across versions. Pinning prevents silent breakage.
+
+> Version note (as of Jun 2026): `2025-09-30.clover` is the Clover-era pinned version used throughout this skill. Before copying these examples, confirm the version your account defaults to (Dashboard → Developers → API version / Workbench) and the version your installed SDK major expects — the SDK major (`stripe@19` here) and the API version evolve together. Verify the latest at https://docs.stripe.com/api/versioning and https://docs.stripe.com/changelog. Bumping the version may change object shapes (e.g. invoice/subscription fields), so test webhooks against the new version before deploying.
 
 ---
 
@@ -94,11 +103,11 @@ Price × quantity. Quantity updated as team grows/shrinks.
 
 ### 3. Usage-Based (Metered)
 
-Pay for what you use. Reported via usage records.
+Pay for what you use. Reported via the Billing Meters API (`billing.meterEvents`).
 
 - **Example:** $0.01 per API call
-- **Stripe price type:** `recurring` with `usage_type: 'metered'`
-- **Best for:** API platforms, infrastructure, AI/ML services
+- **Stripe price type:** `recurring` with `usage_type: 'metered'` and `meter: <meter_id>` (Billing Meters era)
+- **Best for:** API platforms, infrastructure, AI/ML services (per-token, per-inference billing)
 
 ### 4. Tiered Pricing
 
@@ -166,25 +175,35 @@ const perSeatPrice = await stripe.prices.create({
   metadata: { plan: 'pro_per_seat' },
 });
 
-// Metered usage price
+// Metered usage price — MODERN (Billing Meters era, the default for new builds).
+// First create a Meter (once, persisted), then back the price with it.
+// See "Metered / Usage-Based Billing" below for the full meter setup + event reporting.
+const meter = await stripe.billing.meters.create({
+  display_name: 'API calls',
+  event_name: 'api_request',                 // you send events with this event_name
+  default_aggregation: { formula: 'sum' },   // 'sum' | 'count' | 'last'
+});
+
 const usagePrice = await stripe.prices.create({
   product: product.id,
   currency: 'usd',
   recurring: {
     interval: 'month',
     usage_type: 'metered',
+    meter: meter.id,           // ← binds this price to the meter (required for Meters-era usage)
   },
   unit_amount: 1,              // $0.01 per unit (cents)
   metadata: { plan: 'pro_api_usage' },
 });
 
-// Tiered price (graduated)
+// Tiered price (graduated), also meter-backed
 const tieredPrice = await stripe.prices.create({
   product: product.id,
   currency: 'usd',
   recurring: {
     interval: 'month',
     usage_type: 'metered',
+    meter: meter.id,
   },
   billing_scheme: 'tiered',
   tiers_mode: 'graduated',
@@ -196,6 +215,10 @@ const tieredPrice = await stripe.prices.create({
   metadata: { plan: 'pro_tiered_api' },
 });
 ```
+
+> A `recurring.usage_type: 'metered'` price **without** `meter` falls back to the legacy
+> subscription-item usage-record path (`createUsageRecord`), which is in maintenance mode for new
+> integrations. Always set `meter` for new builds. The legacy path is documented in the appendix below.
 
 ### Best Practices for Products & Prices
 
@@ -249,8 +272,12 @@ const session = await stripe.checkout.sessions.create({
   success_url: `${BASE_URL}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
   cancel_url: `${BASE_URL}/pricing`,
   allow_promotion_codes: true,
-  billing_address_collection: 'auto',
-  tax_id_collection: { enabled: true },
+
+  // ─── Stripe Tax (see "Stripe Tax" section below for full setup) ───
+  automatic_tax: { enabled: true },          // calculate & collect tax automatically
+  billing_address_collection: 'required',    // 'required' so Tax always has a location
+  customer_update: { address: 'auto', name: 'auto' }, // persist collected address onto the Customer
+  tax_id_collection: { enabled: true },      // collect B2B VAT/GST IDs (enables reverse-charge)
 });
 ```
 
@@ -304,6 +331,151 @@ app.get('/billing/success', async (req, res) => {
 ```
 
 **Never provision access on the success URL.** Users can navigate away, close the tab, or the redirect can fail. Always provision in webhooks.
+
+---
+
+## Stripe Tax
+
+Stripe Tax automatically calculates and collects sales tax, VAT, and GST based on the customer's location and your registrations. For SaaS, this is almost always preferable to hand-rolling tax — Stripe maintains rates and rules across jurisdictions.
+
+### One-time account setup (Dashboard / API)
+
+1. **Set your origin address** and enable Tax: Dashboard → **Tax** → Settings (or `POST /v1/tax/settings` with `defaults` + `head_office`). Tax stays in a non-collecting "preview" state until origin + a registration exist.
+2. **Add registrations** for every jurisdiction where you have nexus/obligation. Stripe only *collects* tax where you are registered; everywhere else it returns a zero-rate "not registered" line, not an error.
+
+```js
+// Register to collect in a jurisdiction (do this per state/country where you have nexus)
+await stripe.tax.registrations.create({
+  country: 'US',
+  country_options: {
+    us: { state: 'CA', type: 'state_sales_tax' }, // e.g. California state sales tax
+  },
+  active_from: 'now',
+});
+
+// EU example (one-stop-shop style country registration)
+await stripe.tax.registrations.create({
+  country: 'DE',
+  country_options: { de: { type: 'standard' } },
+  active_from: 'now',
+});
+
+// List what you're currently registered to collect
+const regs = await stripe.tax.registrations.list({ status: 'active' });
+```
+
+> **Nexus is a legal/accounting determination, not a Stripe feature.** Where you must register depends on revenue/transaction thresholds per jurisdiction (e.g. US economic-nexus thresholds, EU OSS). This is tax advice — confirm registrations with a tax professional or accountant. Stripe will not register for you, and collecting tax you aren't registered for can create liability. Rates/thresholds change; verify at https://docs.stripe.com/tax.
+
+### Tax behavior & tax codes on Products/Prices
+
+Two settings drive correct calculation:
+
+- **`tax_behavior`** on the Price — whether `unit_amount` is `inclusive` (tax baked into the displayed price, common in EU/UK) or `exclusive` (tax added on top, common in US). `unspecified` blocks `automatic_tax` from finalizing.
+- **`tax_code`** on the Product — Stripe's product tax category (a `txcd_...` code). SaaS commonly uses `txcd_10103001` (Software as a service — B2B) or `txcd_10103000` (SaaS — general); downloadable software, e-books, and physical goods each have distinct codes. The wrong code means the wrong rate.
+
+```js
+const product = await stripe.products.create({
+  name: 'Pro Plan',
+  tax_code: 'txcd_10103001', // SaaS (B2B). Browse codes: stripe.taxCodes.list() or docs.
+});
+
+const price = await stripe.prices.create({
+  product: product.id,
+  unit_amount: 2900,
+  currency: 'usd',
+  recurring: { interval: 'month' },
+  tax_behavior: 'exclusive', // tax added on top of $29 (typical US SaaS)
+});
+
+// List available tax codes to find the right txcd_ for your product
+const codes = await stripe.taxCodes.list({ limit: 50 });
+```
+
+> Tax-code identifiers (`txcd_...`) and their applicability change; **do not hardcode a code without verifying it** at https://docs.stripe.com/tax/tax-codes or via `stripe.taxCodes.list()`. As of Jun 2026 the SaaS codes above are current, but confirm for your product type.
+
+### Enabling Tax in Checkout
+
+```js
+const session = await stripe.checkout.sessions.create({
+  mode: 'subscription',
+  customer: customerId,
+  line_items: [{ price: 'price_pro_monthly', quantity: 1 }],
+
+  automatic_tax: { enabled: true },        // turn on calculation
+  billing_address_collection: 'required',  // Tax needs a location; 'required' is safest
+  customer_update: { address: 'auto', name: 'auto' }, // persist address onto the Customer
+  tax_id_collection: { enabled: true },    // collect B2B VAT/GST IDs → enables reverse-charge
+
+  success_url: `${BASE_URL}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
+  cancel_url: `${BASE_URL}/pricing`,
+});
+```
+
+- `automatic_tax` requires a determinable customer location. With Checkout, `billing_address_collection: 'required'` guarantees one; Stripe can also infer from a verified card / IP, but don't rely on that for finalizing invoices.
+- `customer_update: { address: 'auto' }` is **mandatory** when you pass an existing `customer` and want the collected address saved back — otherwise tax recalculation on renewals has no address.
+- **Reverse charge (B2B EU/UK):** when a business customer enters a valid VAT ID via `tax_id_collection`, intra-EU B2B sales are typically zero-rated with a reverse-charge note. Stripe handles the validation and invoice wording; you just enable collection.
+
+### Tax on API-created subscriptions and one-off invoices
+
+```js
+// Subscription created directly via API
+await stripe.subscriptions.create({
+  customer: customerId,
+  items: [{ price: 'price_pro_monthly' }],
+  automatic_tax: { enabled: true },
+});
+
+// One-off invoice
+const invoice = await stripe.invoices.create({
+  customer: customerId,
+  automatic_tax: { enabled: true },
+});
+```
+
+The Customer must have a valid `address` (or `tax.ip_address`) or Stripe cannot finalize a tax-enabled invoice — it will surface an error rather than guess.
+
+### Testing tax
+
+- Use a Checkout test address in a jurisdiction where you've added a (test-mode) registration — e.g. a California ZIP — and confirm a tax line appears.
+- Confirm a non-registered jurisdiction yields a zero-rate "not registered" line, not a hard failure.
+- Enter a valid EU VAT ID as a business customer and verify reverse-charge wording on the invoice.
+- Inspect `invoice.total_tax_amounts` (and the `tax` breakdown) in the webhook payload to reconcile what was collected.
+
+> Filing/remittance is **not** automatic on standard Tax. Stripe calculates and collects; remittance is handled via Stripe Tax filing/exports or your accountant. Treat collected tax as a liability you owe, not revenue.
+
+---
+
+## Adaptive Pricing (Local-Currency Checkout)
+
+Adaptive Pricing lets Checkout present prices in the **buyer's local currency** with localized rounding, even though your Price is defined in a single base currency (e.g. USD). Stripe handles the FX conversion and settlement. It improves conversion for international buyers without you maintaining a Price per currency.
+
+### Enabling it
+
+Adaptive Pricing is primarily an **account/Dashboard setting** (Dashboard → Settings → Checkout and Payment Links → Adaptive Pricing), and applies to eligible Checkout Sessions automatically once enabled. Where the Session API exposes it, the surface looks like:
+
+```js
+const session = await stripe.checkout.sessions.create({
+  mode: 'subscription',
+  customer: customerId,
+  line_items: [{ price: 'price_pro_monthly', quantity: 1 }], // USD-based price
+
+  // Present localized currency to the buyer (account setting must also be on).
+  adaptive_pricing: { enabled: true },
+
+  success_url: `${BASE_URL}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
+  cancel_url: `${BASE_URL}/pricing`,
+});
+```
+
+> The exact API parameter surface and the list of supported buyer currencies/regions have shifted across releases. **As of Jun 2026, verify the current parameter name, eligibility, and enablement steps at https://docs.stripe.com/payments/checkout/adaptive-pricing before relying on it in code** — treat the account-level toggle as the source of truth and the API flag as advisory.
+
+### Caveats & when NOT to use it
+
+- **Don't combine with manual multi-currency Prices.** If you already maintain a Price per currency (`currency_options` / separate Prices), use those instead — mixing the two double-converts and confuses reporting.
+- **FX and rounding** are Stripe-managed; you don't control the exact displayed amount, and presented amounts move with exchange rates. Don't advertise an exact foreign price you can't guarantee.
+- **Reconciliation:** charges settle and report in your **settlement currency**; the buyer sees local. Your revenue analytics must reconcile on settlement currency, not the displayed amount, or MRR/ARR will look noisy.
+- **Tax interaction:** local-currency display does not change *where* you owe tax — Stripe Tax still keys off the customer's location and your registrations (see above).
+- **Not a substitute for true local pricing.** If you want deliberately different price points per market (psychological pricing, PPP discounts), use explicit per-currency Prices, not Adaptive Pricing's FX conversion.
 
 ---
 
@@ -363,29 +535,56 @@ const subscription = await stripe.subscriptions.create({
 
 ### Upgrade / Downgrade (Plan Changes)
 
+> **Never assume `items.data[0]` is "the plan".** Hybrid subscriptions (base +
+> metered) have multiple items, and Stripe does not guarantee their order.
+> Targeting the wrong item silently changes the metered item instead of the base
+> price (or vice versa). Identify items explicitly — by `price.lookup_key`,
+> product metadata, or a stored subscription-item id.
+
 ```js
-async function changePlan(subscriptionId, newPriceId, prorate = true) {
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-  const currentItemId = subscription.items.data[0].id;
-
-  const updated = await stripe.subscriptions.update(subscriptionId, {
-    items: [
-      {
-        id: currentItemId,
-        price: newPriceId,
-      },
-    ],
-    proration_behavior: prorate ? 'create_prorations' : 'none',
-    // For downgrades, you might want to wait until period end:
-    // proration_behavior: 'none',
-    // Then the new price applies next cycle.
-  });
-
-  return updated;
+// Resolve a specific subscription item by lookup_key (preferred) or by a
+// predicate over its price/product. Falls back to throwing rather than guessing.
+function findSubscriptionItem(subscription, { lookupKey, match } = {}) {
+  const items = subscription.items.data;
+  const found = items.find((it) =>
+    (lookupKey && it.price.lookup_key === lookupKey) ||
+    (match && match(it))
+  );
+  if (!found) {
+    throw new Error(
+      `No subscription item matched ${lookupKey ?? 'predicate'} ` +
+      `on ${subscription.id} (has ${items.length} item(s))`
+    );
+  }
+  return found;
 }
 
-// Upgrade immediately with proration
-await changePlan(subId, 'price_enterprise_monthly', true);
+// Change the BASE plan item only, leaving any metered item untouched.
+async function changePlan(subscriptionId, newPriceId, { prorate = true, lookupKey } = {}) {
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+
+  // Pick the base item explicitly. If the sub has exactly one item, that's it;
+  // otherwise require a lookupKey (or a metadata match) to be unambiguous.
+  const target = subscription.items.data.length === 1
+    ? subscription.items.data[0]
+    : findSubscriptionItem(subscription, {
+        lookupKey,
+        match: (it) => it.price.recurring?.usage_type !== 'metered', // the flat/base item
+      });
+
+  return stripe.subscriptions.update(subscriptionId, {
+    items: [{ id: target.id, price: newPriceId }],
+    proration_behavior: prorate ? 'create_prorations' : 'none',
+    // For period-end downgrades, prefer a Subscription Schedule (below) — calling
+    // update() with proration_behavior: 'none' switches the price object NOW
+    // (no immediate proration, but the new price is on the subscription already).
+  });
+}
+
+// Upgrade immediately with proration (single-item sub)
+await changePlan(subId, 'price_enterprise_monthly', { prorate: true });
+// Hybrid sub: name the base item so the metered item isn't touched
+await changePlan(subId, 'price_enterprise_monthly', { prorate: true, lookupKey: 'base_plan' });
 
 // Downgrade at period end — use Subscription Schedules to defer the change.
 // Simply calling subscriptions.update() with proration_behavior: 'none'
@@ -424,11 +623,15 @@ async function downgradeAtPeriodEnd(subscriptionId, newPriceId) {
 ### Seat Changes
 
 ```js
-async function updateSeats(subscriptionId, newQuantity) {
+// Update quantity on the per-seat item. Pass the seat item's lookup_key so this
+// works on hybrid/multi-item subscriptions (metered items have no quantity).
+async function updateSeats(subscriptionId, newQuantity, { lookupKey = 'per_seat' } = {}) {
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-  const itemId = subscription.items.data[0].id;
+  const seatItem = subscription.items.data.length === 1
+    ? subscription.items.data[0]
+    : findSubscriptionItem(subscription, { lookupKey });
 
-  return stripe.subscriptionItems.update(itemId, {
+  return stripe.subscriptionItems.update(seatItem.id, {
     quantity: newQuantity,
     proration_behavior: 'create_prorations',
   });
@@ -445,13 +648,29 @@ async function cancelAtPeriodEnd(subscriptionId) {
   });
 }
 
-// Cancel immediately (rare — refund scenarios)
+// Cancel immediately (rare — refund / abuse scenarios)
 async function cancelImmediately(subscriptionId) {
+  // `subscriptions.cancel` (DELETE) ends the subscription NOW. Its supported
+  // options are `invoice_now` and `prorate` — NOT `proration_behavior`
+  // (that belongs to subscriptions.update). Passing proration_behavior here
+  // is ignored/invalid depending on API version.
   return stripe.subscriptions.cancel(subscriptionId, {
-    proration_behavior: 'create_prorations',  // issue prorated credit
-    // invoice_now: true, // generate final invoice immediately
+    invoice_now: true, // finalize any pending metered usage into a final invoice
+    prorate: true,     // credit unused time as a proration on that final invoice
   });
-  // Note: `prorate: true` is deprecated — use proration_behavior instead.
+  // `prorate: true`/`invoice_now: true` are the cancel-time flags. Immediate
+  // cancellation does NOT auto-refund the customer — issue a refund or credit
+  // note separately if you owe money back:
+  //   await stripe.refunds.create({ payment_intent: '<pi_...>' });
+}
+
+// Alternative: schedule a hard cancel at a specific future timestamp without
+// ending access now. Use cancel_at (a Unix timestamp) on update:
+async function cancelAt(subscriptionId, unixTs) {
+  return stripe.subscriptions.update(subscriptionId, {
+    cancel_at: unixTs,
+    proration_behavior: 'none', // proration_behavior IS valid on update
+  });
 }
 
 // Reactivate before period end
@@ -681,6 +900,14 @@ async function handleCheckoutCompleted(session) {
       return;
     }
 
+    // Resolve the tier from the BASE (non-metered) item, not blindly data[0] —
+    // a hybrid sub also has a metered item whose product carries no tier.
+    const baseItem = subscription.items.data.length === 1
+      ? subscription.items.data[0]
+      : subscription.items.data.find((it) => it.price.recurring?.usage_type !== 'metered')
+        || subscription.items.data[0];
+    const tier = baseItem.price.product?.metadata?.tier || 'pro';
+
     // Provision access
     await db.query(
       `UPDATE users SET
@@ -693,7 +920,7 @@ async function handleCheckoutCompleted(session) {
       [
         customerId,
         subscription.id,
-        subscription.items.data[0].price.product.metadata.tier || 'pro',
+        tier,
         subscription.status,
         subscription.current_period_end,
         userId,
@@ -739,10 +966,20 @@ async function handleSubscriptionUpdated(subscription, previousAttributes = {}) 
   const userId = await getUserByCustomerId(subscription.customer);
   if (!userId) return;
 
-  // Detect plan change
+  // Detect plan change. The webhook payload's price.product is usually just a
+  // STRING id (not expanded), so re-fetch with expansion to read real metadata
+  // and resolve the base (non-metered) item rather than blindly using data[0].
+  let newTier = null;
   if (previousAttributes.items) {
-    const newPlan = subscription.items.data[0].price.product;
-    console.log(`User ${userId} changed plan to ${newPlan}`);
+    const full = await stripe.subscriptions.retrieve(subscription.id, {
+      expand: ['items.data.price.product'],
+    });
+    const baseItem = full.items.data.length === 1
+      ? full.items.data[0]
+      : full.items.data.find((it) => it.price.recurring?.usage_type !== 'metered')
+        || full.items.data[0];
+    newTier = baseItem.price.product?.metadata?.tier || null;
+    console.log(`User ${userId} changed plan; tier=${newTier ?? 'unknown'}`);
   }
 
   // Detect cancellation scheduled
@@ -760,18 +997,19 @@ async function handleSubscriptionUpdated(subscription, previousAttributes = {}) 
     await provisionApiKey(userId);
   }
 
-  // Always update local state
+  // Always update local state. Use COALESCE so a NULL plan (this update wasn't a
+  // plan change, or metadata was absent) does NOT erase the stored plan.
   await db.query(
     `UPDATE users SET
       subscription_status = $1,
       current_period_end = to_timestamp($2),
-      plan = $3,
+      plan = COALESCE($3, plan),
       cancel_at_period_end = $4
     WHERE stripe_customer_id = $5`,
     [
       subscription.status,
       subscription.current_period_end,
-      subscription.metadata?.plan || null,
+      newTier || subscription.metadata?.plan || null,
       subscription.cancel_at_period_end,
       subscription.customer,
     ]
@@ -884,11 +1122,13 @@ For SaaS products that expose an API, provision keys tied to the subscription li
 ```js
 const crypto = require('crypto');
 
-// Generate a cryptographically secure API key
-function generateApiKey(prefix = 'sk') {
+// Generate a cryptographically secure API key.
+// Use a PRODUCT-specific prefix (e.g. `myapp_live_`) — never `sk_`, which collides
+// with Stripe secret keys (`sk_live_`/`sk_test_`) and confuses secret scanners.
+function generateApiKey(prefix = 'myapp_live') {
   const key = crypto.randomBytes(32).toString('hex');  // 64 hex chars
   return `${prefix}_${key}`;
-  // Example: sk_a1b2c3d4e5f6...
+  // Example: myapp_live_a1b2c3d4e5f6...
 }
 
 // Hash for storage (never store plaintext keys in your DB)
@@ -904,7 +1144,7 @@ CREATE TABLE api_keys (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id),
   key_hash VARCHAR(64) NOT NULL UNIQUE,
-  key_prefix VARCHAR(12) NOT NULL,        -- first 8 chars for display: "sk_a1b2..."
+  key_prefix VARCHAR(24) NOT NULL,        -- leading chars for display: "myapp_live_a1b2..."
   name VARCHAR(100) DEFAULT 'Default',
   scopes TEXT[] DEFAULT '{}',
   is_active BOOLEAN DEFAULT true,
@@ -932,9 +1172,9 @@ async function provisionApiKey(userId) {
     return; // Already has a key
   }
 
-  const apiKey = generateApiKey('sk');
+  const apiKey = generateApiKey();           // product-prefixed, e.g. myapp_live_...
   const keyHash = hashApiKey(apiKey);
-  const keyPrefix = apiKey.substring(0, 10) + '...';
+  const keyPrefix = apiKey.substring(0, 18) + '...'; // store namespace + a few chars for display
 
   await db.query(
     `INSERT INTO api_keys (user_id, key_hash, key_prefix, name)
@@ -1099,111 +1339,130 @@ app.post('/billing/portal', requireAuth, async (req, res) => {
 
 ## Metered / Usage-Based Billing
 
-### Reporting Usage
+> **Use Billing Meters for all new usage-based billing.** You send *meter events*
+> keyed by `stripe_customer_id` (not subscription-item usage records); Stripe
+> aggregates them against the meter that backs the price (see "Stripe Products &
+> Prices" for creating the meter + meter-backed price). The legacy
+> `subscriptionItems.createUsageRecord` path is in maintenance mode and is kept
+> in the appendix at the end of this section only for existing integrations.
+> Docs: https://docs.stripe.com/billing/subscriptions/usage-based
 
-> **Note:** `createUsageRecord` is deprecated for new integrations as of 2024.
-> Stripe now recommends the **Billing Meters API** (`stripe.billing.meterEvents.create`)
-> for usage-based billing. The example below uses the legacy API for existing integrations.
-> For new projects, see: https://docs.stripe.com/billing/subscriptions/usage-based/recording-usage#billing-meter
+### Reporting Usage (Billing Meters — default)
 
 ```js
-// Legacy: Report usage for a metered subscription item
-// For new integrations, use stripe.billing.meterEvents.create() instead.
-async function reportUsage(subscriptionItemId, quantity, timestamp = null) {
-  return stripe.subscriptionItems.createUsageRecord(subscriptionItemId, {
-    quantity,
-    timestamp: timestamp || Math.floor(Date.now() / 1000),
-    action: 'increment',   // 'increment' adds to existing, 'set' replaces
-  });
-}
-
-// Modern: Report usage via Billing Meters (recommended for new integrations)
-async function reportMeterEvent(customerId, eventName, value = 1) {
+// Send a meter event. `event_name` MUST match the meter's event_name.
+// `stripe_customer_id` is the aggregation key — NOT a subscription item id.
+async function reportMeterEvent(customerId, value = 1, { eventName = 'api_request', timestamp, identifier } = {}) {
   return stripe.billing.meterEvents.create({
-    event_name: eventName,     // matches your Meter's event_name
+    event_name: eventName,
+    // `identifier` makes the event idempotent — Stripe de-dupes events that
+    // share the same identifier, so a retry after a network blip won't double-bill.
+    identifier,                                  // e.g. a request id / ULID
+    timestamp,                                   // Unix seconds; omit = "now". Most
+                                                 // meters reject events older than ~35 days.
     payload: {
-      stripe_customer_id: customerId,
-      value: String(value),
+      stripe_customer_id: customerId,            // required aggregation key
+      value: String(value),                      // payload values are strings
     },
   });
 }
 
-// Example: Report API usage at end of request
+// Example: report API usage after each request (fire-and-forget, never block the response)
 app.use('/api/v1', authenticateApiKey, async (req, res, next) => {
-  // ... handle request ...
-
-  // After response, report usage (fire and forget)
-  res.on('finish', async () => {
-    try {
-      const user = await db.query(
-        'SELECT stripe_subscription_item_id FROM users WHERE id = $1',
-        [req.userId]
-      );
-      const subItemId = user.rows[0]?.stripe_subscription_item_id;
-      if (subItemId) {
-        await reportUsage(subItemId, 1);
-      }
-    } catch (err) {
-      console.error('Failed to report usage:', err.message);
-      // Don't fail the request — queue for retry
-    }
+  res.on('finish', () => {
+    // Resolve the Stripe customer id for this user (cache it on req in auth middleware
+    // to avoid a DB hit per request).
+    const customerId = req.stripeCustomerId;
+    if (!customerId) return;
+    reportMeterEvent(customerId, 1, {
+      identifier: req.id,                         // unique per request → idempotent
+    }).catch((err) => {
+      console.error('Failed to report meter event:', err.message);
+      enqueueUsageRetry({ customerId, value: 1, identifier: req.id }); // durable retry, see below
+    });
   });
-
   next();
 });
 ```
 
-### Batched Usage Reporting (Recommended for High Volume)
+> **Reporting !== invoicing.** Meter events feed an aggregated total that Stripe
+> bills at the period boundary. There is no per-event charge, so emitting events
+> is cheap — but it is also eventually-consistent, so don't read meter totals to
+> enforce hard real-time quotas (use your own counter for that; see
+> "Usage Limits" below).
+
+### Batched / High-Volume Usage Reporting
+
+At high request rates, prefer a **durable queue** (Redis Stream, SQS, Postgres
+`outbox` table) over an in-memory accumulator — a process restart must not lose
+billable usage. The aggregation key is the **customer**, and each batched event
+should carry a stable `identifier` so retries stay idempotent.
 
 ```js
-// Don't report every single API call individually.
-// Batch locally and flush periodically.
-
+// Aggregate in-memory only as a write-coalescing buffer in FRONT of a durable
+// queue. On every flush, generate ONE identifier per (customer, window) so a
+// retried flush de-dupes instead of double-billing.
 class UsageAccumulator {
-  constructor(flushIntervalMs = 60_000) {
-    this.counters = new Map(); // subscriptionItemId → count
-    this.interval = setInterval(() => this.flush(), flushIntervalMs);
+  constructor(flushIntervalMs = 60_000, { eventName = 'api_request' } = {}) {
+    this.counters = new Map(); // stripeCustomerId → count
+    this.eventName = eventName;
+    this.interval = setInterval(() => this.flush().catch(console.error), flushIntervalMs);
   }
 
-  increment(subscriptionItemId, amount = 1) {
-    const current = this.counters.get(subscriptionItemId) || 0;
-    this.counters.set(subscriptionItemId, current + amount);
+  increment(customerId, amount = 1) {
+    this.counters.set(customerId, (this.counters.get(customerId) || 0) + amount);
   }
 
   async flush() {
+    const windowId = Math.floor(Date.now() / 60_000); // 1-min bucket → stable id
     const entries = [...this.counters.entries()];
     this.counters.clear();
 
-    for (const [subItemId, quantity] of entries) {
-      if (quantity === 0) continue;
+    for (const [customerId, value] of entries) {
+      if (value === 0) continue;
       try {
-        await stripe.subscriptionItems.createUsageRecord(subItemId, {
-          quantity,
-          action: 'increment',
-          timestamp: Math.floor(Date.now() / 1000),
+        await stripe.billing.meterEvents.create({
+          event_name: this.eventName,
+          identifier: `${customerId}:${windowId}`, // idempotent per customer per minute
+          payload: { stripe_customer_id: customerId, value: String(value) },
         });
       } catch (err) {
-        console.error(`Failed to report usage for ${subItemId}:`, err.message);
-        // Re-add to counters for next flush
-        const existing = this.counters.get(subItemId) || 0;
-        this.counters.set(subItemId, existing + quantity);
+        console.error(`Failed to report usage for ${customerId}:`, err.message);
+        // Re-buffer for the next flush (still de-duped by the windowId identifier).
+        this.counters.set(customerId, (this.counters.get(customerId) || 0) + value);
       }
     }
   }
 
   async shutdown() {
     clearInterval(this.interval);
-    await this.flush();
+    await this.flush(); // flush remaining buffer on SIGTERM so usage isn't lost
   }
 }
 
 const usageTracker = new UsageAccumulator(60_000); // flush every 60s
+process.on('SIGTERM', async () => { await usageTracker.shutdown(); process.exit(0); });
+```
 
-// On graceful shutdown
-process.on('SIGTERM', async () => {
-  await usageTracker.shutdown();
-  process.exit(0);
-});
+> **Caveat on `${customerId}:${windowId}` identifiers:** within a single window
+> you must coalesce to exactly one event per customer (as above). If you instead
+> emit multiple events per window, give each a unique identifier — reusing one
+> identifier for different values means Stripe keeps only the first.
+
+### Legacy appendix — `createUsageRecord` (maintenance mode, existing integrations only)
+
+Only for subscriptions on **legacy metered prices created without a `meter`**.
+Do not use for new builds.
+
+```js
+// LEGACY — keyed by subscription ITEM id, not customer. Prefer meter events above.
+async function reportUsageLegacy(subscriptionItemId, quantity, timestamp = null) {
+  return stripe.subscriptionItems.createUsageRecord(subscriptionItemId, {
+    quantity,
+    timestamp: timestamp || Math.floor(Date.now() / 1000),
+    action: 'increment', // 'increment' adds to the period total; 'set' overwrites it
+  });
+}
 ```
 
 ### Usage Limits & Rate Limiting Per Plan
@@ -1370,19 +1629,23 @@ function planRateLimiter(req, res, next) {
   return limiter(req, res, next);
 }
 
-// Webhook rate limiting (prevent abuse)
-const webhookLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 300,  // Stripe can burst events
-  message: 'Too many webhook requests',
-});
-
-app.post('/webhooks/stripe', webhookLimiter, express.raw({ type: 'application/json' }), handleStripeWebhook);
+// ⚠️  Do NOT rate-limit the Stripe webhook endpoint by request volume before
+// verifying the signature. Stripe legitimately bursts events (backfills,
+// migrations, incident recovery) and a 429 just triggers retries, growing a
+// backlog and risking dropped events past Stripe's retry window.
+//
+// Instead: (1) verify the signature first — that IS your authentication and
+// rejects forged/replayed payloads; (2) keep the handler cheap by enqueuing
+// work and returning 200 fast; (3) protect the box with a generous infra-level
+// connection/QPS cap (LB/WAF), not an app-level per-window cap that drops valid
+// events. If you must cap in-app, cap AFTER verification and only on bodies that
+// fail signature checks (i.e. throttle attackers, never Stripe).
+app.post('/webhooks/stripe', express.raw({ type: 'application/json' }), handleStripeWebhook);
 ```
 
 ### Secure Key Storage
 
-- **Never log full API keys.** Log only the prefix (`sk_a1b2...`).
+- **Never log full API keys.** Log only the prefix (`myapp_live_a1b2...`).
 - **Never store plaintext keys.** Always hash with SHA-256.
 - **Rotate webhook secrets** periodically via Stripe Dashboard.
 - **Use separate restricted API keys** for different services (read-only for analytics, write for billing).
@@ -1634,10 +1897,16 @@ Stripe doesn't guarantee event ordering. You might receive `customer.subscriptio
 
 ## Complete Express.js Server Example
 
-Putting it all together — a production-ready billing server.
+Putting it all together — a **runnable end-to-end demo**. It wires up every flow above, but it deliberately uses in-memory `Map`/`Set` stores so you can run it without a database. **This is not production-safe as written:** restarting the process drops all idempotency records and billing state, so duplicate webhooks would re-provision and re-bill. For production, replace the in-memory stores with the Postgres schema and transactional handlers shown earlier (`users`, `api_keys`, `processed_events`), and follow this webhook architecture:
+
+1. **Verify** the Stripe signature (authentication).
+2. **Persist** the event id (`INSERT ... ON CONFLICT DO NOTHING`) to dedupe.
+3. **Enqueue** the work (durable queue / outbox) and return `200` fast.
+4. **Process idempotently** in a worker; **re-fetch** the current Stripe object (`subscriptions.retrieve`, etc.) as the source of truth rather than trusting possibly-stale or out-of-order payload fields.
+5. **Reconcile** periodically — list recent Stripe events / objects and repair any your handler missed (Stripe only retries for a limited window).
 
 ```js
-// server.js — Complete SaaS Billing Server
+// server.js — Complete SaaS Billing DEMO (in-memory stores; swap for Postgres in prod)
 require('dotenv').config();
 const express = require('express');
 const crypto = require('crypto');
@@ -1781,7 +2050,10 @@ async function routeEvent(event) {
         break;
       }
 
-      const plan = sub.items.data[0].price.product.metadata?.tier || 'pro';
+      const baseItem = sub.items.data.length === 1
+        ? sub.items.data[0]
+        : sub.items.data.find((it) => it.price.recurring?.usage_type !== 'metered') || sub.items.data[0];
+      const plan = baseItem.price.product?.metadata?.tier || 'pro';
 
       users.set(userId, {
         ...users.get(userId),
@@ -1894,7 +2166,7 @@ async function routeEvent(event) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // HELPERS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function generateApiKey(prefix = 'sk') {
+function generateApiKey(prefix = 'myapp_live') { // product-specific, never `sk_`
   return `${prefix}_${crypto.randomBytes(32).toString('hex')}`;
 }
 

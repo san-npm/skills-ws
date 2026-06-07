@@ -1,21 +1,24 @@
 ---
 name: mcp-server-builder
-description: "Build production MCP servers — tool schemas (Zod/Pydantic), Streamable HTTP transport (MCP spec 2025-03-26, replaces SSE), stdio, OAuth/bearer auth, FastMCP (Python) and @modelcontextprotocol/sdk (TS), Stripe + x402 monetization, deployment. Use when shipping an MCP server."
+description: "Build production MCP servers: tool/resource/prompt schemas (Zod/Pydantic), Streamable HTTP + stdio (spec 2025-11-25, SSE legacy), OAuth 2.1 bearer auth, FastMCP (Python) and @modelcontextprotocol/sdk (TS), Stripe + x402 v2 monetization, deploy. Use when shipping, monetizing, or deploying an MCP server or wrapping a REST API as tools."
 ---
 
 # MCP Server Builder — Production Skill
 
-> Default to **Streamable HTTP** transport (`StreamableHTTPServerTransport` in TS, `FastMCP` in Python). SSE is deprecated as of MCP spec 2025-03-26. Keep stdio only for local-process servers.
+> **Pick the transport first.** **stdio** for local-process servers (Claude Desktop, CLI). **Streamable HTTP** for everything remote/shared/monetized — `StreamableHTTPServerTransport` in TS (`@modelcontextprotocol/sdk` v1.x), `FastMCP` in Python. The two standard transports are stdio and Streamable HTTP. The old **HTTP+SSE** transport (`/sse` + `/messages`) is **legacy/deprecated** (replaced in spec 2025-03-26, current spec **2025-11-25**); ship it only as a backward-compat appendix for old clients (see §2c).
 
 > Build production-grade Model Context Protocol servers that wrap any REST API into AI-callable tools, with three-tier auth, monetization, and battle-tested deployment.
 
+> **Related skills:** for the consuming side (connecting to / calling MCP servers) see `mcp-client`; for general agent architecture see `ai-agent-building`; for REST contract/versioning design see `api-design`; for the Stripe billing details behind §7 see `stripe-billing`; for the SSRF/secret-handling depth in §9 see `security-hardening`.
+
 ## When to Use
 
-- User wants to build an MCP server (stdio or SSE transport)
+- User wants to build an MCP server (stdio or Streamable HTTP)
 - User wants to wrap a REST API as MCP tools
-- User asks about MCP architecture, tool schemas, or transports
-- User wants to monetize an MCP server (free tier, API keys, x402 micropayments)
-- User mentions `@modelcontextprotocol/sdk`, `mcp` Python package, or MCP in general
+- User asks about MCP architecture, tool/resource/prompt schemas, or transports
+- User wants to monetize an MCP server (free tier, API keys, x402 micropayments, Stripe subscriptions)
+- User wants OAuth/bearer auth on a remote MCP server, or to deploy/list one
+- User mentions `@modelcontextprotocol/sdk`, `mcp` Python package, FastMCP, or MCP in general
 
 ---
 
@@ -31,24 +34,27 @@ MCP (Model Context Protocol) defines three primitives that a server exposes to A
 
 ### Transports
 
-**stdio** — Server runs as a child process. Client spawns it, communicates over stdin/stdout.
-Best for: local tools, Claude Desktop, CLI integrations.
+**stdio** — Server runs as a child process. Client spawns it, communicates over stdin/stdout. One client per process; no auth layer (trust is the local OS).
+Best for: local tools, Claude Desktop, Claude Code, CLI integrations.
 
-**SSE (Server-Sent Events)** — Legacy HTTP transport. Client connects via SSE for server→client messages, POST for client→server.
-**Note:** SSE transport was deprecated in MCP spec 2025-03-26. New servers should use `StreamableHTTPServerTransport` from `@modelcontextprotocol/sdk/server/streamableHttp.js`. SSE examples below still work but are considered legacy.
+**Streamable HTTP** *(recommended for all remote servers; MCP spec 2025-03-26, refined 2025-11-25)* — A **single endpoint** (conventionally `/mcp`) that serves **POST** (client→server JSON-RPC), **GET** (open a server→client SSE stream for notifications/resumability), and **DELETE** (terminate a session). It is *not* "just request/response": per request the server replies either `application/json` (one-shot) **or** `text/event-stream` (streamed result + server notifications); responses/notifications that aren't requests get `202 Accepted` with no body. Supports optional **sessions** (`Mcp-Session-Id` header), **resumability** (`Last-Event-ID` + an event store), and a **JSON-only mode** (`enableJsonResponse` / `json_response=True`) for stateless API-style scaling.
+Best for: remote servers, shared services, monetized APIs, multi-node deployments.
 
-**Streamable HTTP** — Modern HTTP transport (MCP spec 2025-03-26+). Replaces SSE with a simpler request/response model.
-Best for: remote servers, shared services, monetized APIs.
+**HTTP+SSE** *(legacy — backward compat only)* — Two endpoints: `GET /sse` to open the stream, `POST /messages?sessionId=…` to send. Deprecated in spec 2025-03-26 and superseded by Streamable HTTP; the SDK still ships `SSEServerTransport` so you can host `/sse` alongside `/mcp` for clients that predate Streamable HTTP. Do not build new servers SSE-first — see the dual-transport appendix in §2c.
 
-### Message Flow (SSE)
+### Message Flow (Streamable HTTP — current)
 
 ```
-Client                          Server
-  |--- GET /sse ------------------>|  (SSE connection opens)
-  |<-- event: endpoint            |  (server sends POST endpoint URL)
+Client                          Server   (single endpoint, e.g. POST/GET/DELETE /mcp)
+  |--- POST /mcp (initialize) ---->|  server may return Mcp-Session-Id response header
+  |<-- 200 + Mcp-Session-Id -------|  (Content-Type: application/json)
   |                                |
-  |--- POST /messages ------------>|  (JSON-RPC request: tools/call)
-  |<-- SSE event: message --------|  (JSON-RPC response)
+  |--- POST /mcp (tools/call) ---->|  with Mcp-Session-Id header
+  |<-- 200 application/json -------|  one-shot result …
+  |   …or text/event-stream -------|  …or streamed result + server notifications
+  |                                |
+  |--- GET /mcp (SSE stream) ----->|  optional: server→client notifications, resumable
+  |--- DELETE /mcp --------------->|  end the session
 ```
 
 ### JSON-RPC Protocol
@@ -121,21 +127,29 @@ const server = new McpServer(
 );
 
 // --- TOOLS ---
+// Current SDK (v1.x) API: server.registerTool(name, config, handler).
+// config carries { title, description, inputSchema, outputSchema?, annotations? }.
+// (The older server.tool(name, desc, shape, handler) still works as a compat alias,
+//  but registerTool is the documented best practice — it adds a UI `title`, optional
+//  `outputSchema`, and lets handlers return `structuredContent`.)
 
-server.tool(
+server.registerTool(
   "screenshot",
-  "Capture a screenshot of a webpage",
   {
-    url: z.string().url().describe("URL to capture"),
-    width: z.number().int().min(320).max(3840).default(1280).describe("Viewport width"),
-    height: z.number().int().min(240).max(2160).default(720).describe("Viewport height"),
-    fullPage: z.boolean().default(false).describe("Capture full page scroll"),
+    title: "Webpage Screenshot",
+    description: "Capture a screenshot of a webpage",
+    inputSchema: {
+      url: z.string().url().describe("URL to capture"),
+      width: z.number().int().min(320).max(3840).default(1280).describe("Viewport width"),
+      height: z.number().int().min(240).max(2160).default(720).describe("Viewport height"),
+      fullPage: z.boolean().default(false).describe("Capture full page scroll"),
+    },
   },
   async ({ url, width, height, fullPage }) => {
     const apiUrl = `https://api.screenshotone.com/take?url=${encodeURIComponent(url)}&viewport_width=${width}&viewport_height=${height}&full_page=${fullPage}&format=png&access_key=${process.env.SCREENSHOT_API_KEY}`;
     const res = await fetch(apiUrl);
     if (!res.ok) {
-      return { content: [{ type: "text", text: `Screenshot failed: ${res.status} ${res.statusText}` }] };
+      return { content: [{ type: "text", text: `Screenshot failed: ${res.status} ${res.statusText}` }], isError: true };
     }
     const buffer = Buffer.from(await res.arrayBuffer());
     return {
@@ -147,17 +161,31 @@ server.tool(
   }
 );
 
-server.tool(
+server.registerTool(
   "dns_lookup",
-  "Resolve DNS records for a domain",
   {
-    domain: z.string().min(1).describe("Domain to look up"),
-    type: z.enum(["A", "AAAA", "CNAME", "MX", "NS", "TXT", "SOA"]).default("A").describe("Record type"),
+    title: "DNS Lookup",
+    description: "Resolve DNS records for a domain",
+    inputSchema: {
+      domain: z.string().min(1).describe("Domain to look up"),
+      type: z.enum(["A", "AAAA", "CNAME", "MX", "NS", "TXT", "SOA"]).default("A").describe("Record type"),
+    },
+    // outputSchema makes the result machine-readable; pair it with `structuredContent` below.
+    outputSchema: {
+      records: z.array(z.object({ name: z.string(), type: z.number(), TTL: z.number(), data: z.string() })).default([]),
+      status: z.number(),
+    },
   },
   async ({ domain, type }) => {
     const res = await fetch(`https://dns.google/resolve?name=${encodeURIComponent(domain)}&type=${type}`);
     const data = await res.json();
-    return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+    const structuredContent = { records: data.Answer ?? [], status: data.Status ?? 0 };
+    // When you declare outputSchema, ALSO return a text block (for clients that ignore
+    // structuredContent) plus the structuredContent itself (for clients that parse it).
+    return {
+      content: [{ type: "text", text: JSON.stringify(structuredContent, null, 2) }],
+      structuredContent,
+    };
   }
 );
 
@@ -207,205 +235,281 @@ main().catch((err) => {
 });
 ```
 
-### SSE Transport (Express)
+### 2a. Streamable HTTP — Stateful (sessions + resumability) — RECOMMENDED
+
+This is the default remote transport. One endpoint `/mcp` handles POST (requests), GET (server→client SSE stream), and DELETE (session teardown). Sessions are keyed by the `Mcp-Session-Id` response header the server returns on `initialize`.
 
 ```typescript
-// src/sse-server.ts
+// src/http-server.ts
 import express from "express";
 import cors from "cors";
+import { randomUUID } from "node:crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 
 const app = express();
 
-// CRITICAL: raw body for webhook signature verification BEFORE json parser
+// CRITICAL: raw body for webhook signature verification BEFORE the JSON parser (see §8).
 app.use("/webhooks", express.raw({ type: "application/json" }));
 app.use(express.json());
-app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(",") || "*" }));
 
-// Health check
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok", uptime: process.uptime(), timestamp: new Date().toISOString() });
-});
+// CORS: fail closed. NEVER "*" on an MCP/auth endpoint. Browsers also must be allowed
+// to READ the session header, so expose it. (Non-browser MCP clients ignore CORS.)
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || "").split(",").map(s => s.trim()).filter(Boolean);
+app.use(cors({
+  origin: allowedOrigins.length ? allowedOrigins : false, // false = deny cross-origin in browsers
+  methods: ["GET", "POST", "DELETE"],
+  allowedHeaders: ["Content-Type", "Mcp-Session-Id", "Last-Event-ID", "Authorization"],
+  exposedHeaders: ["Mcp-Session-Id"],
+}));
 
-// MCP server factory — one per connection
+app.get("/health", (_req, res) =>
+  res.json({ status: "ok", uptime: process.uptime(), timestamp: new Date().toISOString() }));
+
+// One McpServer per session. Register tools/resources/prompts here.
 function createMcpServer(): McpServer {
-  const server = new McpServer(
-    { name: "my-mcp-server", version: "1.0.0" },
-  );
-
-  server.tool(
+  const server = new McpServer({ name: "my-mcp-server", version: "1.0.0" });
+  server.registerTool(
     "screenshot",
-    "Capture a screenshot of a webpage",
-    { url: z.string().url(), width: z.number().int().default(1280), height: z.number().int().default(720) },
+    { title: "Webpage Screenshot", description: "Capture a screenshot of a webpage",
+      inputSchema: { url: z.string().url(), width: z.number().int().default(1280), height: z.number().int().default(720) } },
     async ({ url, width, height }) => {
       const apiRes = await fetch(
         `https://api.screenshotone.com/take?url=${encodeURIComponent(url)}&viewport_width=${width}&viewport_height=${height}&format=png&access_key=${process.env.SCREENSHOT_API_KEY}`
       );
-      if (!apiRes.ok) return { content: [{ type: "text" as const, text: `Error: ${apiRes.status}` }] };
+      if (!apiRes.ok) return { content: [{ type: "text" as const, text: `Error: ${apiRes.status}` }], isError: true };
       const buf = Buffer.from(await apiRes.arrayBuffer());
       return { content: [{ type: "image" as const, data: buf.toString("base64"), mimeType: "image/png" }] };
     }
   );
-
   return server;
 }
 
-// Track active transports for cleanup
-const transports = new Map<string, SSEServerTransport>();
+// Transports keyed by session id. In multi-node deploys, either pin sessions with a
+// sticky load balancer or run stateless (§2b) — this in-memory map is per-process.
+const transports: Record<string, StreamableHTTPServerTransport> = {};
 
-app.get("/sse", async (req, res) => {
-  const transport = new SSEServerTransport("/messages", res);
-  const server = createMcpServer();
-  transports.set(transport.sessionId, transport);
-
-  res.on("close", () => {
-    transports.delete(transport.sessionId);
-  });
-
-  await server.connect(transport);
-});
-
-app.post("/messages", async (req, res) => {
-  const sessionId = req.query.sessionId as string;
-  const transport = transports.get(sessionId);
-  if (!transport) {
-    res.status(404).json({ error: "Session not found" });
-    return;
+// POST /mcp — every JSON-RPC request. Creates a session on `initialize`, reuses it after.
+app.post("/mcp", async (req, res) => {
+  const sessionId = req.headers["mcp-session-id"] as string | undefined;
+  try {
+    let transport: StreamableHTTPServerTransport;
+    if (sessionId && transports[sessionId]) {
+      transport = transports[sessionId];                 // reuse existing session
+    } else if (!sessionId && isInitializeRequest(req.body)) {
+      transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => randomUUID(),           // stateful: hand out a session id
+        // enableJsonResponse: true,                       // uncomment for JSON-only (no SSE) replies
+        // eventStore: new InMemoryEventStore(),           // enable Last-Event-ID resumability
+        onsessioninitialized: (sid) => { transports[sid] = transport; }, // store AFTER init (no races)
+      });
+      transport.onclose = () => {
+        const sid = transport.sessionId;
+        if (sid) delete transports[sid];
+      };
+      // Connect BEFORE handling so responses flow back over the same transport.
+      await createMcpServer().connect(transport);
+      await transport.handleRequest(req, res, req.body);
+      return;
+    } else {
+      res.status(400).json({ jsonrpc: "2.0", error: { code: -32000, message: "Bad Request: no valid session id" }, id: null });
+      return;
+    }
+    await transport.handleRequest(req, res, req.body);
+  } catch (err) {
+    console.error("MCP request error:", err);
+    if (!res.headersSent) res.status(500).json({ jsonrpc: "2.0", error: { code: -32603, message: "Internal server error" }, id: null });
   }
-  await transport.handlePostMessage(req, res);
 });
+
+// GET /mcp — open the server→client SSE notification stream (supports Last-Event-ID resume).
+// DELETE /mcp — terminate the session. Both just hand off to the existing transport.
+const sessionRequest = async (req: express.Request, res: express.Response) => {
+  const sessionId = req.headers["mcp-session-id"] as string | undefined;
+  if (!sessionId || !transports[sessionId]) return res.status(400).send("Invalid or missing session id");
+  await transports[sessionId].handleRequest(req, res);
+};
+app.get("/mcp", sessionRequest);
+app.delete("/mcp", sessionRequest);
 
 const PORT = parseInt(process.env.PORT || "3100");
-app.listen(PORT, () => console.log(`MCP SSE server on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`MCP Streamable HTTP server on http://localhost:${PORT}/mcp`));
+
+// Graceful shutdown: close every live session (see Appendix A for the full handler).
+process.on("SIGTERM", async () => {
+  for (const sid of Object.keys(transports)) { try { await transports[sid].close(); } catch {} }
+  process.exit(0);
+});
 ```
+
+### 2b. Streamable HTTP — Stateless (horizontal scale, JSON-only)
+
+For pure API proxies / serverless / multi-node behind a round-robin LB, run stateless: a fresh transport + server **per request**, no session header, GET/DELETE return `405`. Set `sessionIdGenerator: undefined` and (typically) `enableJsonResponse: true`.
+
+```typescript
+// src/http-server-stateless.ts
+app.post("/mcp", async (req, res) => {
+  try {
+    const server = createMcpServer();
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,    // stateless: no sessions, any node can serve any request
+      enableJsonResponse: true,         // reply application/json instead of SSE
+    });
+    res.on("close", () => { transport.close(); server.close(); });
+    await server.connect(transport);
+    await transport.handleRequest(req, res, req.body);
+  } catch (err) {
+    console.error("MCP request error:", err);
+    if (!res.headersSent) res.status(500).json({ jsonrpc: "2.0", error: { code: -32603, message: "Internal server error" }, id: null });
+  }
+});
+
+// No sessions ⇒ no SSE stream / no teardown to honor.
+const methodNotAllowed = (_req: express.Request, res: express.Response) =>
+  res.writeHead(405).end(JSON.stringify({ jsonrpc: "2.0", error: { code: -32000, message: "Method not allowed." }, id: null }));
+app.get("/mcp", methodNotAllowed);
+app.delete("/mcp", methodNotAllowed);
+```
+
+> **Pick one:** *stateful* keeps per-connection context, supports streaming notifications + resumability, needs sticky routing across nodes. *stateless* scales trivially and is the better default for tool-only API wrappers. Don't mix them on one endpoint.
+
+### 2c. Backward-compat appendix — host legacy HTTP+SSE alongside `/mcp`
+
+**Only if you must support clients that predate Streamable HTTP** (the old two-endpoint transport: `GET /sse` opens the stream, `POST /messages?sessionId=…` sends). New servers should be `/mcp`-only. To serve both from one process, run Streamable HTTP on `/mcp` (per §2a) **and** add the deprecated `SSEServerTransport` pair below. Keep the SSE transports in their own session map — the two transports are not interchangeable.
+
+```typescript
+// src/legacy-sse.ts — mount onto the SAME Express app that already serves /mcp (§2a).
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import type express from "express";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+
+// Separate map: SSE sessions are keyed by the id SSEServerTransport generates.
+const sseTransports: Record<string, SSEServerTransport> = {};
+
+export function mountLegacySSE(app: express.Express, createMcpServer: () => McpServer) {
+  // GET /sse — open the stream. The transport writes an `endpoint` event telling the
+  // client where to POST (/messages?sessionId=…). One McpServer per SSE connection.
+  app.get("/sse", async (_req, res) => {
+    const transport = new SSEServerTransport("/messages", res);  // path the client POSTs back to
+    sseTransports[transport.sessionId] = transport;
+    res.on("close", () => { delete sseTransports[transport.sessionId]; });
+    await createMcpServer().connect(transport);                  // connect AFTER registering in the map
+  });
+
+  // POST /messages?sessionId=… — deliver a client message into its SSE session.
+  // NOTE: do NOT put express.json() in front of this route — handlePostMessage reads the
+  // raw stream itself. Mount it on a sub-router without the JSON body parser.
+  app.post("/messages", async (req, res) => {
+    const sessionId = req.query.sessionId as string | undefined;
+    const transport = sessionId ? sseTransports[sessionId] : undefined;
+    if (!transport) return res.status(400).send("No transport for that sessionId");
+    await transport.handlePostMessage(req, res);                 // parses the body internally
+  });
+}
+```
+
+> **Migration note:** the SDK still ships `SSEServerTransport`, but the SSE transport is deprecated (spec 2025-03-26) and will be dropped from clients over time. Treat `/sse` as a sunset path: log its usage, and once your clients negotiate `protocolVersion >= 2025-03-26` over `/mcp`, remove it. The official `mcp-remote` shim and current Claude clients already speak Streamable HTTP — point new integrations at `/mcp` (see §12).
 
 ---
 
-## 3. Server Setup — Python (mcp package)
+## 3. Server Setup — Python (FastMCP, the `mcp` package)
+
+Use **FastMCP** (shipped inside the official `mcp` package as `mcp.server.fastmcp`). Decorate plain typed functions; FastMCP derives the JSON Schema from type hints + docstrings and supports stdio and Streamable HTTP from the same definition.
 
 ### Project Init
 
 ```bash
 mkdir my-mcp-server-py && cd my-mcp-server-py
 python -m venv .venv && source .venv/bin/activate
-pip install mcp httpx pydantic uvicorn
+pip install "mcp[cli]" httpx pydantic uvicorn   # mcp[cli] adds the `mcp` dev/inspector CLI
 ```
 
-### Minimal stdio Server
+### FastMCP server — stdio + Streamable HTTP from one definition
 
 ```python
 # server.py
 import json
+from urllib.parse import quote
 import httpx
-from mcp.server import Server
-from mcp.server.stdio import stdio_server
-from mcp.types import Tool, TextContent, ImageContent
+from pydantic import BaseModel, Field
+from mcp.server.fastmcp import FastMCP
 
-server = Server("my-mcp-server")
+# stateless_http + json_response = best scaling for tool-only API wrappers (see §2b rationale).
+# Drop both kwargs for a stateful server with sessions; FastMCP serves a single /mcp endpoint.
+mcp = FastMCP("my-mcp-server", stateless_http=True, json_response=True)
 
-@server.list_tools()
-async def list_tools() -> list[Tool]:
-    return [
-        Tool(
-            name="dns_lookup",
-            description="Resolve DNS records for a domain",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "domain": {"type": "string", "description": "Domain to look up"},
-                    "type": {"type": "string", "enum": ["A","AAAA","CNAME","MX","NS","TXT","SOA"], "default": "A"},
-                },
-                "required": ["domain"],
-            },
-        ),
-        Tool(
-            name="whois_lookup",
-            description="Get WHOIS registration info for a domain",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "domain": {"type": "string", "description": "Domain to query"},
-                },
-                "required": ["domain"],
-            },
-        ),
-        Tool(
-            name="ssl_check",
-            description="Check SSL certificate details for a domain",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "domain": {"type": "string", "description": "Domain to check"},
-                },
-                "required": ["domain"],
-            },
-        ),
-    ]
-
-@server.call_tool()
-async def call_tool(name: str, arguments: dict) -> list[TextContent | ImageContent]:
+@mcp.tool()
+async def dns_lookup(domain: str, type: str = "A") -> str:
+    """Resolve DNS records for a domain. `type` is one of A, AAAA, CNAME, MX, NS, TXT, SOA."""
     async with httpx.AsyncClient(timeout=30) as client:
-        if name == "dns_lookup":
-            domain = arguments["domain"]
-            record_type = arguments.get("type", "A")
-            from urllib.parse import quote
-            resp = await client.get(f"https://dns.google/resolve?name={quote(domain)}&type={record_type}")
-            return [TextContent(type="text", text=json.dumps(resp.json(), indent=2))]
+        resp = await client.get(f"https://dns.google/resolve?name={quote(domain)}&type={type}")
+        return json.dumps(resp.json(), indent=2)
 
-        elif name == "whois_lookup":
-            domain = arguments["domain"]
-            from urllib.parse import quote
-            resp = await client.get(f"https://whois.freeaitools.casa/api/{quote(domain)}")
-            return [TextContent(type="text", text=json.dumps(resp.json(), indent=2))]
+# Return a Pydantic model (or TypedDict / dataclass) to get an output schema + structuredContent
+# automatically — the client receives both a text rendering and machine-readable structured data.
+class SSLInfo(BaseModel):
+    valid_from: str = Field(description="Certificate validity start")
+    valid_to: str = Field(description="Certificate expiry")
+    issuer: str
+    days_remaining: int
 
-        elif name == "ssl_check":
-            domain = arguments["domain"]
-            resp = await client.get(f"https://ssl-checker.io/api/v1/check/{domain}")
-            return [TextContent(type="text", text=json.dumps(resp.json(), indent=2))]
+@mcp.tool()
+async def ssl_check(domain: str) -> SSLInfo:
+    """Check SSL/TLS certificate details for a domain (no scheme, e.g. example.com)."""
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.get(f"https://ssl-checker.io/api/v1/check/{quote(domain)}")
+        d = resp.json()["result"]
+        return SSLInfo(valid_from=d["valid_from"], valid_to=d["valid_till"],
+                       issuer=d["issuer_o"], days_remaining=d["days_left"])
 
-        else:
-            return [TextContent(type="text", text=f"Unknown tool: {name}")]
+@mcp.resource("info://server")
+def server_info() -> str:
+    """Server metadata and capabilities."""
+    return json.dumps({"name": "my-mcp-server", "version": "1.0.0", "tools": 2})
 
-async def main():
-    async with stdio_server() as (read_stream, write_stream):
-        await server.run(read_stream, write_stream, server.create_initialization_options())
+@mcp.prompt()
+def analyze_domain(domain: str) -> str:
+    """Reusable prompt: full domain analysis."""
+    return (f'Analyze "{domain}": 1) DNS records (A, MX, NS, TXT). '
+            "2) SSL certificate. 3) WHOIS. Summarize findings with any security concerns.")
 
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+    import sys
+    # `python server.py` → stdio (local). `python server.py http` → Streamable HTTP on /mcp.
+    mcp.run(transport="streamable-http" if "http" in sys.argv else "stdio")
 ```
 
-### SSE Transport (Python)
+Run it:
+
+```bash
+python server.py            # stdio — for Claude Desktop / Claude Code
+python server.py http       # Streamable HTTP — serves http://localhost:8000/mcp
+mcp dev server.py           # launch MCP Inspector against the stdio server
+```
+
+### Mounting FastMCP under FastAPI / Starlette
+
+To expose `/mcp` alongside your existing HTTP API, mount `streamable_http_app()` and run its session manager in the app lifespan:
 
 ```python
-# sse_server.py
-import uvicorn
-from mcp.server import Server
-from mcp.server.sse import SseServerTransport
+# app.py — uvicorn app:app
+import contextlib
 from starlette.applications import Starlette
-from starlette.routing import Route, Mount
+from starlette.routing import Mount
+from server import mcp   # the FastMCP instance above
 
-server = Server("my-mcp-server")
-sse = SseServerTransport("/messages/")
+@contextlib.asynccontextmanager
+async def lifespan(app: Starlette):
+    # REQUIRED: run the session manager so /mcp works when mounted.
+    async with mcp.session_manager.run():
+        yield
 
-# ... register tools with @server.list_tools() and @server.call_tool() as above ...
-
-async def handle_sse(request):
-    async with sse.connect_sse(request.scope, request.receive, request._send) as streams:
-        await server.run(streams[0], streams[1], server.create_initialization_options())
-
-routes = [
-    Route("/sse", endpoint=handle_sse),
-    Mount("/messages/", app=sse.handle_post_message),
-]
-
-app = Starlette(routes=routes)
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=3100)
+app = Starlette(routes=[Mount("/", app=mcp.streamable_http_app())], lifespan=lifespan)
 ```
+
+> **Legacy low-level API.** The pre-FastMCP `from mcp.server import Server` with `@server.list_tools()` / `@server.call_tool()` and `from mcp.server.sse import SseServerTransport` still exist for fine-grained control and old SSE clients, but they are verbose and SSE is deprecated — prefer FastMCP + Streamable HTTP for anything new.
 
 ---
 
@@ -699,48 +803,30 @@ export function loadApiKeysFromEnv() {
   }
 }
 
-// --- x402 Payment Verification ---
-async function verifyX402Payment(paymentHeader: string, price: string): Promise<boolean> {
-  try {
-    const res = await fetch(process.env.X402_FACILITATOR_URL || "https://x402.org/verify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        payment: paymentHeader,
-        expectedAmount: price,
-        expectedToken: process.env.X402_TOKEN || "USDC",
-        expectedChain: process.env.X402_CHAIN || "base",
-        expectedRecipient: process.env.X402_RECIPIENT_ADDRESS,
-      }),
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
-
 // --- Main auth middleware ---
+// x402 v2 lives in §7 (PAYMENT-REQUIRED / PAYMENT-SIGNATURE / PAYMENT-RESPONSE, base64 JSON,
+// facilitator verify+settle). For a real deployment prefer the official `x402-express`
+// middleware (§7) over hand-rolling header parsing. The hook below shows where the x402
+// tier slots into the three-tier flow; `settleX402` is defined in §7.
 export interface AuthResult {
   tier: "free" | "pro" | "x402";
   userId?: string;
+  // settlement headers to echo on the 200 response (PAYMENT-RESPONSE), set by the x402 path
+  responseHeaders?: Record<string, string>;
 }
 
 export async function authenticate(req: express.Request): Promise<{ auth: AuthResult } | { error: string; status: number; headers?: Record<string, string> }> {
-  // 1. Check for x402 payment header
-  const paymentHeader = req.headers["x-payment"] as string;
-  if (paymentHeader) {
-    const valid = await verifyX402Payment(paymentHeader, "0.005");
-    if (valid) return { auth: { tier: "x402" } };
-    return { error: "Invalid payment", status: 402, headers: {
-      // x402 spec header is PAYMENT-REQUIRED (not X-Payment-Required)
-      "PAYMENT-REQUIRED": JSON.stringify({
-        amount: "0.005",
-        token: process.env.X402_TOKEN || "USDC",
-        chain: process.env.X402_CHAIN || "base",
-        recipient: process.env.X402_RECIPIENT_ADDRESS,
-        facilitator: process.env.X402_FACILITATOR_URL || "https://x402.org",
-      }),
-    }};
+  // 1. x402 v2: client presents a signed payload in PAYMENT-SIGNATURE (base64 JSON).
+  const paymentSig = req.headers["payment-signature"] as string | undefined;
+  if (paymentSig) {
+    const { settled, paymentResponse, error } = await settleX402(paymentSig, req); // see §7
+    if (settled) return { auth: { tier: "x402", responseHeaders: { "PAYMENT-RESPONSE": paymentResponse! } } };
+    // Settlement failed → re-challenge with fresh requirements.
+    return { error: error || "Payment settlement failed", status: 402, headers: { "PAYMENT-REQUIRED": buildPaymentRequired(req) } };
+  }
+  // No signature yet → challenge with 402 + PAYMENT-REQUIRED (base64 JSON array of requirements).
+  if ((req.headers["accept-payment"] as string) === "x402") {
+    return { error: "Payment required", status: 402, headers: { "PAYMENT-REQUIRED": buildPaymentRequired(req) } };
   }
 
   // 2. Check for API key
@@ -776,25 +862,32 @@ export async function authenticate(req: express.Request): Promise<{ auth: AuthRe
 }
 ```
 
-### Applying Auth to SSE Server
+### Applying Auth to the Streamable HTTP Server
 
 ```typescript
-// src/sse-server-authed.ts
+// src/http-server-authed.ts
 import express from "express";
 import cors from "cors";
+import crypto from "crypto";
+import { randomUUID } from "node:crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
-import { authenticate, loadApiKeysFromEnv, type AuthResult } from "./auth/middleware.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
+import { authenticate, loadApiKeysFromEnv, secureCompare, type AuthResult } from "./auth/middleware.js";
 
 const app = express();
 
-// MUST come before express.json() for webhook signature verification
+// MUST come before express.json() for webhook signature verification (see §8).
 app.use("/webhooks/stripe", express.raw({ type: "application/json" }));
 app.use(express.json());
+
+// CORS: explicit origins, fail closed (never "*" — esp. with credentials). Expose the session header.
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || "").split(",").map(s => s.trim()).filter(Boolean);
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(",") || "*",
-  methods: ["GET", "POST"],
-  allowedHeaders: ["Content-Type", "X-API-Key", "Authorization", "X-Payment"],
+  origin: allowedOrigins.length ? allowedOrigins : false,
+  methods: ["GET", "POST", "DELETE"],
+  allowedHeaders: ["Content-Type", "Mcp-Session-Id", "Last-Event-ID", "Authorization", "X-API-Key", "PAYMENT-SIGNATURE", "Accept-Payment"],
+  exposedHeaders: ["Mcp-Session-Id", "PAYMENT-REQUIRED", "PAYMENT-RESPONSE"],
 }));
 
 loadApiKeysFromEnv();
@@ -803,10 +896,13 @@ loadApiKeysFromEnv();
 app.get("/health", (_req, res) => res.json({ status: "ok", uptime: process.uptime() }));
 
 app.get("/admin/stats", (req, res) => {
-  const adminKey = req.headers["x-admin-key"];
-  if (!adminKey || adminKey !== process.env.ADMIN_KEY) return res.status(401).json({ error: "Unauthorized" });
+  const adminKey = req.headers["x-admin-key"] as string | undefined;
+  // Constant-time compare — never use !== on a secret (timing leak). Mirror the secureCompare in §9.
+  if (!adminKey || !process.env.ADMIN_KEY || !secureCompare(adminKey, process.env.ADMIN_KEY)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
   res.json({
-    activeSessions: transports.size,
+    activeSessions: Object.keys(transports).length,
     uptime: process.uptime(),
     memory: process.memoryUsage(),
   });
@@ -851,44 +947,115 @@ app.get("/pricing", (_req, res) => {
   });
 });
 
-// --- MCP SSE with auth ---
-const transports = new Map<string, SSEServerTransport>();
+// --- MCP Streamable HTTP with three-tier auth ---
+// Authenticate on the `initialize` POST (the start of a session); the tier is then bound
+// to that session's McpServer. GET/DELETE just resume/terminate an already-authed session.
+const transports: Record<string, StreamableHTTPServerTransport> = {};
 
-app.get("/sse", async (req, res) => {
-  const authResult = await authenticate(req);
-  if ("error" in authResult) {
-    if (authResult.headers) {
-      for (const [k, v] of Object.entries(authResult.headers)) res.setHeader(k, v);
-    }
-    return res.status(authResult.status).json({ error: authResult.error });
+app.post("/mcp", async (req, res) => {
+  const sessionId = req.headers["mcp-session-id"] as string | undefined;
+  // Existing session → trust the prior auth, reuse the transport.
+  if (sessionId && transports[sessionId]) {
+    return transports[sessionId].handleRequest(req, res, req.body);
+  }
+  if (sessionId || !isInitializeRequest(req.body)) {
+    return res.status(400).json({ jsonrpc: "2.0", error: { code: -32000, message: "Bad Request: no valid session id" }, id: null });
   }
 
+  // New session: run the tiered auth gate.
+  const authResult = await authenticate(req);
+  if ("error" in authResult) {
+    if (authResult.headers) for (const [k, v] of Object.entries(authResult.headers)) res.setHeader(k, v);
+    return res.status(authResult.status).json({ error: authResult.error });
+  }
   const { auth } = authResult;
-  console.log(`New SSE connection: tier=${auth.tier}, userId=${auth.userId || "anonymous"}`);
+  // x402 settlement receipt (PAYMENT-RESPONSE) rides back on the 200.
+  if (auth.responseHeaders) for (const [k, v] of Object.entries(auth.responseHeaders)) res.setHeader(k, v);
+  console.log(`New session: tier=${auth.tier}, userId=${auth.userId || "anonymous"}`);
 
-  const transport = new SSEServerTransport("/messages", res);
-  const server = createMcpServer(auth);
-  transports.set(transport.sessionId, transport);
-  res.on("close", () => transports.delete(transport.sessionId));
-  await server.connect(transport);
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: () => randomUUID(),
+    onsessioninitialized: (sid) => { transports[sid] = transport; },
+  });
+  transport.onclose = () => { const sid = transport.sessionId; if (sid) delete transports[sid]; };
+  await createMcpServer(auth).connect(transport);
+  await transport.handleRequest(req, res, req.body);
 });
 
-app.post("/messages", async (req, res) => {
-  const sessionId = req.query.sessionId as string;
-  const transport = transports.get(sessionId);
-  if (!transport) return res.status(404).json({ error: "Session not found" });
-  await transport.handlePostMessage(req, res);
-});
+const sessionRequest = async (req: express.Request, res: express.Response) => {
+  const sessionId = req.headers["mcp-session-id"] as string | undefined;
+  if (!sessionId || !transports[sessionId]) return res.status(400).send("Invalid or missing session id");
+  await transports[sessionId].handleRequest(req, res);
+};
+app.get("/mcp", sessionRequest);
+app.delete("/mcp", sessionRequest);
 
 function createMcpServer(_auth: AuthResult): McpServer {
   const server = new McpServer({ name: "my-mcp-server", version: "1.0.0" });
-  // Register tools here — all tiers get all tools, rate limiting handles access
+  // Register tools here — all tiers get all tools; rate limiting / payment gate access.
   return server;
 }
 
 const PORT = parseInt(process.env.PORT || "3100");
-app.listen(PORT, () => console.log(`MCP server running on :${PORT}`));
+app.listen(PORT, () => console.log(`MCP server running on http://localhost:${PORT}/mcp`));
 ```
+
+### 6b. OAuth 2.1 / OIDC Resource-Server Auth (bearer tokens)
+
+For enterprise / hosted MCP servers, validate **OAuth 2.1 bearer tokens** instead of (or alongside) API keys. The MCP server is an OAuth **resource server**: it verifies the access token a client got from your IdP (Auth0, Okta, Entra ID, Keycloak, Cognito…), checks the **audience** and **scopes**, and advertises its metadata so clients can discover where to authorize.
+
+The SDK ships `requireBearerAuth({ verifier, requiredScopes, resourceMetadataUrl })`, which returns `401` with a proper `WWW-Authenticate` header (including `resource_metadata` for MCP's authorization flow) when a token is missing/invalid/under-scoped. You supply an `OAuthTokenVerifier` — typically a JWT validator backed by your IdP's JWKS:
+
+```typescript
+// src/auth/oauth.ts
+import { createRemoteJWKSet, jwtVerify } from "jose";
+import type { OAuthTokenVerifier } from "@modelcontextprotocol/sdk/server/auth/provider.js";
+import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
+
+// JWKS is fetched once and cached/rotated by jose — do NOT re-create per request.
+const ISSUER = process.env.OAUTH_ISSUER!;                 // e.g. https://tenant.us.auth0.com/
+const AUDIENCE = process.env.OAUTH_AUDIENCE!;             // this MCP server's resource id / API identifier
+const jwks = createRemoteJWKSet(new URL(`${ISSUER}.well-known/jwks.json`));
+
+export const verifier: OAuthTokenVerifier = {
+  async verifyAccessToken(token: string): Promise<AuthInfo> {
+    const { payload } = await jwtVerify(token, jwks, {
+      issuer: ISSUER,
+      audience: AUDIENCE,                                  // reject tokens minted for a different resource
+    });
+    const scopes = typeof payload.scope === "string" ? payload.scope.split(" ") : [];
+    // `expiresAt` lets the SDK reject expired tokens; clientId aids logging/rate-limiting.
+    return { token, clientId: String(payload.azp ?? payload.client_id ?? ""), scopes, expiresAt: payload.exp };
+  },
+};
+```
+
+```typescript
+// src/http-server-oauth.ts — wire it onto /mcp
+import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js";
+import { mcpAuthMetadataRouter, getOAuthProtectedResourceMetadataUrl } from "@modelcontextprotocol/sdk/server/auth/router.js";
+import { verifier } from "./auth/oauth.js";
+
+const mcpServerUrl = new URL(process.env.MCP_PUBLIC_URL || "https://mcp.yourdomain.com/mcp");
+const resourceMetadataUrl = getOAuthProtectedResourceMetadataUrl(mcpServerUrl);
+
+// Publishes /.well-known/oauth-protected-resource so MCP clients can discover the IdP + scopes.
+app.use(mcpAuthMetadataRouter({
+  oauthMetadata: { issuer: process.env.OAUTH_ISSUER!, authorization_endpoint: `${process.env.OAUTH_ISSUER}authorize`, token_endpoint: `${process.env.OAUTH_ISSUER}oauth/token`, response_types_supported: ["code"] },
+  resourceServerUrl: mcpServerUrl,
+  scopesSupported: ["mcp:tools:read", "mcp:tools:write"],
+  resourceName: "my-mcp-server",
+}));
+
+// Require a valid bearer token (and a scope) on the MCP endpoint. On failure the SDK emits
+// 401 + WWW-Authenticate: Bearer ..., resource_metadata="<resourceMetadataUrl>".
+const bearer = requireBearerAuth({ verifier, requiredScopes: ["mcp:tools:read"], resourceMetadataUrl });
+app.post("/mcp", bearer, /* mcpPostHandler from §6 — req.auth now holds the AuthInfo */);
+app.get("/mcp", bearer, sessionRequest);
+app.delete("/mcp", bearer, sessionRequest);
+```
+
+> **Per-tool scopes.** Coarse gate at the middleware (`mcp:tools:read`); enforce write scopes inside the handler: read `req.auth.scopes` (or `extra.authInfo` in newer SDKs) and reject a mutating tool if the caller lacks `mcp:tools:write`. **Always check `aud`** — a token minted for another service must not be replayable against your MCP server.
 
 ---
 
@@ -909,17 +1076,96 @@ app.listen(PORT, () => console.log(`MCP server running on :${PORT}`));
 └───────────┴──────────────┴──────────────────────────────┘
 ```
 
-### x402 Payment Flow
+### x402 Payment Flow (v2)
 
-x402 is an HTTP-native payment protocol. When a client can't authenticate via API key:
+x402 is an HTTP-native stablecoin payment protocol (HTTP 402). **In v2 all payment data lives in headers** (base64-encoded JSON), freeing the response body for normal use. Three headers, three steps:
 
 ```
-1. Client calls tool → server returns 402 Payment Required
-2. Response headers include payment details:
-   X-Payment-Required: {"amount":"0.005","token":"USDC","chain":"base","recipient":"0x..."}
-3. Client constructs on-chain payment (or uses x402 SDK)
-4. Client retries with X-Payment header containing payment proof
-5. Server verifies payment via facilitator → processes request
+1. Client calls a paid tool with no payment → server returns HTTP 402 + header
+     PAYMENT-REQUIRED: base64(JSON array of PaymentRequirement objects)
+       each: { scheme:"exact", network:"base", asset:<token addr>, maxAmountRequired, payTo, resource, ... }
+2. Client picks a requirement, signs a payload, retries with header
+     PAYMENT-SIGNATURE: base64(JSON PaymentPayload)
+       for the `exact` scheme on EVM this carries an EIP-3009 transferWithAuthorization signature
+3. Server (via a facilitator) VERIFIES then SETTLES on-chain, then returns 200 + header
+     PAYMENT-RESPONSE: base64(JSON { success, transaction:<txHash>, network, payer })
+```
+
+Notes that the old skill got wrong: the header names are `PAYMENT-REQUIRED` / `PAYMENT-SIGNATURE` / `PAYMENT-RESPONSE` (not `X-Payment` / `X-Payment-Required`), values are **base64 JSON**, and verification+settlement go through a **facilitator** (Coinbase's hosted one via `@coinbase/x402`, or another provider) — you don't POST ad-hoc fields to a bare `/verify` URL. Bind each requirement to the specific `resource` URL and rely on the facilitator/scheme for replay protection (EIP-3009 nonces); never treat a 200 from a random endpoint as proof of payment.
+
+### Easiest path: the official `x402-express` middleware
+
+Don't hand-roll header parsing for production. `x402-express` does the 402 challenge, header (de)serialization, verification, and settlement for you:
+
+```bash
+npm install x402-express @coinbase/x402
+```
+
+```typescript
+// src/x402.ts
+import { paymentMiddleware } from "x402-express";
+import { facilitator } from "@coinbase/x402"; // Coinbase hosted facilitator (mainnet verify+settle)
+
+// Gate specific routes/tools by price. Use a testnet network first (e.g. "base-sepolia").
+export const x402 = paymentMiddleware(
+  process.env.X402_RECIPIENT_ADDRESS as `0x${string}`,   // your receiving wallet
+  {
+    "POST /mcp": { price: "$0.005", network: process.env.X402_NETWORK || "base" },
+  },
+  facilitator,                                            // verifies + settles; omit to default to x402.org
+);
+// app.use(x402)  — mount BEFORE the /mcp handler so unpaid calls get a 402 automatically.
+```
+
+### Hand-rolled v2 helpers (when you can't use the middleware)
+
+These back the `buildPaymentRequired` / `settleX402` hooks referenced in §6. They call a facilitator's `/verify` and `/settle` endpoints with the v2 payload shapes:
+
+```typescript
+// src/auth/x402.ts
+import type express from "express";
+
+const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString("base64");
+const unb64 = <T>(s: string): T => JSON.parse(Buffer.from(s, "base64").toString("utf8"));
+const FACILITATOR = process.env.X402_FACILITATOR_URL || "https://x402.org/facilitator";
+
+// Build the 402 challenge: a base64 JSON array of PaymentRequirement objects.
+export function buildPaymentRequired(req: express.Request): string {
+  const resource = `${req.protocol}://${req.get("host")}${req.originalUrl}`; // bind payment to THIS URL
+  return b64([{
+    scheme: "exact",
+    network: process.env.X402_NETWORK || "base",
+    asset: process.env.X402_ASSET,                  // token contract address (see env below)
+    payTo: process.env.X402_RECIPIENT_ADDRESS,
+    maxAmountRequired: process.env.X402_PRICE_ATOMIC || "5000", // atomic units (USDC 6dp → 5000 = $0.005)
+    resource,
+    description: "MCP tool call",
+    mimeType: "application/json",
+    maxTimeoutSeconds: 60,
+  }]);
+}
+
+// Verify + settle a PAYMENT-SIGNATURE via the facilitator; return the PAYMENT-RESPONSE header value.
+export async function settleX402(paymentSignature: string, req: express.Request):
+  Promise<{ settled: boolean; paymentResponse?: string; error?: string }> {
+  try {
+    const payload = unb64<Record<string, unknown>>(paymentSignature);
+    const requirements = unb64<unknown[]>(buildPaymentRequired(req))[0];
+    const headers = { "Content-Type": "application/json" }; // + CDP auth if using @coinbase/x402 facilitator
+    // 1) verify the signed payload satisfies our requirement (amount, asset, payTo, resource, nonce)
+    const v = await fetch(`${FACILITATOR}/verify`, { method: "POST", headers,
+      body: JSON.stringify({ paymentPayload: payload, paymentRequirements: requirements }) });
+    if (!v.ok || !(await v.json()).isValid) return { settled: false, error: "Payment invalid" };
+    // 2) settle on-chain (idempotent on the payload nonce) and capture the tx hash
+    const s = await fetch(`${FACILITATOR}/settle`, { method: "POST", headers,
+      body: JSON.stringify({ paymentPayload: payload, paymentRequirements: requirements }) });
+    const settlement = await s.json();
+    if (!s.ok || !settlement.success) return { settled: false, error: "Settlement failed" };
+    return { settled: true, paymentResponse: b64({ success: true, transaction: settlement.transaction, network: settlement.network, payer: settlement.payer }) };
+  } catch (e: any) {
+    return { settled: false, error: e.message };
+  }
+}
 ```
 
 ### Environment Config for x402
@@ -927,13 +1173,19 @@ x402 is an HTTP-native payment protocol. When a client can't authenticate via AP
 ```bash
 # .env
 X402_RECIPIENT_ADDRESS=0xYourWalletAddress
-X402_TOKEN=USDC
-X402_CHAIN=base  # or "celo"
-X402_FACILITATOR_URL=https://x402.org/verify
+X402_NETWORK=base                 # or "base-sepolia" (testnet), "celo", etc.
+X402_ASSET=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913   # token contract (USDC on Base, 6 decimals)
+X402_PRICE_ATOMIC=5000            # atomic units: USDC has 6 decimals → 5000 = $0.005
+X402_FACILITATOR_URL=https://x402.org/facilitator        # or your CDP/Coinbase facilitator base URL
+# Coinbase hosted facilitator (verify+settle on mainnet) also needs CDP API credentials:
+# CDP_API_KEY_ID=...   CDP_API_KEY_SECRET=...
 
-# For Celo: use cUSD (0x765DE816845861e75A25fCA122bb6898B8B1282a)
-# For Base: use USDC (0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
+# Token addresses (verify current addresses at the issuer / docs.x402.org before mainnet):
+# Base USDC: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 (6 decimals)
+# Celo cUSD: 0x765DE816845861e75A25fCA122bb6898B8B1282a (18 decimals → atomic units differ)
 ```
+
+> **Money-moving guardrail.** Test on a testnet (`base-sepolia`) first; pin/verify the exact token contract address and decimals before mainnet; treat the wallet key as a production secret. x402 settlement is a real on-chain transfer — your facilitator choice and replay/nonce handling are security-critical. See `security-hardening`.
 
 ### Stripe Subscription Setup
 
@@ -941,9 +1193,13 @@ X402_FACILITATOR_URL=https://x402.org/verify
 // scripts/create-stripe-product.ts — run once to set up billing
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-12-18.acacia",
-});
+// Omit `apiVersion` to use the version pinned by your installed stripe-node release
+// (recommended — it matches the SDK's TypeScript types). Pin a date only when you must
+// freeze behavior, and keep it current. As of Jun 2026 the latest is "2026-05-27.dahlia";
+// check https://docs.stripe.com/api/versioning and the stripe-node CHANGELOG for today's value.
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+// To pin explicitly:  new Stripe(key, { apiVersion: "2026-05-27.dahlia" });
+// Stripe billing details (Checkout vs Payment Links, subscriptions, migrations): see `stripe-billing`.
 
 async function createProduct() {
   const product = await stripe.products.create({
@@ -982,11 +1238,12 @@ createProduct();
 ```
 src/
 ├── index.ts              # Entry point (stdio)
-├── sse-server.ts         # SSE HTTP server
+├── http-server.ts        # Streamable HTTP server (/mcp)
 ├── auth/
 │   ├── middleware.ts      # Three-tier auth
+│   ├── oauth.ts          # OAuth 2.1 bearer verifier (JWKS)
 │   ├── rate-limiter.ts   # Rate limiting logic
-│   └── x402.ts           # x402 payment verification
+│   └── x402.ts           # x402 v2 verify + settle helpers
 ├── tools/
 │   ├── screenshot.ts     # Screenshot tool
 │   ├── dns.ts            # DNS lookup tool
@@ -1014,12 +1271,15 @@ app.use("/webhooks/github", express.raw({ type: "application/json" }));
 // 2. JSON parser for everything else
 app.use(express.json({ limit: "1mb" }));
 
-// 3. CORS
+// 3. CORS — fail CLOSED. Never "*", and especially never "*" with credentials:true
+//    (the browser rejects that combo, and a wildcard on an auth endpoint is unsafe).
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || "").split(",").map(s => s.trim()).filter(Boolean);
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(",") || "*",
-  methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "X-API-Key", "Authorization", "X-Payment"],
-  credentials: true,
+  origin: allowedOrigins.length ? allowedOrigins : false, // no env set ⇒ deny all cross-origin
+  methods: ["GET", "POST", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Mcp-Session-Id", "Last-Event-ID", "Authorization", "X-API-Key", "PAYMENT-SIGNATURE", "Accept-Payment"],
+  exposedHeaders: ["Mcp-Session-Id", "PAYMENT-REQUIRED", "PAYMENT-RESPONSE"],
+  credentials: true, // safe now: only echoed for explicitly listed origins, never "*"
 }));
 
 // 4. Request logging
@@ -1040,9 +1300,11 @@ app.get("/health", (_req, res) => res.json({ status: "ok", version: "1.0.0", upt
 // 8. Pricing / docs (public)
 // app.get("/pricing", pricingHandler);
 
-// 9. MCP endpoints (three-tier auth)
-// app.get("/sse", sseHandler);
-// app.post("/messages", messagesHandler);
+// 9. MCP endpoints (three-tier auth) — Streamable HTTP is the default (see §2a/§6).
+// app.post("/mcp", mcpPostHandler);    // JSON-RPC requests (+ initialize)
+// app.get("/mcp", sessionRequest);     // server→client SSE stream / resume
+// app.delete("/mcp", sessionRequest);  // session teardown
+// Legacy HTTP+SSE clients only (backward-compat appendix): app.get("/sse", ...); app.post("/messages", ...);
 ```
 
 ---
@@ -1051,26 +1313,77 @@ app.get("/health", (_req, res) => res.json({ status: "ok", version: "1.0.0", upt
 
 ### Input Validation
 
+> **SSRF is the #1 risk for an API-wrapping MCP server.** A string filter on `url.hostname` is necessary but **NOT sufficient** — it misses (a) IPv6 loopback/link-local/ULA, (b) decimal/octal/hex/`0x` IPv4 encodings (`http://2130706433/` == `127.0.0.1`), (c) a public hostname whose **DNS resolves** to a private IP, (d) a 30x **redirect** to a private IP after the first hop passed, and (e) cloud **metadata** endpoints (`169.254.169.254`, GCP `metadata.google.internal`, Azure IMDS). Do the string check as a fast pre-filter, then **resolve the host and re-check every resolved IP**, fetch with `redirect: "manual"` (re-validate each hop), and pin the agent to the resolved IP. Below: the syntactic filter, then a runtime guard.
+
 ```typescript
 import { z } from "zod";
+import net from "node:net";
+import dns from "node:dns/promises";
 
-// Validate ALL tool inputs strictly
+// --- 1. Syntactic pre-filter (Zod) — cheap, rejects obvious internals + non-HTTPS ---
 const urlSchema = z.string().url().refine(
   (url) => {
     const parsed = new URL(url);
-    // Block internal/private IPs (SSRF prevention)
-    const hostname = parsed.hostname;
-    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "0.0.0.0") return false;
-    if (hostname.startsWith("10.") || hostname.startsWith("192.168.")) return false;
-    // 172.16.0.0/12 = 172.16.x.x–172.31.x.x (not all of 172.x.x.x)
-    const m172 = hostname.match(/^172\.(\d+)\./);
-    if (m172 && +m172[1] >= 16 && +m172[1] <= 31) return false;
-    if (hostname.endsWith(".internal") || hostname.endsWith(".local")) return false;
-    if (parsed.protocol !== "https:") return false;
-    return true;
+    if (parsed.protocol !== "https:") return false;          // no http:, file:, gopher:, ftp:
+    let h = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, ""); // strip IPv6 brackets
+    // Block obvious internal names + cloud metadata hosts
+    if (["localhost", "metadata.google.internal"].includes(h)) return false;
+    if (h.endsWith(".internal") || h.endsWith(".local") || h.endsWith(".localhost")) return false;
+    // If it's an IP literal, classify it (covers IPv4 + IPv6; throws on weird encodings)
+    if (net.isIP(h)) return !isPrivateIp(h);
+    // Reject numeric IPv4 in non-dotted form (decimal/octal/hex) that net.isIP missed
+    if (/^(0x[0-9a-f]+|\d+)$/.test(h)) return false;
+    return true; // a name — still MUST be re-checked after DNS resolution (see guard below)
   },
-  { message: "URL must be a public HTTPS URL" }
+  { message: "URL must be a public HTTPS URL (no internal hosts/IPs)" }
 );
+
+// --- 2. IP classifier: loopback / private / link-local / ULA / metadata, v4 AND v6 ---
+function isPrivateIp(ip: string): boolean {
+  const v = net.isIP(ip);
+  if (v === 4) {
+    const o = ip.split(".").map(Number);
+    return (
+      o[0] === 0 || o[0] === 10 || o[0] === 127 ||                       // this-net, 10/8, loopback
+      (o[0] === 100 && o[1] >= 64 && o[1] <= 127) ||                     // 100.64/10 CGNAT
+      (o[0] === 169 && o[1] === 254) ||                                  // 169.254/16 link-local (AWS/GCP/Azure metadata)
+      (o[0] === 172 && o[1] >= 16 && o[1] <= 31) ||                      // 172.16/12
+      (o[0] === 192 && o[1] === 168)                                     // 192.168/16
+    );
+  }
+  if (v === 6) {
+    const a = ip.toLowerCase();
+    if (a === "::1" || a === "::") return true;                          // loopback / unspecified
+    if (a.startsWith("fe80")) return true;                              // link-local
+    if (a.startsWith("fc") || a.startsWith("fd")) return true;          // fc00::/7 ULA
+    const m = a.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);                 // IPv4-mapped ::ffff:a.b.c.d
+    if (m) return isPrivateIp(m[1]);
+    return false;
+  }
+  return true; // unparseable ⇒ treat as unsafe
+}
+
+// --- 3. Runtime guard: resolve + re-check, then fetch with manual redirect re-validation ---
+export async function safeFetch(rawUrl: string, init: RequestInit = {}): Promise<Response> {
+  let url = rawUrl;
+  for (let hop = 0; hop < 5; hop++) {                                    // cap redirects
+    const u = new URL(url);
+    if (u.protocol !== "https:") throw new Error("SSRF: non-HTTPS");
+    const host = u.hostname.replace(/^\[|\]$/g, "");
+    const ips = net.isIP(host) ? [host] : (await dns.lookup(host, { all: true })).map(r => r.address);
+    if (ips.length === 0 || ips.some(isPrivateIp)) throw new Error(`SSRF: ${host} resolves to a private/blocked IP`);
+    const res = await fetch(url, { ...init, redirect: "manual" });
+    if (res.status >= 300 && res.status < 400 && res.headers.get("location")) {
+      url = new URL(res.headers.get("location")!, url).toString();      // re-validate next hop on loop
+      continue;
+    }
+    return res;                                                          // 2xx/4xx/5xx — done
+  }
+  throw new Error("SSRF: too many redirects");
+}
+// NB: even this has a TOCTOU gap (DNS can change between check and connect / "DNS rebinding").
+// For hard guarantees, resolve once and pin the connection to that IP via a custom https.Agent
+// lookup, or run egress behind an allowlisting forward proxy. See `security-hardening`.
 
 const domainSchema = z.string()
   .min(1).max(253)
@@ -1078,6 +1391,8 @@ const domainSchema = z.string()
 
 const evmAddressSchema = z.string().regex(/^0x[a-fA-F0-9]{40}$/, "Invalid EVM address");
 ```
+
+> **MCP-specific transport hardening.** A remote MCP server is also exposed to **DNS-rebinding** attacks against its *own* HTTP endpoint: enable the SDK's host/origin validation on `StreamableHTTPServerTransport` (`enableDnsRebindingProtection: true`, `allowedHosts`, `allowedOrigins`) so a browser page on another origin can't drive your `/mcp` endpoint. Pair it with the fail-closed CORS in §8.
 
 ### Constant-Time Comparison
 
@@ -1235,7 +1550,7 @@ After=network.target
 Type=simple
 User=mcp
 WorkingDirectory=/opt/my-mcp-server
-ExecStart=/usr/bin/node dist/sse-server.js
+ExecStart=/usr/bin/node dist/http-server.js
 Restart=always
 RestartSec=5
 Environment=NODE_ENV=production
@@ -1310,7 +1625,7 @@ COPY package.json ./
 USER mcp
 EXPOSE 3100
 HEALTHCHECK --interval=30s --timeout=5s CMD wget -qO- http://localhost:3100/health || exit 1
-CMD ["node", "dist/sse-server.js"]
+CMD ["node", "dist/http-server.js"]
 ```
 
 ```yaml
@@ -1382,7 +1697,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     },
     "my-mcp-server-remote": {
       "command": "npx",
-      "args": ["-y", "mcp-remote", "https://mcp.yourdomain.com/sse"],
+      "args": ["-y", "mcp-remote", "https://mcp.yourdomain.com/mcp"],
       "env": {}
     }
   }
@@ -1408,37 +1723,64 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 ### Testing Checklist
 
+`protocolVersion` is a dated string negotiated at `initialize`. Use a **current** value — as of Jun 2026 the spec revision is **`2025-11-25`** (prior: `2025-06-18`, `2025-03-26`); the server echoes the highest it supports. The old `2024-11-05` is the pre-Streamable-HTTP value — don't hardcode it for new servers. Verify the latest at https://modelcontextprotocol.io/specification.
+
 ```bash
-# 1. Test stdio server directly
-echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | node dist/index.js
+# 1. Test the stdio server directly (one-shot initialize)
+echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | node dist/index.js
 
-# 2. Test SSE server
-# Terminal 1: start server
-node dist/sse-server.js
+# 2. Test the Streamable HTTP server (the default remote transport) — start it first:
+node dist/http-server.js   # serves http://localhost:3100/mcp
 
-# Terminal 2: connect SSE
-curl -N http://localhost:3100/sse
-# Note the sessionId from the endpoint event
-
-# Terminal 3: send request
-curl -X POST "http://localhost:3100/messages?sessionId=SESSION_ID" \
+# 2a. initialize — clients MUST send BOTH Accept types; capture the Mcp-Session-Id from headers.
+#     (-D - dumps response headers so you can read Mcp-Session-Id back out.)
+curl -sD - http://localhost:3100/mcp \
   -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}'
 
-# 3. Test rate limiting
+# 2b. tools/list on that session (reuse the header value from 2a)
+SID="<paste Mcp-Session-Id>"
+curl -s http://localhost:3100/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -H "Mcp-Session-Id: $SID" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
+
+# 2c. DELETE to terminate the session
+curl -s -X DELETE http://localhost:3100/mcp -H "Mcp-Session-Id: $SID"
+
+# 3. Test rate limiting (free tier) — repeated initialize calls should trip 429
 for i in $(seq 1 15); do
-  curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3100/sse
+  curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3100/mcp \
+    -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" \
+    -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"t","version":"1"}}}'
 done
-# Should see 429 after 10 requests
+# Should see 429 after the free-tier per-minute limit (default 10)
 
-# 4. Test with API key
-curl -N -H "X-API-Key: your-test-key" http://localhost:3100/sse
+# 4. Test with an API key (pro tier — should NOT 429 at the free-tier limit)
+curl -s http://localhost:3100/mcp -H "X-API-Key: your-test-key" \
+  -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"t","version":"1"}}}'
 
-# 5. Test health endpoint
+# 5. Test the x402 challenge (paid tier): no payment header ⇒ 402 + PAYMENT-REQUIRED (base64 JSON)
+curl -sD - -o /dev/null http://localhost:3100/mcp -H "Accept-Payment: x402" \
+  -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"t","version":"1"}}}' \
+  | grep -i '^payment-required:'
+
+# 6. Health endpoint
 curl http://localhost:3100/health
 
-# 6. Use MCP Inspector for interactive testing
-npx @modelcontextprotocol/inspector node dist/index.js
+# 7. MCP Inspector — interactive testing of either transport
+npx @modelcontextprotocol/inspector node dist/index.js        # stdio
+npx @modelcontextprotocol/inspector                            # then point the UI at http://localhost:3100/mcp
+
+# 8. Legacy HTTP+SSE clients ONLY (if you also host the §2c backward-compat /sse endpoint):
+#   curl -N http://localhost:3100/sse                          # open stream, note the sessionId
+#   curl -X POST "http://localhost:3100/messages?sessionId=SESSION_ID" \
+#     -H "Content-Type: application/json" \
+#     -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
 ```
 
 ---
@@ -1483,8 +1825,8 @@ One-line description of what this server does.
 }
 ```
 
-### Remote (SSE)
-Endpoint: `https://mcp.yourdomain.com/sse`
+### Remote (Streamable HTTP)
+Endpoint: `https://mcp.yourdomain.com/mcp`
 
 ### Pricing
 - Free: 10 req/min, 100/day
@@ -1530,13 +1872,16 @@ ALLOWED_ORIGINS=https://yourdomain.com
 API_KEYS=key1:user1,key2:user2
 ADMIN_KEY=your-admin-secret
 
-# x402 Payments
+# x402 Payments (v2 — see §7; these names match the §7 helpers, NOT the legacy X402_TOKEN/X402_CHAIN)
 X402_RECIPIENT_ADDRESS=0xYourWalletAddress
-X402_TOKEN=USDC
-X402_CHAIN=base
-X402_FACILITATOR_URL=https://x402.org/verify
+X402_NETWORK=base                 # or "base-sepolia" (testnet), "celo", etc.
+X402_ASSET=0xYourTokenContractAddress       # token contract addr (e.g. USDC on Base, 6 decimals)
+X402_PRICE_ATOMIC=5000            # atomic units: USDC has 6 decimals → 5000 = $0.005
+X402_FACILITATOR_URL=https://x402.org/facilitator   # facilitator BASE url (verify+settle live under it), NOT a bare /verify
+# Coinbase hosted facilitator (mainnet verify+settle) also needs CDP credentials:
+# CDP_API_KEY_ID=...   CDP_API_KEY_SECRET=...
 
-# Stripe
+# Stripe (omit a pinned apiVersion to track the SDK; see §7 for the current-version policy)
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 STRIPE_CHECKOUT_LINK=https://buy.stripe.com/...
@@ -1584,10 +1929,12 @@ server.tool("bulk_dns", "Look up DNS for multiple domains", {
 });
 ```
 
-### Gotcha: SSE Connection Lifecycle
+### Gotcha: SSE Connection Lifecycle (legacy `/sse` transport — §2c)
+
+Applies to the deprecated HTTP+SSE path only. With Streamable HTTP the SDK manages the GET stream for you; you mainly handle teardown via `transport.onclose` (§2a).
 
 ```typescript
-// SSE connections can die silently. Always handle cleanup:
+// Legacy SSE connections can die silently. Always handle cleanup:
 app.get("/sse", async (req, res) => {
   const transport = new SSEServerTransport("/messages", res);
   const server = createMcpServer();
