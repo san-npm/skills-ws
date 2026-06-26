@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.9.0] — 2026-06-26
+
+### Added
+
+- **`ophis-swap`** (web3) — onchain token swaps via Ophis, an intent-based DEX (CoW Protocol deployment) that is MEV-protected, gasless for the trader, and keyless. Drives the Ophis MCP server (`mcp.ophis.fi`) to quote, build, and submit swaps and to read balances, prices, gas, and fee-rebate tiers across 11 EVM chains. Ships `SKILL.md` plus a `reference.md` tool schema. Catalog now totals **86 skills**.
+
 ## [1.7.0] — 2026-05-25
 
 ### Deep Audit & 2026 Refresh
