@@ -1,6 +1,6 @@
 # skills.ws
 
-Agent skills for AI coding assistants. 86 skills across 8 categories — built for OpenClaw, Claude Code, Cursor, Codex, and any agent that supports the SKILL.md format.
+Agent skills for AI coding assistants. 87 skills across 8 categories — built for OpenClaw, Claude Code, Cursor, Codex, and any agent that supports the SKILL.md format.
 
 **Website:** [skills.ws](https://skills.ws) | **npm:** [skills-ws](https://www.npmjs.com/package/skills-ws) | **Docs:** [llms-full.txt](https://skills.ws/llms-full.txt)
 
@@ -19,7 +19,7 @@ Skills are `SKILL.md` files that give AI coding assistants specialized knowledge
 
 ---
 
-## Skills (81 across 8 categories)
+## Skills (87 across 8 categories)
 
 ### Marketing (15)
 SEO/GEO, content strategy, copywriting, paid ads, email sequences, PR/media, influencer marketing, brand strategy, webinars, blog engine, and more.
@@ -27,7 +27,7 @@ SEO/GEO, content strategy, copywriting, paid ads, email sequences, PR/media, inf
 ### Dev (16)
 Git workflow, CI/CD, API design, database design, testing, web performance, security hardening, prompt engineering, AI agent design, MVP launcher, Next.js stack.
 
-### Growth (10)
+### Growth (11)
 Social media, community building, customer feedback, business development, cold outreach, competitor intelligence, affiliate marketing.
 
 ### Operations (11)
