@@ -155,7 +155,10 @@ resource "aws_nat_gateway" "main" {
 
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
-  route { cidr_block = "0.0.0.0/0"; gateway_id = aws_internet_gateway.main.id }
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main.id
+  }
 }
 
 resource "aws_route_table_association" "public" {
@@ -167,7 +170,10 @@ resource "aws_route_table_association" "public" {
 resource "aws_route_table" "private" {
   count  = var.environment == "production" ? var.az_count : 1
   vpc_id = aws_vpc.main.id
-  route { cidr_block = "0.0.0.0/0"; nat_gateway_id = aws_nat_gateway.main[count.index].id }
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.main[count.index].id
+  }
 }
 
 resource "aws_route_table_association" "private" {
@@ -215,10 +221,14 @@ variable "max_count" { default = 10 }
 variable "health_check_path" { default = "/health" }
 variable "secrets_arn" { type = string }
 variable "certificate_arn" { type = string }
+variable "admin_cidr" { type = string } # trusted CIDR for the blue/green test listener
 
 resource "aws_ecs_cluster" "main" {
   name = "${var.project}-${var.environment}"
-  setting { name = "containerInsights"; value = "enabled" }
+  setting {
+    name  = "containerInsights"
+    value = "enabled"
+  }
 }
 
 resource "aws_cloudwatch_log_group" "app" {
@@ -263,7 +273,11 @@ resource "aws_iam_role_policy" "task" {
     Version = "2012-10-17"
     Statement = [
       { Effect = "Allow", Action = ["s3:GetObject","s3:PutObject"], Resource = ["arn:aws:s3:::${var.project}-${var.environment}-uploads/*"] },
-      { Effect = "Allow", Action = ["xray:PutTraceSegments","xray:PutTelemetryRecords"], Resource = ["*"] },
+      # Permissions for the ADOT collector sidecar below: forward traces to
+      # X-Ray and pull centralized sampling rules.
+      { Effect = "Allow",
+        Action = ["xray:PutTraceSegments","xray:PutTelemetryRecords","xray:GetSamplingRules","xray:GetSamplingTargets","xray:GetSamplingStatisticSummaries"],
+        Resource = ["*"] },
       # Required for ECS Exec (enable_execute_command below). Without these four
       # SSM Messages actions on the TASK role, `aws ecs execute-command` fails with
       # "execute command failed because execute command was not enabled".
@@ -300,37 +314,76 @@ resource "aws_ecs_task_definition" "app" {
       ]
       logConfiguration = {
         logDriver = "awslogs"
-        options = { "awslogs-group" = aws_cloudwatch_log_group.app.name, "awslogs-region" = data.aws_region.current.name, "awslogs-stream-prefix" = "app" }
+        options = { "awslogs-group" = aws_cloudwatch_log_group.app.name, "awslogs-region" = data.aws_region.current.region, "awslogs-stream-prefix" = "app" }
       }
       healthCheck = {
         command = ["CMD-SHELL", "curl -f http://localhost:${var.container_port}/health || exit 1"]
         interval = 30, timeout = 5, retries = 3, startPeriod = 60
       }
     },
+    # Tracing sidecar: ADOT collector (OpenTelemetry), forwards traces to X-Ray.
+    # The X-Ray daemon and SDKs entered maintenance mode on February 25, 2026
+    # (security fixes only); AWS recommends OpenTelemetry instrumentation. If you
+    # must keep the daemon for an existing app, pin amazon/aws-xray-daemon:3.x,
+    # never :latest.
     {
-      name = "xray-daemon", image = "amazon/aws-xray-daemon:latest"
-      cpu = 32, memory = 64, essential = false
-      portMappings = [{ containerPort = 2000, protocol = "udp" }]
-      logConfiguration = { logDriver = "awslogs", options = { "awslogs-group" = aws_cloudwatch_log_group.app.name, "awslogs-region" = data.aws_region.current.name, "awslogs-stream-prefix" = "xray" } }
+      name = "aws-otel-collector", image = "public.ecr.aws/aws-observability/aws-otel-collector:latest"
+      cpu = 32, memory = 256, essential = false
+      command = ["--config=/etc/ecs/ecs-default-config.yaml"]
+      portMappings = [{ containerPort = 4317, protocol = "tcp" }, { containerPort = 4318, protocol = "tcp" }]
+      logConfiguration = { logDriver = "awslogs", options = { "awslogs-group" = aws_cloudwatch_log_group.app.name, "awslogs-region" = data.aws_region.current.region, "awslogs-stream-prefix" = "otel" } }
     }
   ])
 }
 
 # Security groups
+# Only CloudFront's origin-facing ranges may reach the ALB. Opening 80/443 to
+# 0.0.0.0/0 would let clients hit the ALB DNS name directly and bypass the WAF
+# and rate limits attached to CloudFront in section 4. For defense in depth,
+# also verify a secret custom origin header at the ALB.
+data "aws_ec2_managed_prefix_list" "cloudfront" {
+  name = "com.amazonaws.global.cloudfront.origin-facing"
+}
+
 resource "aws_security_group" "alb" {
   name_prefix = "${var.project}-${var.environment}-alb-"
   vpc_id      = var.vpc_id
-  ingress { from_port = 443; to_port = 443; protocol = "tcp"; cidr_blocks = ["0.0.0.0/0"] }
-  ingress { from_port = 80; to_port = 80; protocol = "tcp"; cidr_blocks = ["0.0.0.0/0"] }
-  egress { from_port = 0; to_port = 0; protocol = "-1"; cidr_blocks = ["0.0.0.0/0"] }
+  ingress {
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    prefix_list_ids = [data.aws_ec2_managed_prefix_list.cloudfront.id]
+  }
+  ingress {
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    prefix_list_ids = [data.aws_ec2_managed_prefix_list.cloudfront.id]
+  }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
   lifecycle { create_before_destroy = true }
 }
 
 resource "aws_security_group" "ecs" {
   name_prefix = "${var.project}-${var.environment}-ecs-"
   vpc_id      = var.vpc_id
-  ingress { from_port = var.container_port; to_port = var.container_port; protocol = "tcp"; security_groups = [aws_security_group.alb.id] }
-  egress { from_port = 0; to_port = 0; protocol = "-1"; cidr_blocks = ["0.0.0.0/0"] }
+  ingress {
+    from_port       = var.container_port
+    to_port         = var.container_port
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
+  }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
   lifecycle { create_before_destroy = true }
 }
 
@@ -351,7 +404,10 @@ resource "aws_lb_listener" "https" {
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
   certificate_arn   = var.certificate_arn
-  default_action { type = "forward"; target_group_arn = aws_lb_target_group.blue.arn }
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.blue.arn
+  }
   lifecycle { ignore_changes = [default_action] }
 }
 
@@ -359,7 +415,14 @@ resource "aws_lb_listener" "http_redirect" {
   load_balancer_arn = aws_lb.main.arn
   port              = 80
   protocol          = "HTTP"
-  default_action { type = "redirect"; redirect { port = "443"; protocol = "HTTPS"; status_code = "HTTP_301" } }
+  default_action {
+    type = "redirect"
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
 }
 
 # --- Two target groups for CodeDeploy blue/green ---
@@ -373,7 +436,14 @@ resource "aws_lb_target_group" "blue" {
   vpc_id               = var.vpc_id
   target_type          = "ip"
   deregistration_delay = 30
-  health_check { path = var.health_check_path; healthy_threshold = 2; unhealthy_threshold = 3; timeout = 5; interval = 15; matcher = "200" }
+  health_check {
+    path                = var.health_check_path
+    healthy_threshold   = 2
+    unhealthy_threshold = 3
+    timeout             = 5
+    interval            = 15
+    matcher             = "200"
+  }
   lifecycle { create_before_destroy = true }
 }
 
@@ -384,7 +454,14 @@ resource "aws_lb_target_group" "green" {
   vpc_id               = var.vpc_id
   target_type          = "ip"
   deregistration_delay = 30
-  health_check { path = var.health_check_path; healthy_threshold = 2; unhealthy_threshold = 3; timeout = 5; interval = 15; matcher = "200" }
+  health_check {
+    path                = var.health_check_path
+    healthy_threshold   = 2
+    unhealthy_threshold = 3
+    timeout             = 5
+    interval            = 15
+    matcher             = "200"
+  }
   lifecycle { create_before_destroy = true }
 }
 
@@ -396,18 +473,23 @@ resource "aws_lb_listener" "test" {
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
   certificate_arn   = var.certificate_arn
-  default_action { type = "forward"; target_group_arn = aws_lb_target_group.green.arn }
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.green.arn
+  }
   lifecycle { ignore_changes = [default_action] }
 }
 
-# Allow the test-listener port through the ALB and into the tasks.
+# Allow the test-listener port through the ALB and into the tasks. The green
+# task set on :8443 is not yet validated, so never expose it to 0.0.0.0/0:
+# scope it to a trusted admin CIDR (or the CloudFront prefix list above).
 resource "aws_security_group_rule" "alb_test_ingress" {
   type              = "ingress"
   security_group_id = aws_security_group.alb.id
   from_port         = 8443
   to_port           = 8443
   protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
+  cidr_blocks       = [var.admin_cidr] # e.g. your office/VPN CIDR
 }
 
 # ECS Service — CodeDeploy-controlled blue/green with auto-rollback.
@@ -461,7 +543,9 @@ resource "aws_appautoscaling_policy" "cpu" {
 
   target_tracking_scaling_policy_configuration {
     predefined_metric_specification { predefined_metric_type = "ECSServiceAverageCPUUtilization" }
-    target_value = 65; scale_in_cooldown = 300; scale_out_cooldown = 60
+    target_value       = 65
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 60
   }
 }
 
@@ -481,7 +565,9 @@ resource "aws_appautoscaling_policy" "requests" {
       # target (above) or a custom CloudWatch metric on the ALB request count.
       resource_label = "${aws_lb.main.arn_suffix}/${aws_lb_target_group.blue.arn_suffix}"
     }
-    target_value = 1000; scale_in_cooldown = 300; scale_out_cooldown = 60
+    target_value       = 1000
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 60
   }
 }
 ```
@@ -571,7 +657,10 @@ If you do NOT need blue/green (no per-deploy test traffic, faster rollouts are f
   enable_execute_command             = true
   deployment_minimum_healthy_percent = 100
   deployment_maximum_percent         = 200
-  deployment_circuit_breaker { enable = true, rollback = true }
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
   # ECS-native rolling deploys mutate the task definition, so do NOT ignore it:
   lifecycle { ignore_changes = [] }
 ```
@@ -599,13 +688,24 @@ resource "aws_db_subnet_group" "main" {
 resource "aws_security_group" "rds" {
   name_prefix = "${var.project}-${var.environment}-rds-"
   vpc_id      = var.vpc_id
-  ingress { from_port = 5432; to_port = 5432; protocol = "tcp"; security_groups = [var.ecs_security_group_id] }
-  egress { from_port = 0; to_port = 0; protocol = "-1"; cidr_blocks = ["0.0.0.0/0"] }
+  ingress {
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [var.ecs_security_group_id]
+  }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
-# Pin a specific supported minor and pick your upgrade policy. As of Jun 2026
-# Aurora PostgreSQL supports the 14 / 15 / 16 / 17 major lines (13.x left
-# standard support Feb 2026); 16.x and 17.x carry LTS minors. Use a recent minor
+# Pin a specific supported minor and pick your upgrade policy. As of mid-2026
+# Aurora PostgreSQL supports the 14 / 15 / 16 / 17 / 18 major lines (13.x left
+# standard support Feb 2026; 18.3 arrived Jun 2026); 16.x and 17.x carry LTS
+# minors (16.8 and 17.7). Use a recent minor
 # (e.g. 16.x LTS for stability, 17.x for newest features) and let AWS apply
 # patch upgrades in the maintenance window. Verify the current minor list at
 # https://docs.aws.amazon.com/AmazonRDS/latest/AuroraPostgreSQLReleaseNotes/AuroraPostgreSQL.Updates.html
@@ -698,7 +798,10 @@ variable "certificate_arn" { type = string }
 #
 #   # root main.tf
 #   provider "aws" { region = "eu-west-1" }            # your primary region
-#   provider "aws" { alias = "us_east_1"; region = "us-east-1" }
+#   provider "aws" {
+#     alias  = "us_east_1"
+#     region = "us-east-1"
+#   }
 #   module "cdn" {
 #     source    = "./modules/cdn"
 #     providers = { aws = aws, aws.us_east_1 = aws.us_east_1 }
@@ -767,7 +870,8 @@ resource "aws_cloudfront_distribution" "main" {
     domain_name = var.alb_dns_name
     origin_id   = "alb"
     custom_origin_config {
-      http_port = 80; https_port = 443
+      http_port              = 80
+      https_port             = 443
       origin_protocol_policy = "https-only"
       origin_ssl_protocols   = ["TLSv1.2"]
     }
@@ -828,27 +932,58 @@ resource "aws_wafv2_web_acl" "main" {
     name     = "rate-limit"
     priority = 1
     action { block {} }
-    statement { rate_based_statement { limit = 2000; aggregate_key_type = "IP" } }
-    visibility_config { cloudwatch_metrics_enabled = true; metric_name = "rate-limit"; sampled_requests_enabled = true }
+    statement {
+      rate_based_statement {
+        limit              = 2000
+        aggregate_key_type = "IP"
+      }
+    }
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "rate-limit"
+      sampled_requests_enabled   = true
+    }
   }
 
   rule {
     name     = "aws-managed-common"
     priority = 2
     override_action { none {} }
-    statement { managed_rule_group_statement { name = "AWSManagedRulesCommonRuleSet"; vendor_name = "AWS" } }
-    visibility_config { cloudwatch_metrics_enabled = true; metric_name = "common"; sampled_requests_enabled = true }
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesCommonRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "common"
+      sampled_requests_enabled   = true
+    }
   }
 
   rule {
     name     = "aws-managed-sqli"
     priority = 3
     override_action { none {} }
-    statement { managed_rule_group_statement { name = "AWSManagedRulesSQLiRuleSet"; vendor_name = "AWS" } }
-    visibility_config { cloudwatch_metrics_enabled = true; metric_name = "sqli"; sampled_requests_enabled = true }
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesSQLiRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "sqli"
+      sampled_requests_enabled   = true
+    }
   }
 
-  visibility_config { cloudwatch_metrics_enabled = true; metric_name = "${var.project}-waf"; sampled_requests_enabled = true }
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = "${var.project}-waf"
+    sampled_requests_enabled   = true
+  }
 }
 ```
 
@@ -875,12 +1010,13 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        # Use a current Active LTS. Node 22 is Active LTS through 2026; Node 24
-        # entered LTS in late 2025. Node 20 is in maintenance — avoid for new
-        # services. Match this to the runtime in your Dockerfile.
-        with: { node-version: 22, cache: npm }
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        # Use a current LTS. Node 24 is Active LTS (through Oct 2026); Node 22
+        # moved to Maintenance LTS in Oct 2025 (security fixes to Apr 2027);
+        # Node 20 is end of life (Apr 2026), do not use. Match this to the
+        # runtime in your Dockerfile.
+        with: { node-version: 24, cache: npm }
       - run: npm ci && npm test && npm run lint && npm run typecheck
 
   deploy:
@@ -888,9 +1024,9 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-deploy
           aws-region: us-east-1
@@ -1029,7 +1165,7 @@ resource "aws_cloudwatch_metric_alarm" "ecs_cpu" {
   threshold           = 80
   comparison_operator = "GreaterThanThreshold"
   alarm_actions       = [aws_sns_topic.alerts.arn]
-  dimensions          = { ClusterName = var.ecs_cluster_name; ServiceName = var.ecs_service_name }
+  dimensions          = { ClusterName = var.ecs_cluster_name, ServiceName = var.ecs_service_name }
 }
 
 resource "aws_budgets_budget" "monthly" {
@@ -1165,14 +1301,19 @@ export class ProductionStack extends cdk.Stack {
 resource "aws_security_group" "vpce" {
   name_prefix = "${var.project}-${var.environment}-vpce-"
   vpc_id      = aws_vpc.main.id
-  ingress { from_port = 443; to_port = 443; protocol = "tcp"; cidr_blocks = [aws_vpc.main.cidr_block] }
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = [aws_vpc.main.cidr_block]
+  }
   lifecycle { create_before_destroy = true }
 }
 
 # Gateway endpoints (S3 + DynamoDB) are FREE — no hourly or data charge.
 resource "aws_vpc_endpoint" "s3" {
   vpc_id            = aws_vpc.main.id
-  service_name      = "com.amazonaws.${data.aws_region.current.name}.s3"
+  service_name      = "com.amazonaws.${data.aws_region.current.region}.s3"
   vpc_endpoint_type = "Gateway"
   route_table_ids   = aws_route_table.private[*].id
 }
@@ -1185,7 +1326,7 @@ locals {
 resource "aws_vpc_endpoint" "interface" {
   for_each            = local.interface_endpoints
   vpc_id              = aws_vpc.main.id
-  service_name        = "com.amazonaws.${data.aws_region.current.name}.${each.key}"
+  service_name        = "com.amazonaws.${data.aws_region.current.region}.${each.key}"
   vpc_endpoint_type   = "Interface"
   subnet_ids          = aws_subnet.private[*].id
   security_group_ids  = [aws_security_group.vpce.id]
@@ -1250,7 +1391,12 @@ resource "aws_s3_bucket_versioning" "tfstate" {
 }
 resource "aws_s3_bucket_server_side_encryption_configuration" "tfstate" {
   bucket = aws_s3_bucket.tfstate.id
-  rule { apply_server_side_encryption_by_default { sse_algorithm = "aws:kms"; kms_master_key_id = aws_kms_key.tfstate.arn } }
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm     = "aws:kms"
+      kms_master_key_id = aws_kms_key.tfstate.arn
+    }
+  }
 }
 resource "aws_s3_bucket_public_access_block" "tfstate" {
   bucket                  = aws_s3_bucket.tfstate.id
@@ -1259,8 +1405,14 @@ resource "aws_s3_bucket_public_access_block" "tfstate" {
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
-resource "aws_kms_key" "tfstate" { description = "tfstate"; enable_key_rotation = true }
-resource "aws_kms_alias" "tfstate" { name = "alias/tfstate"; target_key_id = aws_kms_key.tfstate.key_id }
+resource "aws_kms_key" "tfstate" {
+  description         = "tfstate"
+  enable_key_rotation = true
+}
+resource "aws_kms_alias" "tfstate" {
+  name          = "alias/tfstate"
+  target_key_id = aws_kms_key.tfstate.key_id
+}
 ```
 
 If you are on Terraform < 1.10, keep a DynamoDB lock table and set `dynamodb_table` in the backend block instead of `use_lockfile`.
@@ -1280,10 +1432,21 @@ data "aws_iam_openid_connect_provider" "github" { url = "https://token.actions.g
 data "aws_iam_policy_document" "gha_assume" {
   statement {
     actions = ["sts:AssumeRoleWithWebIdentity"]
-    principals { type = "Federated"; identifiers = [data.aws_iam_openid_connect_provider.github.arn] }
-    condition { test = "StringEquals"; variable = "token.actions.githubusercontent.com:aud"; values = ["sts.amazonaws.com"] }
+    principals {
+      type        = "Federated"
+      identifiers = [data.aws_iam_openid_connect_provider.github.arn]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
+    }
     # Lock to one repo + ref. NEVER use repo:org/*:* — that lets any repo assume it.
-    condition { test = "StringLike"; variable = "token.actions.githubusercontent.com:sub"; values = ["repo:myorg/myapp:ref:refs/heads/main"] }
+    condition {
+      test     = "StringLike"
+      variable = "token.actions.githubusercontent.com:sub"
+      values   = ["repo:myorg/myapp:ref:refs/heads/main"]
+    }
   }
 }
 
@@ -1303,7 +1466,10 @@ resource "aws_securityhub_account" "main" {}
 resource "aws_config_configuration_recorder" "main" {
   name     = "default"
   role_arn = aws_iam_role.config.arn
-  recording_group { all_supported = true; include_global_resource_types = true }
+  recording_group {
+    all_supported                 = true
+    include_global_resource_types = true
+  }
 }
 ```
 GuardDuty (threat detection), Security Hub (CIS/AWS Foundational Security Best Practices scoring), and AWS Config (resource compliance + drift) are the baseline three. Add Access Analyzer to catch public/cross-account exposure.

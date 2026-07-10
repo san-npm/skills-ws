@@ -75,7 +75,7 @@ Caveats to design for:
 | Composite | Multi-column queries | `CREATE INDEX idx_org_status ON tickets(org_id, status)` |
 | Partial | Subset of rows | `CREATE INDEX idx_active ON users(email) WHERE active = true` |
 
-**Composite index rule:** Left-to-right prefix matching. Index on `(a, b, c)` serves queries on `(a)`, `(a, b)`, `(a, b, c)` — not `(b, c)`. Put the most selective *equality* column first, then the column you range/sort on last (`WHERE a = ? AND b = ? ORDER BY c` → `(a, b, c)`).
+**Composite index rule:** Left-to-right prefix matching. Index on `(a, b, c)` serves queries on `(a)`, `(a, b)`, `(a, b, c)`, not `(b, c)`. Put the most selective *equality* column first, then the column you range/sort on last (`WHERE a = ? AND b = ? ORDER BY c` → `(a, b, c)`). (PG 18 adds B-tree skip scan, which can use the index for `(b, c)` when `a` has few distinct values; treat that as a planner bonus, not a design target.)
 
 ### Designing the index, not just adding one
 
@@ -141,8 +141,8 @@ EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) SELECT ...;
 The N+1 pattern (1 query for the list + N queries for each row's relation) is the #1 ORM performance bug. Detect it by logging SQL and watching for a repeated parameterized query: in Prisma 7 set `new PrismaClient({ log: ['query'] })`; in Drizzle pass a `logger: true` to the client. Each fires once per row.
 
 ```typescript
-// Prisma 7.x (the production-recommended line as of Jun 2026; "Prisma Next", the all-TypeScript
-// rewrite, is still pre-release — verify the current line at prisma.io/docs)
+// Prisma 7.x (the production line as of mid-2026; v7 itself is the Rust-free, all-TypeScript
+// rewrite, GA since Nov 2025. Verify the current line at prisma.io/docs)
 // BAD: N+1 — one query per user
 const users = await prisma.user.findMany();
 for (const u of users) {
@@ -154,7 +154,9 @@ const users = await prisma.user.findMany({ include: { posts: true } });
 
 // CAVEAT: Prisma `include` does NOT emit a SQL JOIN by default — it issues a second batched
 // `WHERE authorId IN (...)` query (the default "query" join strategy). That's fine and avoids
-// row fan-out. If you specifically want a single JOIN, opt in per-query:
+// row fan-out. If you specifically want a single JOIN, enable previewFeatures = ["relationJoins"]
+// in your generator block (relationLoadStrategy is still a Preview feature; note that with the
+// flag on, 'join' becomes the default on supported databases), then opt in per-query:
 const users2 = await prisma.user.findMany({
   relationLoadStrategy: 'join',          // emit one LATERAL JOIN instead of two queries
   include: { posts: true },
@@ -291,7 +293,17 @@ for (;;) {
     }),
   );
 
-  if (updated.length === 0) break;        // done
+  if (updated.length === 0) {
+    // SKIP LOCKED may have skipped rows held by live writers while lastId advanced past them.
+    // A finished loop is not proof of a finished backfill: re-scan until a clean pass.
+    const [{ remaining }] = await db.execute(sql`
+      SELECT count(*)::int AS remaining FROM users WHERE role IS NULL;
+    `);
+    if (remaining === 0) break;             // done
+    lastId = 0;                             // restart the pass to pick up skipped rows
+    await sleep(SLEEP_MS);
+    continue;
+  }
   lastId = Math.max(...updated.map((r) => r.id));
   total += updated.length;
   console.log(JSON.stringify({ evt: 'backfill', table: 'users', lastId, total }));  // observability
@@ -308,6 +320,7 @@ Design rules for any backfill:
 - **Bounded transactions.** One transaction per batch; keep each well under a second to avoid long-lived locks and WAL/vacuum pressure.
 - **Throttle to the slowest replica.** Watch replication lag and write throughput; sleep between batches. A backfill should be invisible to users.
 - **Retry transient failures** (`deadlock_detected`, `serialization_failure`, lock timeout) with backoff; abort on anything structural.
+- **Verify completion.** `SKIP LOCKED` silently skips rows held by live writers, so a finished loop is not proof of a finished backfill; re-scan until a clean pass before promoting constraints (`VALIDATE CONSTRAINT` / `SET NOT NULL` will fail on missed rows).
 - **Define rollback criteria up front:** error-rate or replication-lag thresholds that pause/stop the job. The migration's `.down.sql` (or a reverse backfill) must restore the prior state.
 
 ## PostgreSQL Power Features
@@ -358,7 +371,7 @@ For PgBouncer pool-mode gotchas (prepared statements, session-level features, `S
 
 | Method | RPO | Use case |
 |--------|-----|----------|
-| `pg_dump` | Point-in-time | Small DBs, dev restore |
+| `pg_dump` | Hours (since last dump) | Small DBs, dev restore |
 | WAL archiving + `pg_basebackup` | Seconds | Production PITR |
 | Logical replication | Near-realtime | Cross-version, selective |
 

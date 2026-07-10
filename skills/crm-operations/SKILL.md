@@ -220,7 +220,7 @@ Build these as saved reports/dashboards; the formulas are platform-agnostic, wit
 - Property/field and automation limits scale with tier (Starter/Pro/Enterprise) — don't hardcode a number, check your portal's limits page.
 - Use **calculated properties** for `lead_score` components and `days_in_stage`.
 
-**Lead scoring:** Settings → Properties → **HubSpot Score** (manual, positive/negative criteria) on Marketing Pro+; or **predictive/AI scoring** (Likelihood to Close, Buyer Intent) on Enterprise — fit on your closed data (see §3 calibration).
+**Lead scoring:** Marketing → **Lead Scoring** tool (manual fit, engagement, and combined scores on Marketing or Sales Hub Pro+; AI-assisted scoring on Marketing Hub Enterprise). The legacy **HubSpot Score** property (Settings → Properties) stopped updating on August 31, 2025: migrate any workflows, lists, or reports still referencing it. Fit AI scores on your closed data (see §3 calibration).
 
 **Workflow recipe — MQL routing with speed-to-lead SLA:**
 ```

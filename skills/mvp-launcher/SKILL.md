@@ -41,9 +41,9 @@ For deeper interview technique and ongoing feedback loops, pair this with the **
 | Feature | Recommendation | Service | Build time if DIY |
 |---------|---------------|---------|-------------------|
 | Auth | **Buy** | Clerk, Supabase Auth, Auth0 | 2-5 days |
-| Payments | **Buy** | Stripe, Lemon Squeezy | 3-7 days |
+| Payments | **Buy** | Stripe, Lemon Squeezy (Stripe-owned; roadmap points to Stripe Managed Payments) | 3-7 days |
 | Email (transactional) | **Buy** | Resend, Postmark | 1-2 days |
-| Email (marketing) | **Buy** | Loops, ConvertKit | 2-3 days |
+| Email (marketing) | **Buy** | Loops, Kit (formerly ConvertKit) | 2-3 days |
 | File uploads | **Buy** | UploadThing, S3+presigned | 1-3 days |
 | Search | **Buy** (until >100k records) | Algolia, Meilisearch | 3-5 days |
 | Realtime | **Buy** | Ably, Pusher, Supabase Realtime | 2-4 days |
@@ -57,7 +57,7 @@ For deeper interview technique and ongoing feedback loops, pair this with the **
 
 | Project type | Frontend | Backend | DB | Deploy |
 |-------------|----------|---------|-----|--------|
-| SaaS | Next.js / Remix | Server Actions / tRPC | Postgres (Neon) | Vercel |
+| SaaS | Next.js / React Router (framework mode, the continuation of classic Remix) | Server Actions / tRPC | Postgres (Neon) | Vercel |
 | Marketplace | Next.js | API routes + queue | Postgres + Redis | Railway |
 | Dev tool / API | Docs site (Mintlify) | Hono / Fastify | Postgres or SQLite | Fly.io |
 | Content site | Astro / Next.js | Headless CMS | CMS-managed | Vercel / Cloudflare |
@@ -117,7 +117,7 @@ For deeper interview technique and ongoing feedback loops, pair this with the **
 
 ### SEO & Social
 - [ ] Title + meta description on all pages
-- [ ] OG image (use og-image.vercel.app or similar)
+- [ ] OG image (generate with @vercel/og, prototype at og-playground.vercel.app, or use a similar service)
 - [ ] Favicon + web manifest
 - [ ] robots.txt + sitemap.xml
 - [ ] Social profiles linked
@@ -191,7 +191,7 @@ Track each channel with a tagged URL (UTM params) so you know which channel actu
 | Analytics | Generous free event tier (PostHog/Plausible) | scales with events/pageviews | Self-host PostHog/Plausible to cap cost + own data. |
 | Error monitoring | Free event tier (Sentry) | ~$26+ | |
 | Uptime monitoring | Free tier (BetterStack/UptimeRobot) | low | |
-| **Payments** | $0 to start | **per-transaction %** | Card fees are typically ~2.9% + a fixed fee per charge (region-dependent); platforms like Lemon Squeezy/Paddle act as merchant-of-record and charge more but handle sales-tax/VAT. Verify current rates on the PSP's pricing page. |
+| **Payments** | $0 to start | **per-transaction %** | Card fees are typically ~2.9% + a fixed fee per charge (region-dependent); platforms like Paddle or Lemon Squeezy (Stripe-owned, migrating toward Stripe Managed Payments) act as merchant-of-record and charge more but handle sales-tax/VAT. Verify current rates on the PSP's pricing page. |
 | LLM / AI APIs | small free/trial credit | **usage-based, can dominate the bill** | Model your $/request × volume — see §11. |
 
 **Budgeting rules:**

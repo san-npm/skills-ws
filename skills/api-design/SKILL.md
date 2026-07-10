@@ -350,14 +350,18 @@ More "RESTful" but harder to test (can't just paste a URL).
 // middleware/deprecation.ts
 function deprecationWarning(sunset: string, alternative: string) {
   return (req: Request, res: Response, next: NextFunction) => {
-    res.setHeader('Deprecation', 'true');
+    // RFC 9745: the value is a structured-field Date (@unix-timestamp), not a
+    // boolean. Using the sunset date satisfies RFC 9745's rule that Sunset must
+    // not be earlier than Deprecation; pass a separate deprecation date if the
+    // API was deprecated before the sunset.
+    res.setHeader('Deprecation', `@${Math.floor(new Date(sunset).getTime() / 1000)}`);
     res.setHeader('Sunset', sunset);  // RFC 8594
     res.setHeader('Link', `<${alternative}>; rel="successor-version"`);
     next();
   };
 }
 
-// Usage — Sunset must be an HTTP-date (RFC 8594 / RFC 7231), in the future
+// Usage: Sunset must be an HTTP-date (RFC 8594 / RFC 9110), in the future
 app.get('/api/v1/users',
   deprecationWarning('Wed, 01 Jul 2026 00:00:00 GMT', '/api/v2/users'),
   v1UserHandler,
@@ -444,7 +448,11 @@ function rateLimit(maxRequests: number, windowSeconds: number) {
 
     const result = await checkRateLimit(key, maxRequests, windowSeconds);
 
-    // Standardized headers (RFC 9333). `RateLimit-Reset` is seconds-until-reset
+    // IETF draft headers (draft-ietf-httpapi-ratelimit-headers, still an
+    // Internet-Draft, not an RFC). The latest draft consolidates these into
+    // RateLimit and RateLimit-Policy structured fields; the Limit/Remaining/Reset
+    // trio below matches earlier drafts and stays the most widely deployed form.
+    // `RateLimit-Reset` is seconds-until-reset
     // (a delta), not an epoch timestamp — that's the key difference from the
     // legacy `X-RateLimit-Reset` convention below.
     const resetDelta = Math.max(0, result.resetAt - Math.floor(Date.now() / 1000));
@@ -458,7 +466,7 @@ function rateLimit(maxRequests: number, windowSeconds: number) {
     res.setHeader('X-RateLimit-Reset', result.resetAt);
 
     if (!result.allowed) {
-      res.setHeader('Retry-After', result.retryAfter!);  // seconds (RFC 7231)
+      res.setHeader('Retry-After', result.retryAfter!);  // seconds (RFC 9110)
       throw new RateLimitError(result.retryAfter!);
     }
 
@@ -668,8 +676,10 @@ app.get('/api/v1/me', {
 ```typescript
 // Generate API keys
 function generateApiKey(): { key: string; hash: string; prefix: string } {
-  const key = `sk_live_${crypto.randomBytes(32).toString('base64url')}`;
-  const prefix = key.slice(0, 12);  // For identification without exposing key
+  // Pick a prefix unique to your product; do not imitate another vendor's
+  // format (sk_live_ is Stripe's), it confuses secret scanners.
+  const key = `myapp_live_${crypto.randomBytes(32).toString('base64url')}`;
+  const prefix = key.slice(0, 15);  // For identification without exposing key
   const hash = crypto.createHash('sha256').update(key).digest('hex');
   return { key, hash, prefix };
 }
@@ -978,8 +988,7 @@ components:
       type: object
       properties:
         next_cursor:
-          type: string
-          nullable: true
+          type: [string, "null"]
         has_more:
           type: boolean
 
@@ -1031,7 +1040,7 @@ components:
         Retry-After:
           schema:
             type: integer
-        RateLimit-Limit:        # RFC 9333 standardized headers
+        RateLimit-Limit:        # IETF draft rate-limit headers (draft-ietf-httpapi-ratelimit-headers)
           schema:
             type: integer
         RateLimit-Remaining:
@@ -1115,7 +1124,7 @@ interface ApiResponse<T> {
 - [ ] Consistent URL patterns (plural nouns, max 2 levels nesting)
 - [ ] Cursor pagination for list endpoints
 - [ ] RFC 9457 Problem Details error responses (`application/problem+json`) with field-level errors
-- [ ] Rate limiting with standardized `RateLimit-*` headers (RFC 9333), optionally legacy `X-RateLimit-*`
+- [ ] Rate limiting with `RateLimit-*` headers (IETF draft, draft-ietf-httpapi-ratelimit-headers), optionally legacy `X-RateLimit-*`
 - [ ] Idempotency keys for POST endpoints (required for money-moving writes; bound to method+route+body+principal)
 - [ ] Request validation from OpenAPI spec
 - [ ] API versioning with deprecation/sunset headers

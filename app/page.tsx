@@ -79,7 +79,7 @@ export default function Home() {
         <div className="flex flex-wrap gap-4 text-[12px] text-text-muted">
           <span className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-            VirusTotal scanned
+            Security scanned
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500" />

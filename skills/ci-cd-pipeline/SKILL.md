@@ -45,7 +45,7 @@ on:
     inputs:
       node-version:
         type: string
-        default: '22'   # 22 = Active LTS in 2026; 20 went EOL 2026-04-30, 18 EOL 2025-04-30
+        default: '22'   # 22 = Maintenance LTS, 24 = Active LTS in mid-2026; 20 went EOL 2026-04-30, 18 EOL 2025-04-30
       working-directory:
         type: string
         default: '.'
@@ -62,8 +62,8 @@ jobs:
   lint-and-typecheck:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ inputs.node-version }}
           cache: 'npm'
@@ -84,8 +84,8 @@ jobs:
   unit-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ inputs.node-version }}
           cache: 'npm'
@@ -100,14 +100,14 @@ jobs:
 
       - name: Upload coverage
         if: inputs.working-directory == '.'
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: unit
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: unit-test-results
           path: ${{ inputs.working-directory }}/junit.xml
@@ -138,8 +138,8 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ inputs.node-version }}
           cache: 'npm'
@@ -166,8 +166,8 @@ jobs:
     if: inputs.run-e2e
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ inputs.node-version }}
           cache: 'npm'
@@ -187,7 +187,7 @@ jobs:
 
       - name: Upload Playwright report
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: playwright-report/
@@ -232,7 +232,7 @@ jobs:
 
 ### Matrix Builds
 
-Use matrices for cross-version testing, but be smart about it. Test only **supported** runtimes — as of mid-2026 that's the Active LTS (22) and Current (24); 18 (EOL 2025-04-30) and 20 (EOL 2026-04-30) are off the support matrix unless you have a contractual reason to keep them. Check the schedule at https://nodejs.org/en/about/previous-releases:
+Use matrices for cross-version testing, but be smart about it. Test only **supported** runtimes: as of mid-2026 that's Maintenance LTS (22), Active LTS (24), and optionally Current (26); 18 (EOL 2025-04-30) and 20 (EOL 2026-04-30) are off the support matrix unless you have a contractual reason to keep them. Check the schedule at https://nodejs.org/en/about/previous-releases:
 
 ```yaml
 jobs:
@@ -245,11 +245,11 @@ jobs:
         os: [ubuntu-latest]
         include:
           # Only test macOS on Active LTS (saves minutes; macOS minutes cost 10x)
-          - node-version: 22
+          - node-version: 24
             os: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm ci
@@ -261,7 +261,7 @@ jobs:
 #### Node.js — npm ci with built-in cache
 
 ```yaml
-- uses: actions/setup-node@v4
+- uses: actions/setup-node@v6
   with:
     node-version: '22'
     cache: 'npm'
@@ -270,7 +270,7 @@ jobs:
 
 #### Docker Layer Caching
 
-GHCR push needs `packages: write` — without it the push 403s. Pin to current major action versions (as of mid-2026: `build-push-action@v6`, `setup-buildx-action@v3`, `login-action@v3`; verify at https://github.com/docker/build-push-action/releases). Tag by **full** `github.sha` and reuse that exact tag downstream, so deploy never references an image that was never pushed:
+GHCR push needs `packages: write` (without it the push 403s). Pin to current major action versions (as of mid-2026: `build-push-action@v7`, `setup-buildx-action@v4`, `login-action@v4`, `metadata-action@v6`; verify at https://github.com/docker/build-push-action/releases). Tag by **full** `github.sha` and reuse that exact tag downstream, so deploy never references an image that was never pushed:
 
 ```yaml
 jobs:
@@ -280,20 +280,20 @@ jobs:
       contents: read
       packages: write   # REQUIRED to push to ghcr.io with GITHUB_TOKEN
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Login to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
@@ -341,8 +341,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
         with: { node-version: '22', cache: 'npm' }
       - run: npm ci
       - run: npm run test:unit -- --bail
@@ -369,8 +369,8 @@ e2e:
     matrix:
       shard: [1, 2, 3, 4]
   steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
+    - uses: actions/checkout@v7
+    - uses: actions/setup-node@v6
       with: { node-version: '22', cache: 'npm' }
     - run: npm ci
     - run: npx playwright install --with-deps chromium
@@ -379,7 +379,7 @@ e2e:
       env:
         # Each shard emits a machine-readable blob report for later merge
         PLAYWRIGHT_BLOB_OUTPUT_DIR: blob-report
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       if: ${{ !cancelled() }}
       with:
         name: blob-report-${{ matrix.shard }}
@@ -391,17 +391,17 @@ merge-e2e-reports:
   if: ${{ !cancelled() }}
   runs-on: ubuntu-latest
   steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
+    - uses: actions/checkout@v7
+    - uses: actions/setup-node@v6
       with: { node-version: '22', cache: 'npm' }
     - run: npm ci
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v8
       with:
         path: all-blob-reports
         pattern: blob-report-*
         merge-multiple: true
     - run: npx playwright merge-reports --reporter=html ./all-blob-reports
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: playwright-html-report
         path: playwright-report
@@ -449,13 +449,13 @@ jobs:
       # The single source of truth for "what we deploy": image@sha256 digest.
       image: ${{ steps.out.outputs.image }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Login to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -463,7 +463,7 @@ jobs:
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
@@ -472,7 +472,7 @@ jobs:
 
       - name: Build and push
         id: build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
@@ -551,18 +551,18 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # 1) Cloud auth via OIDC (EKS example; swap for GKE/AKS as needed).
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
 
       # 2) kubectl binary + 3) cluster kubeconfig.
       # Pin kubectl within +/-1 minor of your cluster's control plane (skew policy).
-      - uses: azure/setup-kubectl@v4
-        with: { version: ${{ vars.KUBECTL_VERSION }} }   # e.g. 'v1.33.x' for a 1.32/1.33 cluster
+      - uses: azure/setup-kubectl@v5
+        with: { version: '${{ vars.KUBECTL_VERSION }}' }   # e.g. 'v1.33.x' for a 1.32/1.33 cluster
       - name: Configure kubeconfig
         run: aws eks update-kubeconfig --name ${{ vars.EKS_CLUSTER }} --region ${{ vars.AWS_REGION }}
       # GKE alt: google-github-actions/get-gke-credentials@v2
@@ -633,13 +633,13 @@ By 2026, signing artifacts and attaching verifiable provenance is table stakes, 
     outputs:
       image: ${{ steps.out.outputs.image }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        with: { registry: ghcr.io, username: ${{ github.actor }}, password: ${{ secrets.GITHUB_TOKEN }} }
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with: { registry: ghcr.io, username: '${{ github.actor }}', password: '${{ secrets.GITHUB_TOKEN }}' }
 
       - id: build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
@@ -649,14 +649,14 @@ By 2026, signing artifacts and attaching verifiable provenance is table stakes, 
           provenance: mode=max
 
       # GitHub-native SLSA provenance attestation, signed keyless via Sigstore.
-      - uses: actions/attest-build-provenance@v2
+      - uses: actions/attest-build-provenance@v4
         with:
           subject-name: ghcr.io/${{ github.repository }}
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
 
       # Optional explicit cosign signature (interop with non-GitHub verifiers).
-      - uses: sigstore/cosign-installer@v3
+      - uses: sigstore/cosign-installer@v4
       - run: cosign sign --yes ghcr.io/${{ github.repository }}@${{ steps.build.outputs.digest }}
 
       - id: out
@@ -677,13 +677,13 @@ Put this in the deploy job so an unsigned or wrongly-provenanced image is never 
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # 2) cosign verification, asserting the signer identity + issuer:
-      - uses: sigstore/cosign-installer@v3
+      - uses: sigstore/cosign-installer@v4
       - run: |
           cosign verify ${{ needs.build.outputs.image }} \
             --certificate-identity-regexp "^https://github.com/${{ github.repository }}/" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com
           cosign verify-attestation ${{ needs.build.outputs.image }} \
-            --type slsaprovenance \
+            --type slsaprovenance1 \
             --certificate-identity-regexp "^https://github.com/${{ github.repository }}/" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
@@ -873,10 +873,10 @@ jobs:
       contents: write     # push version-bump commit / create release
       id-token: write      # npm Trusted Publishing (OIDC) — no NPM_TOKEN needed
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with: { node-version: '22', cache: 'npm', registry-url: 'https://registry.npmjs.org' }
       - run: npm ci
       - name: Create Release PR or Publish
@@ -910,10 +910,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with: { node-version: '22', cache: 'npm' }
       - run: npm ci
       - name: Build affected
@@ -927,7 +927,7 @@ jobs:
 
 ```yaml
 - name: Derive SHAs
-  uses: nrwl/nx-set-shas@v4
+  uses: nrwl/nx-set-shas@v5
 - name: Run affected
   run: npx nx affected -t lint test build --parallel=3
 ```
@@ -947,13 +947,13 @@ jobs:
       contents: read
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::123456789012:role/github-actions-deploy
           aws-region: us-east-1
 
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: 'projects/123/locations/global/workloadIdentityPools/github/providers/github'
           service_account: 'deploy@project.iam.gserviceaccount.com'
@@ -1002,7 +1002,7 @@ on:
 
 3. **Cache Playwright browsers:**
 ```yaml
-- uses: actions/cache@v4
+- uses: actions/cache@v6
   id: pw-cache
   with:
     path: ~/.cache/ms-playwright

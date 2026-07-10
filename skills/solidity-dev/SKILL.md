@@ -10,6 +10,8 @@ description: "Solidity smart contract development with Foundry & Hardhat — pro
 ### Foundry Setup
 ```bash
 # Install Foundry
+# Official installer (foundry.paradigm.xyz). To review before running:
+#   curl -L https://foundry.paradigm.xyz -o foundryup-install.sh && less foundryup-install.sh && bash foundryup-install.sh
 curl -L https://foundry.paradigm.xyz | bash
 foundryup
 
@@ -31,8 +33,8 @@ cd my-project
 src = "src"
 out = "out"
 libs = ["lib"]
-solc_version = "0.8.30"   # pin EXACTLY; see compiler version table below. Check latest at github.com/ethereum/solidity/releases
-evm_version = "cancun"    # pin the target EVM hardfork explicitly (see EVM version table in §8)
+solc_version = "0.8.36"   # pin EXACTLY; see compiler version table below. Check latest at github.com/ethereum/solidity/releases
+evm_version = "cancun"    # pin the target EVM hardfork explicitly; cancun is a safe cross-chain floor, mainnet supports osaka (see EVM version table in §8)
 optimizer = true
 optimizer_runs = 200      # low = cheaper deploy; high (e.g. 1_000_000) = cheaper runtime calls
 via_ir = false            # opt-in only; changes codegen/optimizer path — re-audit + gas-diff before flipping (see note)
@@ -66,12 +68,12 @@ sepolia = "${SEPOLIA_RPC_URL}"
 
 | Version | What it actually adds / why it matters | When to use |
 |---------|----------------------------------------|-------------|
-| `0.8.24` | First release defaulting `evm_version` to `cancun`; enables `tstore`/`tload` builtins, `mcopy`, and `blobhash` *when targeting Cancun*. Note: `MCOPY` is a Cancun opcode — it is gated by `evm_version`, not just compiler version. | Conservative floor; widely audited; safe on chains that support Cancun. |
+| `0.8.24` | First release supporting `evm_version = "cancun"` (it became the default in 0.8.25); enables `tstore`/`tload` builtins, `mcopy`, and `blobhash` *when targeting Cancun*. Note: `MCOPY` is a Cancun opcode; it is gated by `evm_version`, not just compiler version. | Conservative floor; widely audited; safe on chains that support Cancun. |
 | `0.8.26` | Stabilized the `transient` storage keyword for declaring transient state variables (earlier versions only had inline `tstore`/`tload` assembly). | If you want first-class `transient` variables for reentrancy locks. |
-| `0.8.28`–`0.8.29` | Bugfixes, `--via-ir` improvements, Prague/Pectra `evm_version` support added in this range. EOF is **experimental only** and must NOT be assumed production-ready. | General current use. |
-| `0.8.30` (current line, mid-2026) | Latest patch series; default `evm_version` advanced toward `prague`/`cancun` depending on release — **always set `evm_version` explicitly** rather than relying on the default. | New projects; verify the exact latest patch at the releases page above. |
+| `0.8.28`-`0.8.29` | Bugfixes, `--via-ir` improvements, Prague/Pectra `evm_version` support added in this range. EOF existed only behind **experimental flags** here (and through 0.8.35) before being removed entirely in 0.8.36; never production-ready. | General current use. |
+| `0.8.31`-`0.8.36` | 0.8.31 adds Fusaka support and sets default `evm_version` to `osaka`; 0.8.35 adds an `erc7201` builtin for namespaced storage slots; 0.8.36 (current, released 2026-07-09) adds Amsterdam EVM support and removes the experimental EOF backend. **Always set `evm_version` explicitly** rather than relying on the default. | New projects: pin the exact latest patch (0.8.36 as of July 2026); verify at the releases page above. |
 
-> **Correction vs. common myths:** `MCOPY` and `BLOBHASH` are unlocked by targeting the **Cancun** EVM (`evm_version = "cancun"`), available since 0.8.24 — not by some "≥0.8.27" rule. Transient-storage *assembly* (`tstore`/`tload`) also arrived with Cancun in 0.8.24; the high-level `transient` keyword landed in 0.8.26. **EOF is still experimental in 2026 — do not describe it as "stabilized" and do not ship EOF bytecode to mainnet.**
+> **Correction vs. common myths:** `MCOPY` and `BLOBHASH` are unlocked by targeting the **Cancun** EVM (`evm_version = "cancun"`), available since 0.8.24, not by some "≥0.8.27" rule. Transient-storage *assembly* (`tstore`/`tload`) also arrived with Cancun in 0.8.24; the high-level `transient` keyword landed in 0.8.26. **EOF never stabilized: the experimental EOF backend was removed from the compiler in 0.8.36 (July 2026). Do not target EOF or describe it as production-ready; on 0.8.28-0.8.35 it existed only behind experimental flags.**
 
 > **`via_ir` is opt-in, not required.** No mainstream language feature *requires* the IR pipeline. Turn it on mainly to (a) escape `Stack too deep` errors or (b) chase extra optimizer wins. It selects a different codegen + optimizer path, so flipping it **changes your deployed bytecode and gas profile**. If you enable it: re-run the full test/invariant suite, regenerate `forge snapshot` and diff gas, re-verify on the explorer (verification must use the *same* `via_ir`/optimizer settings), and ideally re-audit. Never flip it between audit and deploy.
 
@@ -105,11 +107,11 @@ const config: HardhatUserConfig = {
   solidity: {
     profiles: {
       default: {
-        version: "0.8.30",
-        settings: { optimizer: { enabled: true, runs: 200 }, evmVersion: "cancun", viaIR: false },
+        version: "0.8.36",
+        settings: { optimizer: { enabled: true, runs: 200 }, evmVersion: "cancun", viaIR: false }, // cancun = safe cross-chain floor; mainnet supports osaka (§8)
       },
       production: { // higher runs for cheaper runtime in deployed code
-        version: "0.8.30",
+        version: "0.8.36",
         settings: { optimizer: { enabled: true, runs: 1_000_000 }, evmVersion: "cancun" },
       },
     },
@@ -139,7 +141,7 @@ import "@nomicfoundation/hardhat-toolbox";
 import "dotenv/config";
 
 const config: HardhatUserConfig = {
-  solidity: { version: "0.8.30", settings: { optimizer: { enabled: true, runs: 200 }, evmVersion: "cancun" } },
+  solidity: { version: "0.8.36", settings: { optimizer: { enabled: true, runs: 200 }, evmVersion: "cancun" } }, // cancun = safe cross-chain floor; mainnet supports osaka (§8)
   networks: {
     hardhat: { forking: { url: process.env.ETH_RPC_URL || "", blockNumber: 22000000 } },
     sepolia: {
@@ -269,6 +271,7 @@ contract VaultV1 is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     /// @custom:storage-location erc7201:myapp.storage.Vault
     struct VaultStorage { uint256 fee; }
     // keccak256(abi.encode(uint256(keccak256("myapp.storage.Vault")) - 1)) & ~bytes32(uint256(0xff))
+    // solc 0.8.35+: the erc7201 builtin computes this base slot for you; keep the manual keccak formula only for older compilers.
     bytes32 private constant VAULT_STORAGE = 0x.../* compute per ERC-7201 */;
     function _s() private pure returns (VaultStorage storage $) { assembly { $.slot := VAULT_STORAGE } }
 
@@ -402,27 +405,31 @@ function testFork_uniswapSwap() public {
 }
 ```
 
-### Hardhat Testing (TypeScript)
+### Hardhat Testing (TypeScript: Hardhat 3, node:test + viem toolbox)
 ```typescript
-import { expect } from "chai";
-import { ethers } from "hardhat";
-import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+// test/Vault.ts  (Hardhat 3: tests get clients from a network connection)
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+import { network } from "hardhat";
+import { parseEther } from "viem";
+
+const { viem, networkHelpers } = await network.create();
 
 describe("Vault", () => {
   async function deployFixture() {
-    const [owner, alice] = await ethers.getSigners();
-    const Vault = await ethers.getContractFactory("Vault");
-    const vault = await Vault.deploy();
+    const [owner, alice] = await viem.getWalletClients();
+    const vault = await viem.deployContract("Vault");
     return { vault, owner, alice };
   }
 
   it("accepts deposits", async () => {
-    const { vault, alice } = await loadFixture(deployFixture);
-    await vault.connect(alice).deposit({ value: ethers.parseEther("1") });
-    expect(await vault.balances(alice.address)).to.equal(ethers.parseEther("1"));
+    const { vault, alice } = await networkHelpers.loadFixture(deployFixture);
+    await vault.write.deposit({ value: parseEther("1"), account: alice.account });
+    assert.equal(await vault.read.balances([alice.account.address]), parseEther("1"));
   });
 });
 ```
+> For the `mocha + ethers` toolbox equivalent (chai `expect`, `ethers.getSigners()`), see `hardhat.org/docs`. The old Hardhat 2 pattern (`import { ethers } from "hardhat"` + `loadFixture` from `@nomicfoundation/hardhat-toolbox/network-helpers`) only applies to legacy repos on the Hardhat 2 config in §1.
 
 ---
 
@@ -647,8 +654,9 @@ contract ReentrancyGuardTransient {
 |---------------|--------------------------|----------------|
 | `paris` | Pre-PUSH0. Needed for chains/L2s that haven't shipped Shanghai. | Only legacy/non-Shanghai chains. |
 | `shanghai` | Adds `PUSH0` (cheaper constant pushes, smaller bytecode). | Safe broad default if a chain lacks Cancun. |
-| `cancun` | `TSTORE`/`TLOAD` (transient storage), `MCOPY` (cheap memory copy), `BLOBHASH`, blob (EIP-4844) data. **Default since solc 0.8.24.** | Ethereum mainnet + most major L2s in 2026. |
-| `prague` / pectra | Pectra-era opcodes/precompiles; supported by recent 0.8.28+ compilers. | Only once your target chain is on the Prague hardfork — verify per-chain. |
+| `cancun` | `TSTORE`/`TLOAD` (transient storage), `MCOPY` (cheap memory copy), `BLOBHASH`, blob (EIP-4844) data. **Default from solc 0.8.25 through 0.8.29** (0.8.30 defaults to `prague`, 0.8.31+ to `osaka`). | Conservative cross-chain floor; many L2s still lag mainnet. Mainnet itself is on osaka. |
+| `prague` / pectra | Pectra-era opcodes/precompiles; supported by recent 0.8.28+ compilers. Mainnet ran Prague from May to Dec 2025, now superseded by osaka. | Chains still on the Prague hardfork; verify per-chain. |
+| `osaka` | Fusaka-era opcodes/precompiles; compiler default since solc 0.8.31. | Ethereum mainnet (live since Dec 3, 2025); verify L2 support per chain. |
 | L2-specific | Many L2s lag mainnet hardforks and price calldata/state differently. | **Check the chain's docs before targeting cancun/prague on an L2.** |
 
 ### Optimizer & viaIR tradeoffs (measure, don't guess)
@@ -682,7 +690,7 @@ forge build --sizes
 
 ```solidity
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.30;   // pin EXACTLY (matches foundry.toml/§1) — no floating caret in production
+pragma solidity 0.8.36;   // pin EXACTLY (matches foundry.toml/§1); no floating caret in production
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -740,7 +748,7 @@ contract MyToken is ERC20, Ownable {
 | Unchecked return | ERC20 transfer may return false silently | Use SafeERC20 |
 | Storage vs memory | Modifying memory struct doesn't update storage | Be explicit about data location |
 | Uninitialized proxy | Implementation not initialized | Call _disableInitializers() in constructor |
-| Floating pragma | `^0.8.0` allows untested compiler versions | Pin the EXACT version you audit/deploy, e.g. `pragma solidity 0.8.30;` |
+| Floating pragma | `^0.8.0` allows untested compiler versions | Pin the EXACT version you audit/deploy, e.g. `pragma solidity 0.8.36;` |
 | Front-running | Pending tx visible in mempool | Commit-reveal, private mempools/MEV-protect RPC, slippage limits |
 | Block.timestamp | Proposers can nudge it (seconds) | Don't use for precise timing/randomness |
 | Selector collision | Proxy + impl share selector space | Check with `forge selectors collision` |
@@ -779,7 +787,7 @@ slither . --exclude-dependencies       # triage findings; suppress with // slith
 slither . --print human-summary        # contract summary, modifiers, ext calls
 slither-check-upgradeability . VaultV1 --new-contract-name VaultV2   # upgrade/storage safety
 # Mythril (symbolic execution) — slower, good for deep arithmetic/path bugs:
-pipx install mythril && myth analyze src/Vault.sol --solv 0.8.30
+pipx install mythril && myth analyze src/Vault.sol --solv 0.8.36
 ```
 
 ### Fuzzing & invariants (Foundry + Echidna/Medusa)

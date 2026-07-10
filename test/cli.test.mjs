@@ -5,7 +5,8 @@
  * Run: node test/cli.test.mjs
  */
 
-import { readdir, readFile, stat } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm, stat } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFile } from "node:child_process";
@@ -127,6 +128,37 @@ try {
     err.stderr?.includes("relative path") || err.code === 1,
     "--dir rejects absolute paths"
   );
+}
+
+// ── Test 6b: install places SKILL.md byte-for-byte ─────────
+console.log("\nInstall:");
+{
+  const tmp = await mkdtemp(join(tmpdir(), "skills-ws-test-"));
+  try {
+    await exec("node", [CLI, "install", "seo-geo", "--dir", "target"], {
+      cwd: tmp,
+      env: { ...process.env, NO_COLOR: "1" },
+      timeout: 15000,
+    });
+    const installed = await readFile(join(tmp, "target", "seo-geo", "SKILL.md"), "utf8");
+    const source = await readFile(join(SKILLS_DIR, "seo-geo", "SKILL.md"), "utf8");
+    assert(installed === source, "install seo-geo copies SKILL.md byte-for-byte");
+  } catch (err) {
+    assert(false, `install test: ${err.message}`);
+  } finally {
+    await rm(tmp, { recursive: true, force: true });
+  }
+}
+
+// ── Test 6c: unknown arguments fail loudly ─────────────────
+try {
+  await exec("node", [CLI, "definitely-not-a-command"], {
+    env: { ...process.env, NO_COLOR: "1" },
+    timeout: 10000,
+  });
+  assert(false, "unknown command should exit nonzero");
+} catch (err) {
+  assert(err.code === 1, "unknown command exits 1 with usage message");
 }
 
 // ── Test 7: No self-replication language in metadata ───────

@@ -118,7 +118,7 @@ Within the first viewport (test at 360×640 mobile and 1440×900 desktop) a stra
 - **Stack:** semantic HTML + Tailwind utility classes. Portable to JSX by swapping `class`→`className`. For a React/Next.js project, see `nextjs-stack`.
 - **Mobile-first:** author base styles for mobile; layer `sm:`/`md:`/`lg:` up. ~60%+ of landing-page traffic is mobile — design the mobile hero first, not last.
 - **Accessibility (target WCAG 2.2 AA):** one `<h1>`; logical heading order; `alt` on meaningful images (`alt=""` on decorative); visible `:focus-visible` rings; label every input; 4.5:1 text contrast (3:1 for large text/UI); buttons are `<button>`/`<a>`, never `<div onclick>`; respect `prefers-reduced-motion`.
-- **Performance / Core Web Vitals (mid-2026 "good" thresholds, 75th-percentile real-user data):** **LCP < 2.5s**, **INP < 200ms** (INP replaced FID as a Core Web Vital in March 2024 — do not cite FID), **CLS < 0.1**. Practices: give the hero image explicit `width`/`height` (kills CLS), `loading="lazy"` everything below the fold but **never** the LCP/hero image, `fetchpriority="high"` on the hero image, serve modern formats (AVIF/WebP) with `srcset`, preconnect to font origins and use `font-display: swap`, defer non-critical JS. Verify with PageSpeed Insights / `web.dev/measure`; deeper budgets in `web-performance`.
+- **Performance / Core Web Vitals (mid-2026 "good" thresholds, 75th-percentile real-user data):** **LCP < 2.5s**, **INP < 200ms** (INP replaced FID as a Core Web Vital in March 2024; do not cite FID), **CLS < 0.1**. Practices: give the hero image explicit `width`/`height` (kills CLS), `loading="lazy"` everything below the fold but **never** the LCP/hero image, `fetchpriority="high"` on the hero image, serve modern formats (AVIF/WebP) with `srcset`, preconnect to font origins and use `font-display: swap`, defer non-critical JS. Verify with PageSpeed Insights (pagespeed.web.dev); deeper budgets in `web-performance`.
 - **Forms:** ask for the minimum (email-only out-converts long forms for most lead-gen); inline validation; honeypot or CAPTCHA for spam; show success state without a full reload where possible.
 
 ---
@@ -291,7 +291,7 @@ Drop-in, responsive, accessible. Replace bracketed placeholders. Tailwind v3+/v4
   </h2>
   <div class="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
     <div class="flex gap-4">
-      <svg class="h-6 w-6 flex-none text-indigo-600" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M5 13l4 4L19 7"/></svg>
+      <svg class="h-6 w-6 flex-none text-indigo-600" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
       <div>
         <h3 class="font-semibold text-gray-900">[Feature]</h3>
         <p class="mt-1 text-sm text-gray-600">[One-line benefit.]</p>
@@ -347,7 +347,7 @@ Uses native `<details>/<summary>` so it works without JavaScript and is keyboard
 ```html
 <section id="faq" class="mx-auto max-w-3xl px-6 py-20" aria-labelledby="faq-h">
   <h2 id="faq-h" class="text-center text-3xl font-bold tracking-tight text-gray-900">Frequently asked questions</h2>
-  <dl class="mt-10 divide-y divide-gray-200">
+  <div class="mt-10 divide-y divide-gray-200">
     <details class="group py-5">
       <summary class="flex cursor-pointer list-none items-center justify-between font-medium text-gray-900">
         [Real objection phrased as a question, e.g. "Do I need a credit card to start?"]
@@ -356,7 +356,7 @@ Uses native `<details>/<summary>` so it works without JavaScript and is keyboard
       <p class="mt-3 text-gray-600">[Answer the question directly in the first sentence, then add detail.]</p>
     </details>
     <!-- … 5–8 items … -->
-  </dl>
+  </div>
 </section>
 ```
 
@@ -513,7 +513,7 @@ Run before declaring the page done.
 - [ ] Text contrast ≥ 4.5:1; `prefers-reduced-motion` respected
 
 **Performance (Core Web Vitals)**
-- [ ] LCP < 2.5s, INP < 200ms, CLS < 0.1 (PageSpeed Insights / web.dev/measure)
+- [ ] LCP < 2.5s, INP < 200ms, CLS < 0.1 (PageSpeed Insights)
 - [ ] Hero image has explicit dimensions + `fetchpriority="high"`, not lazy; below-fold images lazy
 - [ ] Modern image formats (AVIF/WebP) + `srcset`; fonts `display: swap`
 

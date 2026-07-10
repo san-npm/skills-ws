@@ -34,7 +34,7 @@ description: "BD strategy for B2B SaaS: partner scoring, compliance-safe outreac
 | EU/EEA (GDPR + ePrivacy) | Email to a *named individual* needs a lawful basis. **Legitimate interest** can work for B2B prospecting if the offer is relevant to their role and you pass a balancing test + provide easy opt-out; some member states (e.g. DE, IT) effectively require opt-in. Generic role aliases (`info@`, `sales@`) are lower-risk. | gdpr.eu / your national DPA; verify per-country as of Jun 2026 |
 | UK (UK GDPR + PECR) | Similar to EU; the "soft opt-in" and corporate-subscriber rules under PECR apply. | ico.org.uk |
 | California (CCPA/CPRA) | Not a spam law per se, but honor opt-out/"Do Not Sell or Share" and disclose data use; CPRA expanded this. | oag.ca.gov/privacy/ccpa |
-| Canada (CASL) | One of the strictest — generally requires express or implied consent before commercial email. | fightspam.gc.ca |
+| Canada (CASL) | One of the strictest: generally requires express or implied consent before commercial email. | ised-isde.canada.ca, Canada's Anti-Spam Legislation page (fightspam.gc.ca redirects there) |
 
 **Hard rules for every cold message:**
 - **Document a lawful basis before adding a contact** (legitimate interest assessment for EU/UK; note the source the data came from). Never email scraped consumer/personal addresses.
@@ -47,7 +47,7 @@ description: "BD strategy for B2B SaaS: partner scoring, compliance-safe outreac
 - **Authenticate the sending domain**: SPF, DKIM, and a **DMARC** policy with alignment. Google/Yahoo (since 2024) and Microsoft Outlook (rolled out 2025) require this plus one-click unsubscribe for **bulk senders** — those crossing ~5,000 messages/day to that provider — but apply the same hygiene below that threshold. Verify yours at a DMARC checker before any campaign.
 - **Use a dedicated/subdomain sender** (e.g. `outreach.yourco.com`), not your primary domain, so a reputation hit doesn't burn your main email.
 - **Warm new mailboxes** for 2–4 weeks and cap volume: a fresh inbox should send ~20–40/day ramping up; keep cold volume modest per mailbox/day and split across mailboxes rather than blasting from one.
-- **Keep spam complaint rate < 0.1%** (a Gmail/Yahoo enforcement threshold; verify current value at the postmaster docs). Pause and diagnose if bounces or complaints spike.
+- **Keep spam complaint rate < 0.1%** (Google's recommended target; 0.3% is the Gmail/Yahoo enforcement ceiling, verify current values at the postmaster docs). Pause and diagnose if bounces or complaints spike.
 - Send plain-text-leaning emails, minimal links, no tracking-pixel-heavy templates, no misleading subject lines.
 
 **LinkedIn limits (as of Jun 2026 — verify against current LinkedIn terms, automation tooling is against ToS):**

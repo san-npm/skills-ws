@@ -51,23 +51,23 @@ const faqs: { q: string; a: string | React.ReactElement; schemaA: string }[] = [
   },
   {
     q: "Are the skills secure?",
-    a: "Yes. Every skill is scanned with VirusTotal (each skill page links to its scan report). There are no external runtime dependencies. Scripts read credentials from environment variables only — no hardcoded secrets. No eval(), exec(), or child_process patterns anywhere.",
-    schemaA: "Yes. Every skill is scanned with VirusTotal (each skill page links to its scan report). There are no external runtime dependencies. Scripts read credentials from environment variables only — no hardcoded secrets. No eval(), exec(), or child_process patterns anywhere.",
+    a: "Yes. Skills are markdown instruction files, reviewed and security-scanned before each release (hidden-Unicode injection, secrets, and dangerous-pattern checks). The npm package has zero runtime dependencies and the CLI only copies files, it never executes skill content. One skill (polymarket-trading) bundles an optional helper script under scripts/ that agents run only with your approval; it reads credentials from your environment or keychain, never from hardcoded values. All source is public on GitHub.",
+    schemaA: "Yes. Skills are markdown instruction files, reviewed and security-scanned before each release (hidden-Unicode injection, secrets, and dangerous-pattern checks). The npm package has zero runtime dependencies and the CLI only copies files, it never executes skill content. One skill (polymarket-trading) bundles an optional helper script under scripts/ that agents run only with your approval; it reads credentials from your environment or keychain, never from hardcoded values. All source is public on GitHub.",
   },
   {
     q: "Which AI assistants are supported?",
-    a: "OpenClaw, Claude Code, Cursor, Codex, Gemini CLI, and any agent that supports the open SKILL.md standard. The skills are agent-agnostic — they work anywhere SKILL.md files are recognized.",
-    schemaA: "OpenClaw, Claude Code, Cursor, Codex, Gemini CLI, and any agent that supports the open SKILL.md standard. The skills are agent-agnostic — they work anywhere SKILL.md files are recognized.",
+    a: "OpenClaw, Claude Code, Cursor, Codex, GitHub Copilot, and any agent that supports the open SKILL.md standard. The skills are agent-agnostic — they work anywhere SKILL.md files are recognized.",
+    schemaA: "OpenClaw, Claude Code, Cursor, Codex, GitHub Copilot, and any agent that supports the open SKILL.md standard. The skills are agent-agnostic — they work anywhere SKILL.md files are recognized.",
   },
   {
     q: "How do I install skills?",
-    a: <>Run <Code>npx skills-ws</Code> to install all skills, or add <Code>--skill name</Code> to install a specific one.</>,
-    schemaA: "Run npx skills-ws to install all skills, or add --skill name to install a specific one.",
+    a: <>Run <Code>npx skills-ws install all</Code> to install all skills, or <Code>npx skills-ws install name</Code> to install a specific one. Running <Code>npx skills-ws</Code> with no arguments opens an interactive picker.</>,
+    schemaA: "Run npx skills-ws install all to install all skills, or npx skills-ws install name to install a specific one. Running npx skills-ws with no arguments opens an interactive picker.",
   },
   {
     q: "Can I install individual skills?",
-    a: <>Yes. Use the --skill flag: <Code>npx skills-ws --skill seo-geo</Code></>,
-    schemaA: "Yes. Use the --skill flag: npx skills-ws --skill seo-geo",
+    a: <>Yes. Use the install command: <Code>npx skills-ws install seo-geo</Code></>,
+    schemaA: "Yes. Use the install command: npx skills-ws install seo-geo",
   },
   {
     q: "How often are skills updated?",

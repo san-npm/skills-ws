@@ -232,7 +232,7 @@ Design for the user's genuine interest, not against it. **Banned in this skill:*
 - **Roach motel** — easy to subscribe, near-impossible to cancel. Cancellation must be as easy as signup.
 - **Hidden costs, pre-ticked consent boxes, forced continuity, disguised ads, nagging that can't be dismissed.**
 
-These aren't just unethical — they're regulated. **The EU Digital Services Act prohibits dark patterns on online platforms;** the **FTC** in the US enforces against deceptive design and (under the Click-to-Cancel direction) requires cancellation to be as simple as enrollment; **GDPR/ePrivacy** make pre-ticked or coerced consent invalid. Treat "would I be embarrassed if this tactic were on the front page?" as the bar. *(Regulatory specifics evolve — as of Jun 2026 confirm current obligations for your jurisdictions; for EU specifics see `eu-legal-compliance`.)*
+These aren't just unethical, they're regulated. **The EU Digital Services Act prohibits dark patterns on online platforms;** the **FTC** in the US enforces against deceptive design; its Click-to-Cancel Rule was vacated by the Eighth Circuit in July 2025 (replacement rulemaking pending), but ROSCA still requires a simple mechanism to stop recurring charges, and several US states mandate cancellation as easy as signup, so keep the easy-cancel bar; **GDPR/ePrivacy** make pre-ticked or coerced consent invalid. Treat "would I be embarrassed if this tactic were on the front page?" as the bar. *(Regulatory specifics evolve; as of Jun 2026 confirm current obligations for your jurisdictions; for EU specifics see `eu-legal-compliance`.)*
 
 ### 5.2 Consent, anti-spam & messaging compliance
 
@@ -283,7 +283,7 @@ You cannot grow what you can't measure correctly — and most growth "wins" evap
 ### 6.3 Attribution — and its limits (2026 reality)
 
 - **Attribution is directional, not truth.** Last-touch over-credits bottom-funnel; first-touch over-credits discovery; multi-touch models are assumptions, not measurement.
-- **Modern constraints (plan around them):** third-party cookies are largely gone/restricted, mobile signal is limited (Apple ATT/SKAN-style aggregation, Android Privacy Sandbox), and walled gardens report self-attributed conversions. **Lean on first-party data, server-side event collection (with consent), and modeled/aggregated reporting** rather than precise per-user cross-site tracking.
+- **Modern constraints (plan around them):** third-party cookies are largely gone/restricted, mobile signal is limited (Apple ATT/SKAN-style aggregation; Google retired most Privacy Sandbox APIs, including Attribution Reporting on Chrome and Android, in October 2025, so plan around consented first-party data rather than sandbox APIs), and walled gardens report self-attributed conversions. **Lean on first-party data, server-side event collection (with consent), and modeled/aggregated reporting** rather than precise per-user cross-site tracking.
 - **AI search / answer-engine distribution is now a real channel.** A growing share of discovery happens inside AI assistants and answer engines that summarize without a click, so traditional last-click attribution undercounts it. Track branded/direct/organic lift and assisted conversions, not just clickable referrals. (For making content surface in those engines, see `seo-geo`.)
 - **Channel saturation:** paid channels saturate and CAC rises as you scale spend; the marginal user costs more than the average. Watch *marginal* CAC and diversify into owned/community/creator channels.
 

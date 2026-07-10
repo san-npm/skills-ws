@@ -50,7 +50,7 @@ def create_order(product_name: str, quantity: int) -> str:
     return f"Order {order_id} created: {quantity}x {product_name}"
 
 tools = [search_database, create_order]
-model = ChatOpenAI(model="gpt-5", temperature=0).bind_tools(tools)
+model = ChatOpenAI(model="gpt-5.5").bind_tools(tools)  # gpt-5-family models reject temperature; use reasoning effort to steer
 
 # Define nodes
 def agent(state: AgentState) -> AgentState:
@@ -194,7 +194,7 @@ const searchTool = tool(
   }
 );
 
-const model = new ChatOpenAI({ model: "gpt-5", temperature: 0 }).bindTools([searchTool]);
+const model = new ChatOpenAI({ model: "gpt-5.5" }).bindTools([searchTool]);
 
 // Nodes
 async function agent(state: typeof AgentState.State) {
@@ -242,7 +242,7 @@ researcher = Agent(
     tools=[SerperDevTool(), ScrapeWebsiteTool()],
     verbose=True,
     allow_delegation=False,
-    llm="gpt-5",
+    llm="gpt-5.5",
 )
 
 writer = Agent(
@@ -250,7 +250,7 @@ writer = Agent(
     goal="Create clear, engaging content based on research findings",
     backstory="You're a technical writer who excels at making complex topics accessible.",
     verbose=True,
-    llm="gpt-5",
+    llm="gpt-5.5",
 )
 
 editor = Agent(
@@ -258,7 +258,7 @@ editor = Agent(
     goal="Review and polish the content for accuracy, clarity, and engagement",
     backstory="You're a meticulous editor with an eye for detail and factual accuracy.",
     verbose=True,
-    llm="gpt-5",
+    llm="gpt-5.5",
 )
 
 # Define tasks
@@ -468,9 +468,10 @@ async def maybe_summarize(state: AgentState) -> AgentState:
 ### Vector Store Memory (Long-term)
 
 ```python
+# pip install langchain-chroma langchain-openai
 from datetime import datetime, timezone
 from langchain_openai import OpenAIEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 
 embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 memory_store = Chroma(
@@ -667,17 +668,18 @@ import tiktoken
 from contextlib import contextmanager
 
 class CostTracker:
-    # USD per 1M tokens (input/output). List prices as of Jun 2026 — these move often;
+    # USD per 1M tokens (input/output). List prices as of Jul 2026 (these move often);
     # treat as a starting point and re-check the official pricing pages, ideally generating
     # this dict from a dated constants file in CI:
     #   OpenAI:    https://openai.com/api/pricing
     #   Anthropic: https://platform.claude.com/docs/en/about-claude/pricing
     PRICES = {
-        "gpt-5.5":          {"input": 5.00, "output": 30.00},  # flagship
+        "gpt-5.6-sol":      {"input": 5.00, "output": 30.00},  # flagship
+        "gpt-5.6-terra":    {"input": 2.50, "output": 15.00},  # balanced
+        "gpt-5.6-luna":     {"input": 1.00, "output": 6.00},   # cost-optimized
+        "gpt-5.5":          {"input": 5.00, "output": 30.00},
         "gpt-5.4":          {"input": 2.50, "output": 15.00},  # production workhorse
         "gpt-5.1":          {"input": 1.25, "output": 10.00},
-        "gpt-5":            {"input": 1.25, "output": 10.00},
-        "o3":               {"input": 2.00, "output": 8.00},   # reasoning
         "claude-opus-4-8":   {"input": 5.00, "output": 25.00},
         "claude-sonnet-4-6": {"input": 3.00, "output": 15.00},
         "claude-haiku-4-5":  {"input": 1.00, "output": 5.00},
@@ -728,7 +730,7 @@ async for event in app.astream_events(
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 
-primary = ChatOpenAI(model="gpt-5", timeout=30)
+primary = ChatOpenAI(model="gpt-5.5", timeout=30)
 fallback = ChatAnthropic(model="claude-sonnet-4-6", timeout=30)
 
 model = primary.with_fallbacks([fallback])
@@ -770,7 +772,7 @@ from openai import OpenAI
 client = OpenAI()
 
 resp = client.responses.create(
-    model="gpt-5",
+    model="gpt-5.5",
     input="Summarize the latest issues in repo X and open one for the worst.",
     store=True,
     reasoning={"effort": "medium"},
@@ -779,7 +781,8 @@ resp = client.responses.create(
             "type": "mcp",
             "server_label": "github",
             "server_url": "https://mcp.github.com",  # remote MCP server
-            "require_approval": "never",
+            # Reserve "never" for trusted, read-only servers; write actions stay behind approval.
+            "require_approval": "always",
         },
     ],
 )
@@ -858,7 +861,7 @@ class Judgement(BaseModel):
     reasoning: str
 
 # Use a strong, separate judge model; structured output removes brittle json.loads parsing.
-eval_model = ChatOpenAI(model="gpt-5", temperature=0).with_structured_output(Judgement)
+eval_model = ChatOpenAI(model="gpt-5.5").with_structured_output(Judgement)
 
 EVAL_PROMPT = """Rate the AI response on a 1-5 scale for accuracy, completeness, and clarity.
 
@@ -953,14 +956,18 @@ MCP is the standard for connecting agents to external tools. Instead of hardcodi
 // mcp-server.ts — expose tools for any MCP-compatible agent
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { z } from 'zod';
 import express from 'express';
 
 const server = new McpServer({ name: 'my-tools', version: '1.0.0' });
 
-// Register tools with typed parameters
-server.tool('search_docs', 'Search internal documentation by query', {
-  query: { type: 'string', description: 'Search query' },
-  limit: { type: 'number', description: 'Max results (default 10)' },
+// Register tools with Zod-typed parameters (registerTool replaces the deprecated server.tool)
+server.registerTool('search_docs', {
+  description: 'Search internal documentation by query',
+  inputSchema: {
+    query: z.string().describe('Search query'),
+    limit: z.number().optional().describe('Max results (default 10)'),
+  },
 }, async ({ query, limit = 10 }) => {
   const results = await searchIndex(query, limit);
   return {
@@ -968,10 +975,13 @@ server.tool('search_docs', 'Search internal documentation by query', {
   };
 });
 
-server.tool('create_ticket', 'Create a support ticket in Jira', {
-  title: { type: 'string', description: 'Ticket title' },
-  priority: { type: 'string', description: 'low | medium | high | critical' },
-  description: { type: 'string', description: 'Detailed description' },
+server.registerTool('create_ticket', {
+  description: 'Create a support ticket in Jira',
+  inputSchema: {
+    title: z.string().describe('Ticket title'),
+    priority: z.string().describe('low | medium | high | critical'),
+    description: z.string().describe('Detailed description'),
+  },
 }, async ({ title, priority, description }) => {
   // Validate before acting — agents will pass garbage sometimes
   if (!['low', 'medium', 'high', 'critical'].includes(priority)) {
@@ -1003,10 +1013,11 @@ app.listen(3100, () => console.log('MCP server on :3100'));
 Don't hand-roll an MCP client. Use the official `langchain-mcp-adapters`, which speaks **Streamable HTTP** (the transport the server above exposes at `/mcp`) and returns ready-to-use LangChain tools — handling schema conversion, sessions, and reconnects for you. The deprecated `sse_client` transport will not talk to a `StreamableHTTPServerTransport` server.
 
 ```python
-# pip install langchain-mcp-adapters langgraph langchain-openai
+# pip install langchain-mcp-adapters langchain langgraph langchain-openai
 import asyncio
+import os
 from langchain_mcp_adapters.client import MultiServerMCPClient
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_agent  # replaces deprecated langgraph.prebuilt.create_react_agent
 from langchain_openai import ChatOpenAI
 
 async def main():
@@ -1014,13 +1025,13 @@ async def main():
         "my-tools": {
             "transport": "streamable_http",         # matches the server's /mcp endpoint
             "url": "http://localhost:3100/mcp",
-            "headers": {"Authorization": "Bearer ${MCP_TOKEN}"},  # optional auth
+            "headers": {"Authorization": f"Bearer {os.environ['MCP_TOKEN']}"},  # optional auth
         },
         # add more servers here; tools are merged into one list
     })
 
     tools = await client.get_tools()  # list[BaseTool], names/schemas come from the server
-    agent = create_react_agent(ChatOpenAI(model="gpt-5", temperature=0), tools)
+    agent = create_agent(ChatOpenAI(model="gpt-5.5"), tools)
 
     result = await agent.ainvoke(
         {"messages": [{"role": "user", "content": "Search the docs for CORS config and open a ticket."}]}
@@ -1067,8 +1078,8 @@ from langchain_core.messages import HumanMessage
 
 from my_agent import agent  # your compiled LangGraph app (see "Basic Agent" above)
 
-MODEL = "gpt-5"
-PRICE_IN, PRICE_OUT = 1.25, 10.00  # USD/1M tokens for MODEL — keep in sync with CostTracker.PRICES
+MODEL = "gpt-5.5"
+PRICE_IN, PRICE_OUT = 5.00, 30.00  # USD/1M tokens for MODEL; keep in sync with CostTracker.PRICES
 
 app = FastAPI()
 start_time = time.time()
@@ -1138,11 +1149,12 @@ from langchain_openai import ChatOpenAI
 class BudgetExceededError(Exception):
     pass
 
-# Prices in comments are USD/1M input tokens, list as of Jun 2026 — verify before relying on them.
+# Prices in comments are USD/1M input tokens, list as of Jul 2026; verify before relying on them.
+# gpt-5-family models reject temperature; steer with reasoning effort instead.
 MODELS = {
-    "fast": ChatOpenAI(model="gpt-5-nano", temperature=0),    # cheapest tier — classification, routing
-    "smart": ChatOpenAI(model="gpt-5", temperature=0),        # ~$1.25/1M in — general work
-    "reasoning": ChatOpenAI(model="o3"),                       # ~$2/1M in — multi-step logic/math (no temperature)
+    "fast": ChatOpenAI(model="gpt-5.4-nano"),                        # cheapest tier: classification, routing
+    "smart": ChatOpenAI(model="gpt-5.5"),                            # ~$5/1M in, general work
+    "reasoning": ChatOpenAI(model="gpt-5.5", reasoning_effort="high"),  # multi-step logic/math
 }
 
 def select_model(task_type: str, input_length: int) -> str:

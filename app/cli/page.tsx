@@ -6,7 +6,7 @@ const skillCount = getSkills().length;
 
 export const metadata: Metadata = {
   title: "npx skills — CLI Reference for skills-ws",
-  description: `npx skills (skills-ws) installs ${skillCount} agent skills for AI coding assistants from the command line. Run npx skills-ws to install all skills, or npx skills-ws --skill name for a single one. Works with Claude Code, OpenClaw, Cursor, Codex, and Gemini CLI.`,
+  description: `npx skills (skills-ws) installs ${skillCount} agent skills for AI coding assistants from the command line. Run npx skills-ws install all to install every skill, or npx skills-ws install name for a single one. Works with Claude Code, OpenClaw, Cursor, Codex, and GitHub Copilot.`,
   keywords: [
     "npx skills",
     "npx skills-ws",
@@ -53,7 +53,7 @@ const faqSchema = {
       name: "What is npx skills?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "npx skills (officially npx skills-ws) is a command that installs agent skills for AI coding assistants — Claude Code, OpenClaw, Cursor, Codex, and Gemini CLI. Skills are SKILL.md files that teach an AI agent a specific domain (SEO, design, conversion, security, EU compliance, etc.).",
+        text: "npx skills (officially npx skills-ws) is a command that installs agent skills for AI coding assistants — Claude Code, OpenClaw, Cursor, Codex, and GitHub Copilot. Skills are SKILL.md files that teach an AI agent a specific domain (SEO, design, conversion, security, EU compliance, etc.).",
       },
     },
     {
@@ -61,7 +61,7 @@ const faqSchema = {
       name: "How do I install all skills with npx skills?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Run npx skills-ws inside your project directory. The CLI auto-detects your agent and installs every skill to the correct directory (.claude/skills/, ~/openclaw/skills/, .cursor/skills/, or .codex/skills/).",
+        text: "Run npx skills-ws install all inside your project directory. The CLI auto-detects your agent and installs every skill to the correct directory (.claude/skills/, .cursor/skills/, .agents/skills/, or the OpenClaw workspace skills/ directory).",
       },
     },
     {
@@ -69,7 +69,7 @@ const faqSchema = {
       name: "How do I install one specific skill with npx skills?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Run npx skills-ws --skill seo-geo (replace seo-geo with any skill name from the catalog at skills.ws/skills.json) to install just that skill.",
+        text: "Run npx skills-ws install seo-geo (replace seo-geo with any skill name from the catalog at skills.ws/skills.json) to install just that skill.",
       },
     },
     {
@@ -77,7 +77,7 @@ const faqSchema = {
       name: "How do I list installed skills?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Skills install as SKILL.md files in your agent's skills directory. Check .claude/skills/ for Claude Code, ~/openclaw/skills/ for OpenClaw, .cursor/skills/ for Cursor, or .codex/skills/ for Codex. Use ls or your file explorer to list them.",
+        text: "Skills install as SKILL.md files in your agent's skills directory. Check .claude/skills/ for Claude Code, the workspace skills/ directory (or ~/.openclaw/skills/) for OpenClaw, .cursor/skills/ for Cursor, or .agents/skills/ for Codex. Use ls or your file explorer to list them.",
       },
     },
     {
@@ -104,19 +104,19 @@ const howToSchema = {
       "@type": "HowToStep",
       position: 1,
       name: "Install all skills",
-      text: "Run npx skills-ws inside your project directory. This installs every skill in the catalog into your agent's skills directory.",
+      text: "Run npx skills-ws install all inside your project directory. This installs every skill in the catalog into your agent's skills directory.",
     },
     {
       "@type": "HowToStep",
       position: 2,
       name: "Install a single skill",
-      text: "Run npx skills-ws --skill seo-geo (replace seo-geo with any skill name from skills.ws/skills.json) to add just one skill.",
+      text: "Run npx skills-ws install seo-geo (replace seo-geo with any skill name from skills.ws/skills.json) to add just one skill.",
     },
     {
       "@type": "HowToStep",
       position: 3,
       name: "Verify the install location",
-      text: "Claude Code installs to .claude/skills/, OpenClaw to ~/openclaw/skills/, Cursor to .cursor/skills/, Codex to .codex/skills/.",
+      text: "Claude Code installs to .claude/skills/, OpenClaw to the workspace skills/ directory (or ~/.openclaw/skills/ globally), Cursor to .cursor/skills/, Codex to .agents/skills/.",
     },
   ],
 };
@@ -129,17 +129,17 @@ export default function CliPage() {
       <h1 className="text-2xl font-bold font-sans text-text-main mb-3">npx skills — CLI Reference</h1>
       <p className="text-[15px] text-text-dim font-sans leading-relaxed mb-10">
         <strong className="text-text-main">npx skills</strong> (officially <code className="bg-bg border border-border rounded px-1.5 py-0.5 text-[13px] font-mono text-accent">npx skills-ws</code>) installs agent skills for AI coding assistants —
-        Claude Code, OpenClaw, Cursor, Codex, and Gemini CLI. Run it inside any project to install all {skillCount} skills, or pass <code className="bg-bg border border-border rounded px-1.5 py-0.5 text-[13px] font-mono text-accent">--skill name</code> for one.
+        Claude Code, OpenClaw, Cursor, Codex, and GitHub Copilot. Run <code className="bg-bg border border-border rounded px-1.5 py-0.5 text-[13px] font-mono text-accent">install all</code> inside any project to install all {skillCount} skills, or <code className="bg-bg border border-border rounded px-1.5 py-0.5 text-[13px] font-mono text-accent">install name</code> for one.
       </p>
 
       <section className="mb-10">
         <h2 className="text-lg font-semibold text-text-main font-sans mb-3">Install all skills</h2>
         <div className="bg-bg border border-border rounded-lg px-5 py-3 font-mono text-[13px] mb-3">
           <span className="text-accent select-none">$ </span>
-          <span className="text-text-main">npx skills-ws</span>
+          <span className="text-text-main">npx skills-ws install all</span>
         </div>
         <p className="text-[14px] text-text-dim font-sans leading-relaxed">
-          Installs all {skillCount} skills into your project. Works with any SKILL.md-compatible agent.
+          Installs all {skillCount} skills into your project. Works with any SKILL.md-compatible agent. Running <code className="bg-bg border border-border rounded px-1.5 py-0.5 text-[13px] font-mono text-accent">npx skills-ws</code> with no arguments opens an interactive picker instead.
         </p>
       </section>
 
@@ -147,7 +147,7 @@ export default function CliPage() {
         <h2 className="text-lg font-semibold text-text-main font-sans mb-3">Install a single skill</h2>
         <div className="bg-bg border border-border rounded-lg px-5 py-3 font-mono text-[13px] mb-3">
           <span className="text-accent select-none">$ </span>
-          <span className="text-text-main">npx skills-ws --skill seo-geo</span>
+          <span className="text-text-main">npx skills-ws install seo-geo</span>
         </div>
         <p className="text-[14px] text-text-dim font-sans leading-relaxed">
           Install only the skill you need. Replace <code className="bg-bg border border-border rounded px-1.5 py-0.5 text-[13px] font-mono text-accent">seo-geo</code> with any skill name.
@@ -161,9 +161,9 @@ export default function CliPage() {
         </p>
         <div className="bg-bg border border-border rounded-lg p-5 font-mono text-[13px] text-text-dim space-y-1">
           <div><span className="text-text-muted">Claude Code:</span> <span className="text-text-main">.claude/skills/</span></div>
-          <div><span className="text-text-muted">OpenClaw:</span> <span className="text-text-main">~/openclaw/skills/</span></div>
+          <div><span className="text-text-muted">OpenClaw:</span> <span className="text-text-main">skills/</span> <span className="text-text-muted">(workspace) or</span> <span className="text-text-main">~/.openclaw/skills/</span></div>
           <div><span className="text-text-muted">Cursor:</span> <span className="text-text-main">.cursor/skills/</span></div>
-          <div><span className="text-text-muted">Codex:</span> <span className="text-text-main">.codex/skills/</span></div>
+          <div><span className="text-text-muted">Codex:</span> <span className="text-text-main">.agents/skills/</span></div>
         </div>
       </section>
 
@@ -205,9 +205,10 @@ Understand the site context before auditing:
         </p>
         <div className="space-y-2 text-[13px] font-mono">
           {[
-            ["npx skills-ws", "Canonical form. Installs the full catalog."],
+            ["npx skills-ws", "Canonical form. Opens the interactive picker."],
+            ["npx skills-ws install all", "Install the full catalog."],
             ["npx skills", "Common shorthand — resolves to skills-ws on npm."],
-            ["npx skills-ws --skill seo-geo", "Install one specific skill."],
+            ["npx skills-ws install seo-geo", "Install one specific skill."],
             ["npx skills-ws@latest", "Force the latest version on npm."],
             ["npx skill", "Singular typo — same package."],
           ].map(([cmd, note]) => (
@@ -226,9 +227,9 @@ Understand the site context before auditing:
         </p>
         <div className="bg-bg border border-border rounded-lg px-5 py-3 font-mono text-[13px]">
           <div><span className="text-accent select-none">$ </span><span className="text-text-main">ls .claude/skills</span><span className="text-text-muted">      # Claude Code</span></div>
-          <div><span className="text-accent select-none">$ </span><span className="text-text-main">ls ~/openclaw/skills</span><span className="text-text-muted">   # OpenClaw</span></div>
+          <div><span className="text-accent select-none">$ </span><span className="text-text-main">ls ~/.openclaw/skills</span><span className="text-text-muted">  # OpenClaw</span></div>
           <div><span className="text-accent select-none">$ </span><span className="text-text-main">ls .cursor/skills</span><span className="text-text-muted">      # Cursor</span></div>
-          <div><span className="text-accent select-none">$ </span><span className="text-text-main">ls .codex/skills</span><span className="text-text-muted">       # Codex</span></div>
+          <div><span className="text-accent select-none">$ </span><span className="text-text-main">ls .agents/skills</span><span className="text-text-muted">      # Codex</span></div>
         </div>
       </section>
 
@@ -238,7 +239,7 @@ Understand the site context before auditing:
           These skills work with any agent that supports the SKILL.md standard:
         </p>
         <div className="grid grid-cols-2 gap-2 max-sm:grid-cols-1">
-          {["OpenClaw", "Claude Code", "Cursor", "Codex", "Gemini CLI", "Any SKILL.md agent"].map((agent) => (
+          {["OpenClaw", "Claude Code", "Cursor", "Codex", "GitHub Copilot", "Any SKILL.md agent"].map((agent) => (
             <div key={agent} className="bg-bg-card border border-border rounded-lg px-4 py-2.5 text-[13px] text-text-dim font-sans">
               {agent}
             </div>

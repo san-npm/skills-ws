@@ -202,10 +202,10 @@ histogram_quantile(0.95,
   sum(rate(http_request_duration_seconds_bucket[5m])) by (le, path)
 )
 
-# Apdex score (satisfied < 0.5s, tolerating < 2s)
+# Apdex score (satisfied < 0.5s, tolerating < 2.5s)
 (
   sum(rate(http_request_duration_seconds_bucket{le="0.5"}[5m]))
-  + sum(rate(http_request_duration_seconds_bucket{le="2.0"}[5m]))
+  + sum(rate(http_request_duration_seconds_bucket{le="2.5"}[5m]))
 ) / 2
 / sum(rate(http_request_duration_seconds_count[5m]))
 
@@ -427,7 +427,7 @@ groups:
 
 ### Provisioning with Docker Compose
 
-Image tags below are pinned to the mid-2026 stable lines (Prometheus 3.x, Grafana 12.x, Loki 3.x, Tempo 2.x, OTel Collector 0.12x). **Always pin a real tag — never `:latest`** (`prom/prometheus:latest` notoriously still resolved to a 2.x image long after 3.0 shipped). Bump deliberately and check the vendor release pages: [Prometheus](https://github.com/prometheus/prometheus/releases), [Grafana](https://github.com/grafana/grafana/releases), [Loki/Tempo](https://github.com/grafana/loki/releases), [OTel Collector](https://github.com/open-telemetry/opentelemetry-collector-releases/releases).
+Image tags below are pinned to the mid-2026 stable lines (Prometheus 3.x, Grafana 13.x, Loki 3.x, Tempo 3.x, OTel Collector 0.15x). **Always pin a real tag, never `:latest`** (`prom/prometheus:latest` notoriously still resolved to a 2.x image long after 3.0 shipped). Bump deliberately and check the vendor release pages: [Prometheus](https://github.com/prometheus/prometheus/releases), [Grafana](https://github.com/grafana/grafana/releases), [Loki/Tempo](https://github.com/grafana/loki/releases), [OTel Collector](https://github.com/open-telemetry/opentelemetry-collector-releases/releases).
 
 ```yaml
 # docker-compose.monitoring.yml
@@ -444,11 +444,12 @@ services:
       - '--storage.tsdb.retention.time=30d'
       - '--web.enable-lifecycle'
       - '--web.enable-otlp-receiver'     # Prometheus 3.x: ingest OTLP metrics directly
+      - '--web.enable-remote-write-receiver'  # required for the collector's prometheusremotewrite exporter (off by default)
     ports:
       - '9090:9090'
 
   grafana:
-    image: grafana/grafana:12.0.0        # 12.x line; verify latest at release page
+    image: grafana/grafana:13.1.0        # 13.x line; verify latest at release page
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning
       - ./grafana/dashboards:/var/lib/grafana/dashboards
@@ -460,21 +461,21 @@ services:
       - '3001:3000'
 
   alertmanager:
-    image: prom/alertmanager:v0.28.0
+    image: prom/alertmanager:v0.33.1
     volumes:
       - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
     ports:
       - '9093:9093'
 
   loki:
-    image: grafana/loki:3.5.0            # 3.x line; verify latest at release page
+    image: grafana/loki:3.7.3            # 3.x line; verify latest at release page
     ports:
       - '3100:3100'
     command: -config.file=/etc/loki/local-config.yaml
 
   # Trace backend — required for the Tempo datasource and trace-to-log correlation below.
   tempo:
-    image: grafana/tempo:2.7.0           # 2.x line; verify latest at release page
+    image: grafana/tempo:3.0.2           # 3.x line; verify latest at release page
     command: ['-config.file=/etc/tempo/tempo.yaml']
     volumes:
       - ./tempo/tempo.yaml:/etc/tempo/tempo.yaml
@@ -485,7 +486,7 @@ services:
   # Collector is the single OTLP ingress for apps; it fans out to Tempo (traces)
   # and Prometheus (metrics), and is where tail sampling lives (see below).
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.127.0  # contrib has tail_sampling
+    image: otel/opentelemetry-collector-contrib:0.156.0  # contrib has tail_sampling
     command: ['--config=/etc/otelcol/config.yaml']
     volumes:
       - ./otel/collector.yaml:/etc/otelcol/config.yaml
@@ -658,7 +659,9 @@ route:
 receivers:
   - name: 'slack-default'
     slack_configs:
-      - api_url: '$SLACK_WEBHOOK_URL'   # store the real webhook in a secret, not in git
+      # Alertmanager does NOT expand env vars in its config: use the *_file
+      # fields and mount the secret files at deploy time (compose secrets or a volume).
+      - api_url_file: /etc/alertmanager/secrets/slack_webhook_url
         channel: '#alerts'
         title: '{{ .GroupLabels.alertname }}'
         text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
@@ -667,13 +670,13 @@ receivers:
     pagerduty_configs:
       # PagerDuty Events API v2 uses `routing_key` (the Integration Key from a
       # service's "Events API v2" integration). `service_key` is the legacy v1 field.
-      - routing_key: '$PAGERDUTY_ROUTING_KEY'
+      - routing_key_file: /etc/alertmanager/secrets/pagerduty_routing_key
         severity: '{{ if eq .CommonLabels.severity "critical" }}critical{{ else }}error{{ end }}'
         description: '{{ .GroupLabels.alertname }}: {{ .CommonAnnotations.summary }}'
 
   - name: 'slack-warnings'
     slack_configs:
-      - api_url: '$SLACK_WARN_WEBHOOK_URL'
+      - api_url_file: /etc/alertmanager/secrets/slack_warn_webhook_url
         channel: '#alerts-warnings'
 ```
 

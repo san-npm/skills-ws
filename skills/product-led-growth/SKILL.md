@@ -619,7 +619,7 @@ PQL Sales Score = (Product Score × 0.6) + (Firmographic Score × 0.4)
 | Invited users from 3+ departments | +15 | Cross-functional spread |
 | Admin viewed pricing 3+ times | +10 | Purchase intent |
 
-**Firmographic signals (via enrichment — HubSpot Breeze Intelligence (formerly Clearbit), Apollo, Clay):**
+**Firmographic signals (via enrichment tools: HubSpot data enrichment (Breeze, formerly Breeze Intelligence/Clearbit), Apollo, Clay):**
 
 | Signal | Score | Weight |
 |--------|-------|--------|

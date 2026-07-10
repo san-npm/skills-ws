@@ -24,7 +24,7 @@ Sibling skills: popups/exit-intent/cookie-consent UX → `popup-cro`; multi-step
 
 ## 🎯 100-Point CRO Audit Framework
 
-**Scoring & verdict.** Each item lists its point value. Tally the five sections (25+25+15+15+10+10 = 100). Interpret: **85–100** strong, ship/iterate on margins; **70–84** solid, fix the flagged items and test; **50–69** material leaks, prioritize fixes before paid traffic; **< 50** rebuild the page. Score by **evidence, not vibes** — for each item record: pass/fail, the evidence (screenshot, Lighthouse/CrUX number, heatmap, replay), and a PIE/ICE score so fixes rank by impact, not order of discovery.
+**Scoring & verdict.** Each item lists its point value. Tally the six sections (25+25+15+15+10+10 = 100). Interpret: **85-100** strong, ship/iterate on margins; **70-84** solid, fix the flagged items and test; **50-69** material leaks, prioritize fixes before paid traffic; **< 50** rebuild the page. Score by **evidence, not vibes**. For each item record: pass/fail, the evidence (screenshot, Lighthouse/CrUX number, heatmap, replay), and a PIE/ICE score so fixes rank by impact, not order of discovery.
 
 ### Above-The-Fold Checklist (25 Points)
 
@@ -168,12 +168,12 @@ function runValuePropTest(variant) {
 ### Social Proof & Trust (15 Points)
 
 **Trust Signal Hierarchy**
-1. **Customer testimonials** (Video > Photo + name > Text only)
-2. **Usage statistics** (Users, transactions, years in business)
-3. **Media mentions** (Logos of publications that covered you)
-4. **Customer logos** (Recognizable brands using your service)
-5. **Certifications** (Industry credentials, security badges)
-6. **Guarantees** (Money-back, satisfaction, security)
+1. **Customer testimonials** (4 points): Video > Photo + name > Text only
+2. **Usage statistics** (3 points): Users, transactions, years in business
+3. **Media mentions** (2 points): Logos of publications that covered you
+4. **Customer logos** (2 points): Recognizable brands using your service
+5. **Certifications** (2 points): Industry credentials, security badges
+6. **Guarantees** (2 points): Money-back, satisfaction, security
 
 ```html
 <!-- Social Proof Component Library -->
@@ -306,12 +306,17 @@ const ctaCopyVariants = [
 const ctaStyle = { bg: '#1f6feb', text: '#ffffff', padding: '16px 32px', fontSize: '18px' };
 
 // Sticky, evenly-weighted assignment. Persist so the user always sees the same arm.
+// Persisting the variant id is non-essential storage under ePrivacy: gate it on CMP
+// consent (see the consent-safe analytics section), or keep assignment server-side/edge
+// (cookie set with consent) to avoid client storage entirely.
 function assignCtaVariant(variants, storageKey = 'cta_exp') {
-  let id = localStorage.getItem(storageKey);
+  // Durable ID only with consent; otherwise per-session stickiness via sessionStorage.
+  const store = analyticsAllowed() ? localStorage : sessionStorage;
+  let id = store.getItem(storageKey);
   let v = variants.find(x => x.id === id);
   if (!v) {
     v = variants[Math.floor(Math.random() * variants.length)];
-    localStorage.setItem(storageKey, v.id);
+    store.setItem(storageKey, v.id);
   }
   return v;
 }
@@ -617,8 +622,9 @@ For revenue/AOV (continuous, often skewed) the proportion formula does **not** a
 
 ### Duration: cover whole business cycles
 ```javascript
-function testDurationDays(nPerArm, dailyVisitorsPerArm, variants = 2) {
-  const days = Math.ceil((nPerArm * variants) / (dailyVisitorsPerArm * variants));
+function testDurationDays(nPerArm, dailyVisitorsPerArm) {
+  // dailyVisitorsPerArm already reflects the traffic split across arms.
+  const days = Math.ceil(nPerArm / dailyVisitorsPerArm);
   // Run in FULL weeks to absorb day-of-week effects, min 1 cycle (typically 14 days),
   // and stop on a week boundary so weekday/weekend mix is balanced across arms.
   const minDays = 14;

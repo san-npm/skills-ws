@@ -73,7 +73,7 @@ Apple's free, self-serve listing manager — launched **Jan 11, 2023** — cover
 Bing Places powers Bing Maps and contributes to Microsoft's web index, which has historically been one of the retrieval sources for **ChatGPT's web search**. The exact sourcing for AI search products evolves and is not publicly fixed, so don't model it as "ChatGPT = Bing Places." Treat Bing Places as one input among many (see *Local visibility in AI search* below). It's low effort and worth claiming, but it is not the single gateway to AI answers.
 
 ### Setup
-1. Sign in at `bingplaces.com` with a Microsoft account
+1. Sign in at `bing.com/forbusiness` with a Microsoft account (the old `bingplaces.com` domain redirects there)
 2. **Fastest path: import from GBP** — Bing offers one-click import of any verified Google Business Profile
 3. Verify via phone, mail, or email
 4. Keep NAP identical to GBP and ABC

@@ -104,7 +104,7 @@ Every claim that informs a matrix, battlecard, or strategy decision gets a row h
 - **Selection bias.** Choose features your ICP actually evaluates, not your longest feature list. A matrix that exists to flatter you misleads your own sales team.
 
 **Rules:**
-- Be honest. Don't mark competitors as "None" when they have partial support — your reps get burned on the call, and false comparative claims create legal risk (§7).
+- Be accurate. Don't mark competitors as "None" when they have partial support: your reps get burned on the call, and false comparative claims create legal risk (§7).
 - Update quarterly minimum — features change fast. Tie each cell to a source-register row (§3) so refresh is mechanical.
 - Source every claim (link to their docs/pricing page) and archive it.
 

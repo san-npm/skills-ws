@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.10.0] - 2026-07-10
+
+### Full-catalog best-practices and security audit (Jul 2026)
+
+Every skill audited against official, fetched-this-week documentation from Anthropic, OpenAI, Cursor, GitHub Copilot, OpenClaw, the MCP spec, agentskills.io, OWASP, and npm. 87 parallel auditors produced 288 evidence-backed findings; 229 fixes were applied across 76 skills and every diff was independently re-verified (10 skills were already fully current). Repo-wide scans for hidden-Unicode instruction injection (U+E0000-E007F, zero-width, bidi), embedded secrets, and decode-and-execute patterns: clean.
+
+**Critical fixes (`saas-billing`):** code read `subscription.current_period_end` and `invoice.subscription`, both removed in Stripe `2025-03-31.basil` and later, so renewals and scheduled downgrades were broken under the skill's own API pin. Now reads period bounds from subscription items and the subscription id from `invoice.parent.subscription_details`, pinned to `2026-06-24.dahlia`.
+
+**Security fixes:** replaced an unregistered example API domain in `mcp-server-builder` with `rdap.org` (domain-takeover risk); fixed JSON-LD XSS (`programmatic-seo`) by escaping `<` in `dangerouslySetInnerHTML`; fixed query-parameter injection into an authenticated upstream call (`nextjs-performance`); corrected the false claim that a runtime hostname guard keeps a `NEXT_PUBLIC_*` bot token out of shipped bundles (`telegram-mini-apps`); added allowance-hygiene guidance to `ophis-swap`; added review-the-script caveats to `curl | bash` installers.
+
+**Currency fixes across the catalog (selection):** Claude lineup and API (adaptive thinking, `output_config.effort`, Structured Outputs, prefill and temperature deprecations, platform.claude.com URLs) in `prompt-engineering` and `ai-agent-building`; OpenAI GPT-5.5/5.6 IDs and Responses API; MCP spec 2025-11-25 alignment and `registerTool` migration in both MCP skills; solc 0.8.36 + Osaka EVM default (`solidity-dev`); wagmi v3 (`wallet-integration`); Storybook 10 (`design-system`); Node 24 LTS / Go 1.26 base images (`docker-production`); GitHub Actions current majors and OIDC trusted publishing (`ci-cd-pipeline`, `cicd-pipelines`, `security-sentinel`, `security-hardening`); Lighthouse 13 budgets removal (`web-performance`); OWASP Top 10:2025 (`security-hardening`); vt-cli real flag surface (`virustotal`); Dune `dex.trades` schema (`onchain-analytics`); EU AI Act Digital Omnibus timeline (`eu-legal-compliance`); 1099-NEC $2,000 threshold (`accounting-finance`); dead-product corrections (ShareASale folded into Awin, Hotjar into Contentsquare, Delighted into Qualtrics, Orbit sunset by Postman, HARO relaunched under Featured.com, Product Hunt Orbit Awards).
+
+**Broken-code fixes:** invalid HCL semicolons (`aws-production-deploy`), unparseable workflow YAML (`ci-cd-pipeline`), missing pnpm setup in CI samples (`testing-strategy`), Alertmanager env-var misuse and collector/Prometheus pipeline mismatch (`monitoring-observability`), SQL fan-out and dialect bugs (`data-analytics`, `data-management`, `retention-analytics`, `yandex-webmaster`), otplib v13 migration (`auth-implementation`), no-op WAL archive guard (`postgres-mastery`).
+
+### Infrastructure
+
+- **CLI**: `detectTarget()` now probes the directories each tool actually reads (`.claude/skills`, `.cursor/skills`, `.agents/skills`, OpenClaw workspace `skills/`, and user-level equivalents), prints what it detected, and defaults to `~/.agents/skills` (the cross-tool path). `--skill <name>` now works as an install alias; unknown arguments print usage and exit 1 instead of silently doing nothing.
+- **Website**: corrected install commands (`npx skills-ws install all` / `install <name>`) and per-tool paths on the CLI, docs, FAQ, and skill pages, including the FAQPage/HowTo JSON-LD; unverifiable Gemini CLI support claim replaced with verified GitHub Copilot support; trust copy rewritten to verifiable statements.
+- **Discovery index**: dropped the per-skill `version` field removed by discovery RFC v0.2.0; index is fully spec-conformant.
+- **llms.txt / llms-full.txt**: now generated from the catalog at build time (counts and entries can no longer drift; both were stale and missing `ophis-swap`).
+- **Publishing**: replaced the package.json swap with a staged `scripts/publish-npm.mjs` (never mutates the repo, asserts manifest versions match); SECURITY.md and README claims corrected (provenance is now stated as planned via npm trusted publishing).
+- **Tests**: 12 to 18 checks, adding a byte-for-byte install test and an unknown-argument exit-code test.
+
 ## [1.9.0] — 2026-06-26
 
 ### Added

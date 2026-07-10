@@ -290,6 +290,7 @@ export async function POST(req: Request) {
 // lib/subscription.ts
 type Plan = 'free' | 'pro' | 'enterprise';
 const FEATURE_ACCESS: Record<string, Plan[]> = {
+  'basic-projects': ['free', 'pro', 'enterprise'],
   'export-csv': ['pro', 'enterprise'],
   'api-access': ['pro', 'enterprise'],
   'custom-domain': ['enterprise'],
@@ -297,13 +298,13 @@ const FEATURE_ACCESS: Record<string, Plan[]> = {
 };
 
 export function hasAccess(feature: string, plan: Plan): boolean {
-  return FEATURE_ACCESS[feature]?.includes(plan) ?? true; // unlisted = free
+  return FEATURE_ACCESS[feature]?.includes(plan) ?? false; // unlisted = denied (fail closed: a typo cannot expose a paid feature)
 }
 ```
 
 ### Usage-Based Billing (Billing Meters — current API)
 
-As of 2024, Stripe's usage-based billing is built on **Billing Meters + meter events**. The old `subscriptionItems.createUsageRecord` / standalone `usage_type: 'metered'` price flow is **legacy** — do not use it for new integrations.
+As of 2024, Stripe's usage-based billing is built on **Billing Meters + meter events**. The old `subscriptionItems.createUsageRecord` / standalone `usage_type: 'metered'` price flow is **legacy**; do not use it for new integrations. Note: since acquiring Metronome (January 2026), Stripe positions Metronome as the recommended path for new usage-based integrations; Billing Meters remains fully supported and is the simpler fit for standard SaaS usage pricing.
 
 **One-time setup (per metered dimension):**
 
@@ -347,7 +348,7 @@ await stripe.billing.meterEvents.create({
 - **Idempotency is built in:** a unique `identifier` makes retries safe — Stripe rejects duplicates within a rolling 24-hour window (`duplicate_meter_event`). Use a stable per-event id (e.g. request/job id).
 - **Aggregation is asynchronous.** Reported usage is summarized into the invoice's metered line items; it is not reflected instantly. Read current totals via the meter's event summaries rather than assuming real-time balances.
 - **High throughput / low latency:** use the **v2 meter event stream** (`POST /v2/billing/meter_event_stream` against `meter-events.stripe.com`) with a short-lived meter-event session token (valid ~15 min) to batch many events per call. The single-event call above is fine for typical volumes.
-- **Related building blocks:** **Billing Credits** (grant prepaid/free credits drawn down by metered usage) and **usage alerts/thresholds** (notify or act when a customer crosses a usage level). For complex, high-scale metering (token/GPU-second billing à la OpenAI/Anthropic/Databricks), **Metronome** is the heavyweight option — Stripe and Metronome have a close partnership/integration (as of Jun 2026, verify the current relationship and any acquisition status at https://stripe.com/newsroom and https://metronome.com). Choose plain Billing Meters for standard usage products; reach for Metronome when you need hierarchical accounts, complex rating/credits, or real-time spend orchestration.
+- **Related building blocks:** **Billing Credits** (grant prepaid/free credits drawn down by metered usage) and **usage alerts/thresholds** (notify or act when a customer crosses a usage level). For complex, high-scale metering (token/GPU-second billing à la OpenAI/Anthropic/Databricks), **Metronome** is the heavyweight option: Stripe completed its acquisition of Metronome in January 2026, and Stripe's docs now recommend Metronome as the primary platform for new usage-based integrations, while classic Billing Meters remains fully supported as a low-level building block. Choose plain Billing Meters for standard usage products; reach for Metronome when you need hierarchical accounts, complex rating/credits, or real-time spend orchestration.
 
 > APIs and the recommended approach evolve. Verify current meter syntax and limits at https://docs.stripe.com/billing/subscriptions/usage-based and the API version notes at https://docs.stripe.com/changelog.
 

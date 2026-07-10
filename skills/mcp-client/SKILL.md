@@ -212,9 +212,10 @@ const { resourceTemplates } = await client.listResourceTemplates();
 // e.g. uriTemplate: "github://repos/{owner}/{repo}/issues/{id}"
 
 // If the server's resources capability advertises `subscribe: true`:
+import { ResourceUpdatedNotificationSchema } from '@modelcontextprotocol/sdk/types.js';
 await client.subscribeResource({ uri: 'log://app/today' });
 client.setNotificationHandler(
-  /* ResourceUpdatedNotificationSchema */ undefined as any,
+  ResourceUpdatedNotificationSchema,
   (n) => console.log('resource changed:', n.params.uri)
 );
 ```
@@ -365,7 +366,7 @@ Equivalent `.mcp.json` (project-scoped, commit-safe if it contains no secrets):
 }
 ```
 
-Use `"type": "http"` for Streamable HTTP. Keep `"type": "sse"` only for legacy servers. Reference: https://docs.claude.com/en/docs/claude-code/mcp (verify flags/keys for your version).
+Use `"type": "http"` for Streamable HTTP. Keep `"type": "sse"` only for legacy servers. Reference: https://code.claude.com/docs/en/mcp (verify flags/keys for your version).
 
 ### 4.3 Cursor
 
@@ -430,26 +431,25 @@ There are two worlds:
 
 ### 5.1 OAuth 2.1 discovery flow (spec)
 
-1. Client hits the MCP endpoint with no token → server returns **`401 Unauthorized`** with a `WWW-Authenticate: Bearer ... resource_metadata="https://server/.well-known/oauth-protected-resource"` header.
+1. Client hits the MCP endpoint with no token → server returns **`401 Unauthorized`** with a `WWW-Authenticate: Bearer ... resource_metadata="https://server/.well-known/oauth-protected-resource"` header. If the header is absent, fall back to the well-known PRM URIs (endpoint path first, then root).
 2. Client fetches that **Protected Resource Metadata (PRM)** doc to learn the authorization server(s).
-3. Client fetches the authorization server's metadata (`/.well-known/oauth-authorization-server`), runs an **Authorization Code + PKCE** flow (Dynamic Client Registration if supported), and gets an access token (+ refresh token).
-4. Client retries with `Authorization: Bearer <access_token>` and includes the resource indicator so the token is audience-bound to this server.
+3. Client fetches the authorization server's metadata (try RFC 8414 `/.well-known/oauth-authorization-server`, then OpenID Connect Discovery `/.well-known/openid-configuration`; clients must support both), then runs an **Authorization Code + PKCE** flow using the `S256` challenge method (refuse to proceed if the metadata lacks `code_challenge_methods_supported`). For client registration, prefer **Client ID Metadata Documents** (an HTTPS URL as `client_id`, advertised via `client_id_metadata_document_supported`); Dynamic Client Registration is an optional fallback kept for backwards compatibility. Include the `resource` parameter (RFC 8707, the MCP server's canonical URL) in **both** the authorization request and the token request so the token is audience-bound to this server, and get an access token (+ refresh token).
+4. Client retries with `Authorization: Bearer <access_token>`.
 5. On `401`/expiry, refresh; on `403` you lack scope.
 
 ### 5.2 OAuth in the TypeScript SDK
 
-The SDK handles the dance if you pass an `authProvider`. For servers that mint tokens out-of-band, the minimal form just supplies the token:
+For a token minted out-of-band, don't reach for `authProvider`; just send it as a static header (same pattern as §5.3):
 
 ```typescript
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
-// Minimal: provide a token; a 401 surfaces as UnauthorizedError.
 const transport = new StreamableHTTPClientTransport(new URL('https://api.example.com/mcp'), {
-  authProvider: { token: async () => process.env.MCP_TOKEN! },
+  requestInit: { headers: new Headers({ Authorization: `Bearer ${process.env.MCP_TOKEN}` }) },
 });
 ```
 
-For full interactive OAuth (PKCE, redirect, token persistence), implement `OAuthClientProvider` (redirect URL, client metadata, `tokens()`/`saveTokens()`, `redirectToAuthorization()`, code-verifier storage) and call `transport.finishAuth(authorizationCode)` after the redirect returns. Check the current interface at https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/client.md — the auth API evolves.
+Reserve `authProvider` for full interactive OAuth (PKCE, redirect, token persistence): it must implement the complete `OAuthClientProvider` interface (redirect URL, client metadata, `clientInformation()`, `tokens()`/`saveTokens()`, `redirectToAuthorization()`, code-verifier storage), and you call `transport.finishAuth(authorizationCode)` after the redirect returns. Check the current interface at https://ts.sdk.modelcontextprotocol.io/ (v1 SDK docs; v2 docs under `/v2/`), the auth API evolves.
 
 ### 5.3 Provider-specific header auth
 
@@ -465,6 +465,7 @@ const transport = new StreamableHTTPClientTransport(new URL('https://api.example
 - **Never** put secrets in URLs or stdio `args` (they leak to logs / `ps`); use headers or `env`.
 - Prefer **short-lived** access tokens + refresh; rotate long-lived API keys on a schedule.
 - Request **least privilege** scopes; use a distinct key per app/environment so one leak is contained.
+- Validate every authorization URL a server hands you before opening it: allow only `http`/`https` (`http` solely for loopback during development), reject `javascript:`, `data:`, `file:`, `vbscript:`, and never open the URL through a shell command (use a platform URL-opening API instead). A malicious server can otherwise turn the OAuth redirect into XSS or code execution.
 - Treat a server as untrusted: it can return prompt-injection-laden tool output. Don't auto-execute server-suggested shell/SQL; gate sampling/elicitation behind user approval.
 
 ---

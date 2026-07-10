@@ -46,7 +46,7 @@ Most "the numbers don't match" fights are definition fights, not SQL bugs. Write
 | **Known caveats** | Single-sign-on shares one account across users; counts accounts not seats |
 
 **Semantic layer / metrics-as-code (mid-2026).** Define metrics once and let BI tools query them, so "revenue" can't mean three things:
-- **dbt Semantic Layer** (powered by MetricFlow): declare `semantic_models` and `metrics` in YAML; consumers query via the JDBC/GraphQL API or dbt-cloud-cli, e.g. `dbt sl query --metrics revenue --group-by metric_time__month`. The legacy `dbt_metrics` package is deprecated — use MetricFlow.
+- **dbt Semantic Layer** (powered by MetricFlow): declare `semantic_models` and `metrics` in YAML; consumers query via the JDBC/GraphQL API or the dbt CLI (formerly the dbt Cloud CLI), e.g. `dbt sl query --metrics revenue --group-by metric_time__month`. The legacy `dbt_metrics` package is deprecated; use MetricFlow.
 - **Cube, Looker (LookML), Lightdash, MetricFlow, Malloy** are the common alternatives; pick one and treat metric definitions as reviewed code.
 - Net effect: the SQL patterns below are how a metric is *implemented once* in the semantic layer or a dbt model — not copy-pasted into every dashboard.
 
@@ -63,7 +63,7 @@ metrics:
 
 ### 2c. Data Quality Checks (run before you trust any number)
 
-Bad data silently produces confident-looking dashboards. Gate your models with tests (dbt `tests:`/`unit_tests:`, or `dbt_utils`/`elementary` packages, or Great Expectations / Soda) covering:
+Bad data silently produces confident-looking dashboards. Gate your models with tests (dbt `data_tests:`/`unit_tests:` (the `tests:` key is the pre-1.8 spelling and still accepted as an alias), or `dbt_utils`/`elementary` packages, or Great Expectations / Soda) covering:
 
 | Check | What it catches | Example assertion |
 |---|---|---|
@@ -92,7 +92,11 @@ WITH stages AS (
     MIN(CASE WHEN e.event = 'first_value_action'   THEN e.created_at END) AS t_activate,
     MIN(CASE WHEN e.event = 'purchase'             THEN e.created_at END) AS t_purchase
   FROM events e
-  JOIN sessions s ON s.user_id = e.user_id            -- channel lives on first session
+  JOIN (                                               -- channel lives on first session
+    SELECT DISTINCT ON (user_id) user_id, channel
+    FROM sessions
+    ORDER BY user_id, started_at
+  ) s ON s.user_id = e.user_id  -- Postgres/DuckDB; elsewhere use a ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY started_at) = 1 subquery
   WHERE e.created_at >= CURRENT_DATE - INTERVAL '90 days'
   GROUP BY s.user_id, s.channel
 ),
@@ -176,20 +180,20 @@ ORDER BY r.cohort_week, r.week_index;
 ```
 
 **Dialect differences for the week-index math** (`activity_week - cohort_week`):
-- **Postgres:** `date - date` returns an **integer number of days**, but `timestamp - timestamp` returns an **`interval`** — so cast the truncated weeks to `::date` (as above) before dividing by 7, or you'll be dividing an interval and break `GROUP BY`/`BETWEEN`. (DuckDB returns an `INTERVAL` for both; use `DATE_DIFF('day', cohort_week, activity_week) / 7` or `DATE_DIFF('week', cohort_week, activity_week)` there.)
-- **BigQuery:** use `DATE_DIFF(a.activity_week, c.cohort_week, WEEK)`; truncate with `TIMESTAMP_TRUNC(ts, WEEK(MONDAY))` and convert TZ via `TIMESTAMP(ts, 'UTC')`.
+- **Postgres:** `date - date` returns an **integer number of days**, but `timestamp - timestamp` returns an **`interval`**, so cast the truncated weeks to `::date` (as above) before dividing by 7, or you'll be dividing an interval and break `GROUP BY`/`BETWEEN`. (DuckDB matches Postgres here: `date - date` is an integer day count, while `timestamp - timestamp` is an `INTERVAL`, so the `::date` cast works there too; `DATE_DIFF('day', cohort_week, activity_week) / 7` or `DATE_DIFF('week', cohort_week, activity_week)` are equivalent alternatives.)
+- **BigQuery:** use `DATE_DIFF(a.activity_week, c.cohort_week, WEEK)`; truncate with `TIMESTAMP_TRUNC(ts, WEEK(MONDAY), 'UTC')` (the optional third argument sets the truncation timezone; UTC is the default). Note `TIMESTAMP()` only converts string, date, or datetime inputs, not an existing `TIMESTAMP`.
 - **Snowflake:** use `DATEDIFF('week', c.cohort_week, a.activity_week)`; truncate with `DATE_TRUNC('week', ts)` and `CONVERT_TIMEZONE('UTC', ts)`.
 
 To render a classic retention triangle, `PIVOT` (Snowflake/DuckDB/BigQuery) or `crosstab` (Postgres `tablefunc`) on `week_index`. If you need to show weeks where a cohort had *zero* activity (true gaps, not missing rows), cross-join cohorts to a generated week spine (`generate_series` / `GENERATE_DATE_ARRAY`) before the left join.
 
-**Realized revenue to date (NOT LTV).** Summing historical payments gives *realized revenue per customer so far* — it is **not** LTV. It ignores future revenue, refunds, gross margin, discounts, and survivorship/censoring (active customers haven't finished spending; churned ones drag the average down). Label it honestly and net out refunds:
+**Realized revenue to date (NOT LTV).** Summing historical payments gives *realized revenue per customer so far*; it is **not** LTV. It ignores future revenue, refunds, gross margin, discounts, and survivorship/censoring (active customers haven't finished spending; churned ones drag the average down). Label it accurately and net out refunds:
 
 ```sql
 WITH monthly_revenue AS (
   SELECT
     user_id,
     DATE_TRUNC('month', payment_date) AS month,
-    SUM(amount) FILTER (WHERE status = 'succeeded')
+    COALESCE(SUM(amount) FILTER (WHERE status = 'succeeded'), 0)
       - COALESCE(SUM(amount) FILTER (WHERE status = 'refunded'), 0) AS net_revenue
   FROM payments
   GROUP BY user_id, DATE_TRUNC('month', payment_date)

@@ -48,7 +48,7 @@ CPC ranges below are **directional priors (as of Jun 2026)** — actuals vary 5-
 | YouTube/Video | Brand awareness, consideration | $0.02-$0.15 per view |
 | Demand Gen | Mid-funnel, visual/social discovery | $0.50-$3.00 |
 
-> **Google AI Max (rolling out 2026):** "AI Max for Search campaigns" is Google's opt-in setting that layers PMax-style AI onto *Search* — broad keyword-free matching, automatically created/optimized assets, and AI-driven URL/landing-page selection, while keeping search-term reporting and negative keywords. Treat it as a toggle on top of Search (not a separate campaign type): turn it on for an existing well-tracked Search campaign, keep tight negatives and brand exclusions, and watch search terms closely for query drift. Availability/behavior is still rolling out — verify current capabilities at https://support.google.com/google-ads.
+> **Google AI Max (GA since Apr 2026):** "AI Max for Search campaigns" is Google's opt-in setting that layers PMax-style AI onto *Search*: broad keyword-free matching, automatically created/optimized assets, and AI-driven URL/landing-page selection, while keeping search-term reporting and negative keywords. Treat it as a toggle on top of Search (not a separate campaign type): turn it on for an existing well-tracked Search campaign, keep tight negatives and brand exclusions, and watch search terms closely for query drift. AI Max is generally available as of April 15, 2026. Dynamic Search Ads are being sunset: new DSA campaigns can no longer be created, and existing ones auto-upgrade to AI Max beginning February 2027, so plan DSA migrations now.
 
 ### Meta Ads Structure
 
@@ -65,13 +65,15 @@ Campaign (Objective + Budget)
 ### LinkedIn Ads Structure
 
 ```
-Campaign Group (Budget cap)
-├── Campaign (Objective + Audience + Format)
+Campaign (Budget cap)
+├── Ad Set (Objective + Audience + Format)
 │   ├── Ad 1 (Single Image / Carousel / Video / Text)
 │   ├── Ad 2
 │   └── Ad 3
-└── Campaign 2
+└── Ad Set 2
 ```
+
+> LinkedIn renamed its hierarchy starting Oct 2025: old Campaign Groups are now Campaigns and old Campaigns are now Ad Sets (the Marketing API keeps the old entity names). URL tracking macros changed accordingly (CAMPAIGN_GROUP_ID is now CAMPAIGN_ID, CREATIVE_ID is now AD_ID).
 
 ---
 
@@ -272,7 +274,7 @@ DESCRIPTION: Supporting detail or offer terms
 |------|----------|
 | In-Market | Users actively researching your category |
 | Affinity | Broad interest targeting for awareness |
-| Custom Intent | Your own keyword-based audience |
+| Custom Segments | Your own keyword/URL/app-based audience (replaced custom intent and custom affinity) |
 | Customer Match | Upload email lists for targeting/exclusion |
 | RLSA | Layer search with site visitor data |
 | Similar Audiences | Deprecated — use optimized targeting instead |
@@ -580,9 +582,9 @@ The 2021 iOS App Tracking Transparency era was just the start; by 2026 the bindi
 **Meta:**
 - **Conversions API (CAPI) is mandatory, not optional** — run it alongside the pixel (or via the **Conversions API Gateway**, Meta's self-hosted server-side relay) so server events backstop browser signal loss. Deduplicate with a shared `event_id` on both pixel and CAPI events, or you'll double-count.
 - **Event Match Quality (EMQ)** is the number that matters now — pass hashed email, phone, name, IP, `fbc`/`fbp`, and external ID. Aim for an EMQ of **6.0+/10** per event; low EMQ is the #1 cause of "CAPI didn't help."
-- **Aggregated Event Measurement (AEM)** still caps configurable web events per domain (historically 8, ranked by priority) for users who opted out of tracking — **verify the current limit and your domain's configuration in Events Manager**, since Meta has adjusted AEM rules over time. Rank your most valuable event (e.g., Purchase) highest.
+- **Aggregated Event Measurement (AEM):** the old 8-events-per-domain cap and manual priority ranking are gone; Meta now processes all eligible events automatically. The lever today is event schema consistency (same `event_id`, value, currency across Pixel and CAPI) rather than event ranking.
 - **Value optimization & VBO** need clean revenue values on the Purchase event; without them you can't bid to ROAS.
-- **Advantage+** placements/audiences and **Advantage+ Shopping (ASC)** lean on modeled + broad signals — feed them strong server-side conversions and a good product catalog rather than over-narrowing the audience.
+- **Advantage+** placements/audiences and **Advantage+ sales campaigns** (formerly Advantage+ Shopping, renamed Feb 2025; setup is now a streamlined flow with an Advantage+ "on" state) lean on modeled + broad signals, so feed them strong server-side conversions and a good product catalog rather than over-narrowing the audience.
 
 **Google:**
 - **Enhanced Conversions** (hashed first-party data) + **Consent Mode v2** (required in the EEA/UK to keep modeling and personalization) recover signal as third-party cookies erode. Without Consent Mode v2, EEA conversion data and remarketing degrade sharply.
@@ -631,7 +633,7 @@ The 2021 iOS App Tracking Transparency era was just the start; by 2026 the bindi
 5. Format: Single image for testing, then expand to video/carousel
 6. Bid: Maximum delivery (start), then manual CPC once you have data
 7. Use Lead Gen Forms (higher conversion than landing pages on LinkedIn)
-8. Budget: Minimum $50/day per campaign
+8. Budget: Minimum $50/day per ad set (called "campaign" before LinkedIn's Oct 2025 rename)
 9. Run for 2+ weeks before judging performance
 10. Upload offline conversions from CRM for true ROI measurement
 

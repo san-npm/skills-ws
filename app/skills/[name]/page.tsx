@@ -118,7 +118,7 @@ export default async function SkillPage({ params }: { params: Promise<{ name: st
       downloadUrl: "https://www.npmjs.com/package/skills-ws",
       installUrl: url,
       softwareRequirements:
-        "Node.js 18+ and an AI coding assistant supporting SKILL.md (Claude Code, OpenClaw, Cursor, Codex, or Gemini CLI)",
+        "Node.js 18+ and an AI coding assistant supporting SKILL.md (Claude Code, OpenClaw, Cursor, Codex, or GitHub Copilot)",
       author: ORG,
       publisher: ORG,
       releaseNotes: "https://github.com/san-npm/skills-ws/releases",
@@ -153,7 +153,7 @@ export default async function SkillPage({ params }: { params: Promise<{ name: st
           name: `How do I install the ${display} skill?`,
           acceptedAnswer: {
             "@type": "Answer",
-            text: `Run npx skills-ws install ${skill.name} in your project. The skill is added to your agent's skills directory (.claude/skills, ~/openclaw/skills, .cursor/skills, or .codex/skills) and works with Claude Code, OpenClaw, Cursor, Codex, and Gemini CLI.`,
+            text: `Run npx skills-ws install ${skill.name} in your project. The skill is added to your agent's skills directory (.claude/skills, .cursor/skills, .agents/skills, or the OpenClaw workspace skills/ directory) and works with Claude Code, OpenClaw, Cursor, Codex, and GitHub Copilot.`,
           },
         },
         {
@@ -238,7 +238,7 @@ export default async function SkillPage({ params }: { params: Promise<{ name: st
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500/70" />
-            VirusTotal: clean
+            Security scan: clean
           </span>
           <a
             href="https://github.com/san-npm/skills-ws"

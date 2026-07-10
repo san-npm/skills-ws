@@ -122,7 +122,7 @@ ARR = Ending MRR × 12 =  1,332,000
 
 ## 4. Bookkeeping Automation, Chart of Accounts & the Monthly Close
 
-The body's biggest leverage point: a clean **chart of accounts (COA)** + a repeatable **close** + automated **bank feeds** + **approval controls**. (Implements the "bookkeeping automation" promise.)
+The biggest leverage point: a clean **chart of accounts (COA)** + a repeatable **close** + automated **bank feeds** + **approval controls**.
 
 ### 4a. Chart of accounts (SMB/SaaS starter — numeric ranges)
 
@@ -287,7 +287,7 @@ Structured (machine-readable) e-invoicing and near-real-time digital reporting a
 
 ### 7g. Vendor / contractor information reporting
 
-- **US 1099:** generally issue **1099-NEC** for ≥ **$600/yr** paid to US non-corporate contractors (collect a **W-9** before paying); **1099-K** is issued by payment processors/marketplaces — **verify the current dollar threshold** (it has been changing). Foreign contractors: collect **W-8BEN/W-8BEN-E** instead.
+- **US 1099:** generally issue **1099-NEC** for ≥ **$2,000/yr** (raised from $600 for tax years beginning after 2025; may be inflation-adjusted from 2027) paid to US non-corporate contractors (collect a **W-9** before paying); **1099-K** is issued by payment processors/marketplaces; **verify the current dollar threshold** (it has been changing). Foreign contractors: collect **W-8BEN/W-8BEN-E** instead.
 - **EU/UK:** equivalents include **DAC7** (platform reporting of seller income) and local contractor-reporting/withholding rules — confirm per country.
 
 ---

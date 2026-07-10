@@ -7,7 +7,7 @@ description: "Next.js (App Router, v15/16) performance: Core Web Vitals, renderi
 
 Real performance optimization for Next.js App Router. Not "add lazy loading" — actual diagnosis workflows, rendering-strategy decisions, and production caching patterns.
 
-**Version baseline (as of Jun 2026):** Next.js 16.x is current (16.2.x LTS); examples target Next.js 15/16. Where 15 and 16 diverge (image `priority`→`preload`, `minimumCacheTTL` default, `unstable_cache`→`'use cache'`, removed `NextRequest.geo`), both are called out. Verify versions/APIs at https://nextjs.org/docs and release notes at https://nextjs.org/blog. For SEO/metadata performance see the sibling `seo-geo` skill.
+**Version baseline (as of Jul 2026):** Next.js 16.x is current (16.3 shipped Jun 29, 2026; docs track 16.2.x); examples target Next.js 15/16. Where 15 and 16 diverge (image `priority`→`preload`, `minimumCacheTTL` default, `unstable_cache`→`'use cache'`, removed `NextRequest.geo`), both are called out. Verify versions/APIs at https://nextjs.org/docs and release notes at https://nextjs.org/blog. For SEO/metadata performance see the sibling `seo-geo` skill.
 
 ---
 
@@ -30,11 +30,12 @@ export function Hero() {
     <Image
       src="/hero.webp" alt="Hero" width={1200} height={600}
       // Next.js 16: `preload` injects <link rel="preload"> into <head> so the
-      // browser fetches from the first HTML chunk. It does NOT set fetchpriority;
-      // pass `fetchPriority="high"` separately if you need it (don't combine with
-      // `loading`). Next.js 15 still uses `priority` (deprecated in 16) — same idea.
+      // browser fetches from the first HTML chunk. Do not combine it with
+      // `loading` or `fetchPriority` (the docs list both under when NOT to use
+      // `preload`; in most cases they recommend loading="eager" or
+      // fetchPriority="high" instead). Next.js 15 uses `priority` (deprecated
+      // in 16), same idea.
       preload
-      fetchPriority="high"
       sizes="100vw"   // Don't serve a 3840px source to a 390px phone
       quality={85}    // Good quality/size tradeoff for photos
     />
@@ -165,6 +166,9 @@ const brand = localFont({
 ```tsx
 // app/products/[slug]/page.tsx
 export const revalidate = 60;  // Revalidate every 60s
+// Note: segment configs (`revalidate`, `dynamic`, `fetchCache`, `dynamicParams`) are
+// removed when `cacheComponents: true` is enabled (see §7); under Cache Components
+// use 'use cache' + cacheLife instead.
 
 export async function generateStaticParams() {
   const products = await db.product.findMany({
@@ -225,6 +229,9 @@ const nextConfig: NextConfig = {
     // encode/decode. List AVIF first so the optimizer prefers it, WebP as fallback.
     // Measure transfer size on YOUR images (DevTools Network) before assuming a ratio.
     formats: ['image/avif', 'image/webp'],
+    // Next.js 16 enforces a quality allowlist (default [75]); any quality={n}
+    // you use must be listed here.
+    qualities: [75, 85],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     // Floor for how long the OPTIMIZED variant is cached when the upstream sends
@@ -269,8 +276,8 @@ function HeroBanner() {
       <source media="(max-width: 768px)" srcSet="/hero-mobile.avif" type="image/avif" />
       <source media="(max-width: 768px)" srcSet="/hero-mobile.webp" type="image/webp" />
       <source srcSet="/hero-desktop.avif" type="image/avif" />
-      {/* `preload` (Next 16) / `priority` (Next 15) — pick one, this is the LCP image */}
-      <Image src="/hero-desktop.webp" alt="Hero" width={1920} height={800} preload />
+      {/* LCP candidate varies by viewport here, so per the docs use fetchPriority="high", not `preload` (Next 15: `priority`) */}
+      <Image src="/hero-desktop.webp" alt="Hero" width={1920} height={800} fetchPriority="high" />
     </picture>
   );
 }
@@ -307,6 +314,8 @@ import { Chart } from 'chart.js/auto';
 
 // GOOD: load only when needed
 import dynamic from 'next/dynamic';
+// Must live in a Client Component ('use client'): `ssr: false` throws in
+// Server Components; move the dynamic() call into a client file.
 const Chart = dynamic(() => import('@/components/chart'), {
   loading: () => <div className="h-[400px] animate-pulse bg-gray-100 rounded" />,
   ssr: false,
@@ -394,7 +403,7 @@ export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get('q');
   if (!q) return NextResponse.json({ results: [] });
 
-  const results = await fetch(`https://api.example.com/search?q=${q}`, {
+  const results = await fetch(`https://api.example.com/search?q=${encodeURIComponent(q)}`, {
     headers: { Authorization: `Bearer ${process.env.API_KEY}` },
   }).then(r => r.json());
 

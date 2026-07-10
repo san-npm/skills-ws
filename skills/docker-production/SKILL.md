@@ -11,14 +11,14 @@ Production Docker patterns. Multi-stage builds that actually minimize image size
 
 ## 1. Multi-Stage Builds
 
-> **Base images, mid-2026.** Use a current **LTS** for runtimes you don't want to babysit and current stable for everything else. As of Jun 2026: Node **22 LTS** (default) or **24** (latest LTS line) — Node 20 is in maintenance; Go **1.24/1.25**; Rust current stable (**1.87+**); Python **3.13** (3.14 if you've tested C-extension wheels); Postgres **17** (18 once your extensions support it); Redis **8** (or the BSD-licensed **Valkey 8** fork). Verify the latest patch tags at the official Docker Hub pages and pin a **digest** for reproducibility (see below). Always require BuildKit: `DOCKER_BUILDKIT=1` (default in modern Docker / `docker buildx`).
+> **Base images, mid-2026.** Use a current **LTS** for runtimes you don't want to babysit and current stable for everything else. As of Jul 2026: Node **24 LTS** (default, Active LTS) or **22** (Maintenance LTS until Apr 2027); Node 20 is EOL (Mar 2026); Go **1.25/1.26**; Rust current stable (**1.97**); Python **3.13** (3.14 if you've tested C-extension wheels); Postgres **17** (18 once your extensions support it); Redis **8** (or the BSD-licensed **Valkey 8** fork). Verify the latest patch tags at the official Docker Hub pages and pin a **digest** for reproducibility (see below). Always require BuildKit: `DOCKER_BUILDKIT=1` (default in modern Docker / `docker buildx`).
 
 ### Node.js
 
 ```dockerfile
 # syntax=docker/dockerfile:1
 # Stage 1: Install ALL deps once (cached via BuildKit), then prune to prod
-FROM node:22-alpine AS deps
+FROM node:24-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 # Cache mount keeps npm's cache across builds without baking it into a layer
@@ -26,7 +26,7 @@ RUN --mount=type=cache,target=/root/.npm \
     npm ci
 
 # Stage 2: Build
-FROM node:22-alpine AS build
+FROM node:24-alpine AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -36,7 +36,7 @@ RUN --mount=type=cache,target=/root/.npm \
     npm ci --omit=dev
 
 # Stage 3: Production
-FROM node:22-alpine AS production
+FROM node:24-alpine AS production
 WORKDIR /app
 
 # Security: non-root user (UID/GID 10001 — high, avoids clashing with host users)
@@ -116,7 +116,7 @@ HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
 
 ```dockerfile
 # syntax=docker/dockerfile:1
-FROM golang:1.24-alpine AS build
+FROM golang:1.26-alpine AS build
 WORKDIR /app
 
 # Install CA certs in the BUILDER so we control that they exist,
@@ -152,7 +152,7 @@ ENTRYPOINT ["/server"]
 **Prefer distroless for most services** — it gives you CA certs, `/etc/passwd`, timezone data, and a guaranteed-nonroot tag, while staying nearly as small and far less fiddly than `scratch`:
 
 ```dockerfile
-# ... same golang:1.24-alpine build stage as above ...
+# ... same golang:1.26-alpine build stage as above ...
 FROM gcr.io/distroless/static-debian12:nonroot AS production
 COPY --from=build /server /server
 # distroless :nonroot already runs as uid 65532, ships CA certs + tzdata
@@ -193,20 +193,20 @@ ENTRYPOINT ["tini", "--"]
 CMD ["myapp"]
 ```
 
-> `rust:1-slim` always resolves to the current stable 1.x; pin a concrete patch (`rust:1.87-slim`) + digest for reproducible builds. Because `/app/target` is a **cache mount** (not a layer), you must `cp` the binary out before the stage ends — anything left only in the mount is not available to `COPY --from`.
+> `rust:1-slim` always resolves to the current stable 1.x; pin a concrete patch (`rust:1.97-slim`) + digest for reproducible builds. Because `/app/target` is a **cache mount** (not a layer), you must `cp` the binary out before the stage ends; anything left only in the mount is not available to `COPY --from`.
 
 ### Reproducibility: pin digests, rebuild on a schedule
 
-A tag like `node:22-alpine` is a *moving target* — the same Dockerfile builds different images week to week. For supply-chain integrity, pin the **immutable digest** and re-resolve it deliberately:
+A tag like `node:24-alpine` is a *moving target*: the same Dockerfile builds different images week to week. For supply-chain integrity, pin the **immutable digest** and re-resolve it deliberately:
 
 ```dockerfile
 # Pin the exact content, not just the tag. Keep the human-readable tag as a comment.
-FROM node:22-alpine@sha256:<digest>  AS deps   # node:22.16-alpine, resolved 2026-06
+FROM node:24-alpine@sha256:<digest>  AS deps   # node:24.x-alpine, resolved 2026-07
 ```
 
 ```bash
 # Get the current digest for a tag (so you can pin it)
-docker buildx imagetools inspect node:22-alpine --format '{{.Manifest.Digest}}'
+docker buildx imagetools inspect node:24-alpine --format '{{.Manifest.Digest}}'
 
 # Build reproducibly: clamp file timestamps so layer hashes are deterministic
 SOURCE_DATE_EPOCH=$(git log -1 --format=%ct) \
@@ -327,7 +327,7 @@ docker tag myapp:$SHA myapp:latest  # Only for convenience, never for deploys
 
 > **No top-level `version:` key.** It's **obsolete** under the current **Compose Specification** (Compose v2, the `docker compose` plugin) — Compose now warns `the attribute version is obsolete, it will be ignored`. Delete it. Likewise the `docker-compose` (v1, Python, hyphenated) binary is **EOL**; use `docker compose` (space).
 >
-> **`deploy:` is mostly Swarm-only.** A plain `docker compose up` on a single host **ignores** `deploy.replicas`, `deploy.restart_policy`, `deploy.update_config`, `deploy.rollback_config`, and `deploy.placement` — those only take effect under `docker stack deploy` (Swarm). The only `deploy` fields single-host Compose honors are **`deploy.resources.limits`** (cpus/memory → container limits) and **`deploy.resources.reservations`** (soft). For single-host equivalents use top-level **`restart:` `unless-stopped`** (not `deploy.restart_policy`) and run multiple instances with `docker compose up --scale app=3` behind a load balancer — though for real replicas/rolling updates you want Swarm, K8s, or ECS (see §9). I've annotated below which keys do what.
+> **`deploy:` is mostly Swarm-only.** A plain `docker compose up` on a single host **ignores** `deploy.replicas`, `deploy.restart_policy`, `deploy.update_config`, `deploy.rollback_config`, and `deploy.placement`; those only take effect under `docker stack deploy` (Swarm). The only `deploy` fields single-host Compose honors are **`deploy.resources.limits`** (cpus/memory → container limits) and **`deploy.resources.reservations`** (soft). For single-host equivalents use top-level **`restart:` `unless-stopped`** (not `deploy.restart_policy`) and run multiple instances with `docker compose up --scale app=3` behind a load balancer (though for real replicas/rolling updates you want Swarm, K8s, or ECS, see §9). The keys below are annotated with which mode honors them.
 
 ```yaml
 # docker-compose.production.yml  — Compose Specification (no version: key)
@@ -573,7 +573,7 @@ trivy sbom sbom.spdx.json --exit-code 1 --severity HIGH,CRITICAL
 
 ```bash
 # In GitHub Actions, with `id-token: write` permission set on the job:
-COSIGN_EXPERIMENTAL=1 cosign sign --yes registry.example.com/myapp:$GIT_SHA
+cosign sign --yes registry.example.com/myapp:$GIT_SHA
 
 # Attach the SBOM as a signed attestation
 cosign attest --yes --predicate sbom.spdx.json \
@@ -787,13 +787,13 @@ docker exec myapp tcpdump -i eth0 port 5432 -nn
 
 ### Self-hosted with Docker Registry
 
-> For most teams, **don't self-host** — use a managed registry (GitHub Container Registry / GHCR, GitLab, AWS ECR, Google Artifact Registry, Docker Hub). They handle auth, TLS, replication, vuln scanning, and retention for you. Self-host only when you need air-gapped or on-prem control. The `registry:2` (CNCF Distribution) setup below is a baseline for that case.
+> For most teams, **don't self-host**: use a managed registry (GitHub Container Registry / GHCR, GitLab, AWS ECR, Google Artifact Registry, Docker Hub). They handle auth, TLS, replication, vuln scanning, and retention for you. Self-host only when you need air-gapped or on-prem control. The `registry:3` (CNCF Distribution) setup below is a baseline for that case.
 
 ```yaml
 # registry/docker-compose.yml
 services:
   registry:
-    image: registry:2
+    image: registry:3
     restart: unless-stopped
     # Bind to localhost only and terminate TLS at a reverse proxy (below), OR
     # publish 5000 and set the REGISTRY_HTTP_TLS_* vars to serve TLS directly.
@@ -852,7 +852,7 @@ Prefer **keyless** signing in CI (see §4b) — no private key to store or rotat
 brew install cosign  # or: go install github.com/sigstore/cosign/v2/cmd/cosign@latest
 
 # Keyless (recommended) — signs against your OIDC identity:
-COSIGN_EXPERIMENTAL=1 cosign sign --yes registry.example.com/myapp:1.0.0
+cosign sign --yes registry.example.com/myapp:1.0.0
 
 # Keypair (offline) — guard the private key:
 cosign generate-key-pair                                   # creates cosign.key (KEEP SECRET) + cosign.pub
@@ -868,10 +868,10 @@ Deleting a tag only removes the *reference*; the blobs stay until GC runs. **GC 
 # 1. Put the registry in read-only mode (REGISTRY_STORAGE_MAINTENANCE_READONLY_ENABLED=true)
 #    or stop pushes, then run GC. -m also purges now-unreferenced manifests:
 docker exec registry bin/registry garbage-collect --delete-untagged \
-    /etc/docker/registry/config.yml
+    /etc/distribution/config.yml
 # 2. Restart in read-write mode.
 
-# Retention: registry:2 has no built-in tag retention. Prune old tags out-of-band before GC,
+# Retention: registry:3 has no built-in tag retention. Prune old tags out-of-band before GC,
 # e.g. with a script over the v2 API, or run a tool with policies (Harbor, JFrog) for real RBAC,
 # replication, scanning, and tag-retention rules — graduate to one of those at scale.
 ```
@@ -929,7 +929,7 @@ docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d
 ```markdown
 - [ ] `# syntax=docker/dockerfile:1` + BuildKit enabled
 - [ ] Multi-stage build (deps → build → production)
-- [ ] Specific base image tag pinned to a DIGEST (node:22-alpine@sha256:..., never :latest)
+- [ ] Specific base image tag pinned to a DIGEST (node:24-alpine@sha256:..., never :latest)
 - [ ] .dockerignore covers .git, node_modules, .env* — but NOT *.md/Dockerfile blanket-globbed
 - [ ] Non-root user via USER directive — INCLUDING scratch/distroless images (numeric UID or /etc/passwd)
 - [ ] CA certs present in the final image if it makes outbound TLS calls

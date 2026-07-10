@@ -27,18 +27,18 @@ We will acknowledge receipt within 48 hours and provide a timeline for a fix.
 ## Security Model
 
 - **Zero runtime dependencies** — no supply chain risk from third-party packages
-- **No code execution** — skills are markdown files (SKILL.md), not executable code
-- **No eval/exec patterns** — the CLI copies files only, never evaluates content
+- **Markdown instructions** — skills are SKILL.md files; the CLI copies files only, it never evaluates or executes skill content
+- **One documented script exception** — `polymarket-trading` bundles an optional helper (`scripts/scan.mjs`); agents run it only with user approval, and it reads credentials from the environment or OS keychain, never from hardcoded values. Per the agent-skills discovery RFC, clients do not execute files under `scripts/` by default.
 - **Environment-only credentials** — skills that reference API keys use environment variables exclusively
-- **VirusTotal scanned** — all skill files are periodically scanned
-- **Build provenance** — npm packages are published with Sigstore provenance attestation
+- **Pre-release scans** — skill files are scanned before each release for hidden-Unicode instruction injection (U+E0000-U+E007F, zero-width, bidi controls), embedded secrets, decode-and-execute patterns, and TLS-bypass instructions
+- **Publishing** — releases are published by the maintainer with 2FA; npm trusted publishing (OIDC) with Sigstore provenance attestation is planned
 
 ## Scope
 
 This policy covers:
 - The `skills-ws` npm package
 - The CLI tool (`npx skills-ws`)
-- Skill content in `skills/` and `skills-data/` directories
+- Skill content in the `skills/` directory, including bundled `scripts/`
 
 This policy does NOT cover:
 - Third-party tools referenced in skill documentation (e.g., Google Analytics, VirusTotal)

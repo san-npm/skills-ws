@@ -5,7 +5,7 @@ description: "Web3 wallet integration for React/Next.js dApps — RainbowKit, Co
 
 # Web3 Wallet Integration
 
-> Stack: **wagmi v2 + viem v2 + @tanstack/react-query v5** (the current React Web3 standard as of mid-2026; ethers-era patterns are out). RainbowKit and ConnectKit are wallet-UI layers on top of wagmi. Pin to the latest majors — check `npm view wagmi version` / `npm view viem version` before starting.
+> Stack: **wagmi v2 + viem v2 + @tanstack/react-query v5**. ethers-era patterns are out. RainbowKit and ConnectKit are wallet-UI layers on top of wagmi. Note: wagmi v3 is the latest major (it renames `useAccount` to `useConnection` and hook action functions to `mutate`/`mutateAsync`, and makes connector SDKs optional peer deps), but RainbowKit and ConnectKit still peer-require wagmi 2.x, so this skill targets wagmi v2: install `wagmi@2`, not latest. For kit-free builds you can adopt wagmi v3 via https://wagmi.sh/react/guides/migrate-from-v2-to-v3 (the hooks below need the v3 renames applied).
 
 > **Address typing rule (read first).** wagmi/viem use the template-literal type `` `0x${string}` `` for every address. A placeholder like `'0xRecipient...'` (with a literal `...`) is **not** assignable to that type — TypeScript will reject it and the example won't compile. Every address in this skill is a full 40-hex-char value. **None of these are real or safe to use on mainnet** — replace them with addresses you have verified for the correct chain. Centralize them so they're easy to swap:
 
@@ -27,7 +27,7 @@ export const ZERO_ADDRESS: Address   = '0x00000000000000000000000000000000000000
 
 ### Install Dependencies
 ```bash
-npm install wagmi viem @tanstack/react-query
+npm install wagmi@2 viem @tanstack/react-query
 # For wallet UI kit (pick one):
 npm install @rainbow-me/rainbowkit    # RainbowKit
 # OR
@@ -85,7 +85,7 @@ export default function App({ children }: { children: React.ReactNode }) {
 
 ### Setup (client-only / SPA)
 ```bash
-npm install @rainbow-me/rainbowkit wagmi viem @tanstack/react-query
+npm install @rainbow-me/rainbowkit wagmi@2 viem @tanstack/react-query
 ```
 
 ```tsx
@@ -222,7 +222,7 @@ export function CustomConnect() {
 ## 3. ConnectKit Alternative
 
 ```bash
-npm install connectkit wagmi viem @tanstack/react-query
+npm install connectkit wagmi@2 viem @tanstack/react-query
 ```
 
 ```tsx

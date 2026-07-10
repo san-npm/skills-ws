@@ -7,7 +7,9 @@ description: "Deploy and operate VMs on Aleph Cloud with the aleph-client CLI �
 
 Framework for deploying and managing persistent/confidential VMs on Aleph Cloud's decentralized compute network using the official `aleph-client` CLI, with patterns for running an OpenClaw agent runtime across one or many nodes (Tailscale mesh, HAProxy distribution, pull-based backup, and hardening).
 
-> **Verify before you ship.** Aleph CLI flags, OpenClaw install commands, and pricing change over time. This skill is current as of **Jun 2026**. Authoritative sources, used throughout: the Aleph CLI command reference at https://docs.aleph.cloud/devhub/sdks-and-tools/aleph-cli/ (instance subcommands: https://docs.aleph.cloud/devhub/sdks-and-tools/aleph-cli/commands/instance.html), and OpenClaw docs at https://docs.openclaw.ai/. Run `aleph instance create --help` and `aleph pricing instance` to confirm current flags and prices on your machine.
+> **Verify before you ship.** Aleph CLI flags, OpenClaw install commands, and pricing change over time. This skill is current as of **Jun 2026**. Note: docs.aleph.cloud's CLI reference now documents a rewritten `aleph-cli` (installed via Homebrew, apt, or cargo) whose syntax differs from the Python `aleph-client` used throughout this skill; this skill targets the Python `aleph-client` (PyPI, v1.9.x). Authoritative sources, used throughout: the Aleph CLI command reference at https://docs.aleph.cloud/devhub/sdks-and-tools/aleph-cli/ (instance subcommands: https://docs.aleph.cloud/devhub/sdks-and-tools/aleph-cli/commands/instance.html), and OpenClaw docs at https://docs.openclaw.ai/. Run `aleph instance create --help` and `aleph pricing instance` to confirm current flags and prices on your machine.
+>
+> If you installed the rewritten `aleph-cli` from the docs instead of the Python `aleph-client`, translate commands: `aleph pricing instance` -> `aleph instance price` (`--size 2vcpu-4gb`, `--json`); `aleph account address` -> `aleph account show`; `aleph account create --private-key ...` -> `aleph account import <name> --private-key`; `instance create --name X --compute-units N --rootfs-size MIB` -> `instance create X --vcpus/--memory/--disk-size`; `--crn-url`/`--crn-auto-tac` -> `--crn-hash`. Run `aleph instance create --help` to see which client you have.
 
 > **Sibling skills.** This skill focuses on Aleph-specific provisioning and fleet orchestration. For deep, vendor-neutral coverage prefer: `security-hardening` (SSH/firewall/CIS), `monitoring-observability` (metrics, alerting, log pipelines), and `docker-production` (Compose v2, image hygiene). Use those alongside this one rather than duplicating their depth here.
 
@@ -157,7 +159,8 @@ Do this end-to-end first; the fleet machinery below builds on it. Tear-down is i
 #    account. macOS: `brew install libsecp256k1`; Debian/Ubuntu:
 #    `sudo apt-get install -y libsecp256k1-dev`.
 
-# 1. Install the official CLI in an isolated env (pipx is the documented method)
+# 1. Install the Python aleph-client CLI (PyPI, v1.9.x): the flag set below
+#    targets this client, not the newer aleph-cli documented on docs.aleph.cloud
 python3 -m pip install --user pipx && python3 -m pipx ensurepath   # if needed
 pipx install aleph-client
 aleph --version
@@ -222,8 +225,9 @@ set -euo pipefail
 
 echo "Setting up Aleph Cloud deployment environment..."
 
-# Install the official Aleph CLI in an isolated environment (documented method).
-# https://docs.aleph.cloud/devhub/sdks-and-tools/aleph-cli/
+# Install the Python aleph-client CLI (PyPI, v1.9.x) in an isolated environment.
+# The flags used throughout this skill target this client, not the newer
+# aleph-cli documented at https://docs.aleph.cloud/devhub/sdks-and-tools/aleph-cli/
 if ! command -v aleph &>/dev/null; then
     echo "Installing aleph-client via pipx..."
     if ! command -v pipx &>/dev/null; then
@@ -255,7 +259,7 @@ echo "  2. Fund the address shown by 'aleph account address' on your payment cha
 echo "  3. aleph pricing instance      # check current tiers/prices"
 ```
 
-> **Key type note.** This skill standardizes on **ed25519** keys at `~/.aleph-deploy/keys/aleph_ed25519`. If you are upgrading an older deployment that used `aleph_ed25519`, either re-run the generator above or `export ALEPH_SSH_KEY=~/.aleph-deploy/keys/aleph_ed25519` and substitute it in the `ssh -i` calls; every script below reads the same path, so keep them consistent.
+> **Key type note.** This skill standardizes on **ed25519** keys at `~/.aleph-deploy/keys/aleph_ed25519`. If you are upgrading an older deployment that used a different key (for example `~/.aleph-deploy/keys/aleph_rsa`), either re-run the generator above or `export ALEPH_SSH_KEY=<path-to-your-existing-key>` and keep it consistent; every script below reads the same variable.
 
 **Account Creation & Funding:**
 ```bash
@@ -370,7 +374,7 @@ ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 \
 # 4. Provision over SSH (kept out of the on-chain message; rerun-safe).
 echo "Provisioning $VM_NAME..."
 ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new "$SSH_USER@$VM_IP" \
-    "OPENCLAW_PORT=3000 bash -s" <<'PROVISION'
+    "OPENCLAW_GATEWAY_PORT=18789 bash -s" <<'PROVISION'
 #!/bin/bash
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
@@ -389,6 +393,8 @@ usermod -aG docker "$SUDO_USER_NAME" || true
 docker compose version    # Compose v2 ships as a Docker plugin: `docker compose ...`
 
 # --- Node.js 22.x (OpenClaw requires Node >= 22.19; 24 is recommended) ---
+# Official NodeSource installer; to review first:
+#   curl -fsSL https://deb.nodesource.com/setup_22.x -o /tmp/ns.sh && less /tmp/ns.sh
 curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
 apt-get install -y nodejs
 node --version
@@ -407,19 +413,24 @@ ufw --force enable
 # --- Install OpenClaw (official installer; handles Node if missing) and onboard ---
 # Docs: https://docs.openclaw.ai/install . The installer sets up a systemd daemon
 # via `--install-daemon`; do not hand-roll an ExecStart=/usr/bin/node server.js unit.
+# Official OpenClaw installer (docs.openclaw.ai/install); download and review the
+# script first in high-security environments.
 curl -fsSL https://openclaw.ai/install.sh | bash
 # Onboarding is interactive by design; for headless provisioning configure tokens
 # via env/secret store first, then:
 #   openclaw onboard --install-daemon
 # Verify once installed:
 #   openclaw --version && openclaw doctor && openclaw gateway status
+# The gateway listens on 18789 by default (OPENCLAW_GATEWAY_PORT or gateway.port
+# override it) and binds loopback by default: configure it to listen on the
+# Tailscale interface before HAProxy or mesh peers can reach it.
 
 echo "VM base provisioning complete."
 PROVISION
 
 echo "Deployment complete."
 echo "SSH:     ssh -i $SSH_KEY $SSH_USER@$VM_IP"
-echo "OpenClaw: reach it over Tailscale or via HAProxy (NOT a public 3000 port)."
+echo "OpenClaw: reach it over Tailscale or via HAProxy (gateway defaults to 18789, loopback-bound; NEVER a public port)."
 echo "Tear down: aleph instance delete ${ITEM_HASH:-<item-hash>}"
 ```
 
@@ -702,8 +713,9 @@ echo "Primary node base setup complete (fleet-manager active on Tailscale)."
 PRIMARY_SETUP
     )
 
-    # Create the instance with CURRENT flags, then provision over SSH (the CLI has
-    # no --setup-script / --image-ref / --disk-size / --crn). See `... create --help`.
+    # Create the instance with CURRENT flags, then provision over SSH (the Python
+    # aleph-client has no --setup-script / --image-ref / --disk-size / --crn; the
+    # rewritten aleph-cli does have --disk-size). See `... create --help`.
     local create_args=(
         --name "$node_name"
         --compute-units 4 --memory 8192
@@ -772,6 +784,8 @@ curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y 
 
 # Join the Tailscale mesh BEFORE registering, so `tailscale ip -4` returns a
 # reachable mesh address (the control plane is only reachable over the mesh).
+# Official Tailscale installer; review first via:
+#   curl -fsSL https://tailscale.com/install.sh -o /tmp/ts-install.sh && less /tmp/ts-install.sh
 curl -fsSL https://tailscale.com/install.sh | sh
 : "${TAILSCALE_AUTH_KEY:?TAILSCALE_AUTH_KEY required to join the mesh before registering}"
 printf '%s' "$TAILSCALE_AUTH_KEY" > /tmp/ts && chmod 600 /tmp/ts
@@ -1056,7 +1070,8 @@ apt-get update && apt-get install -y curl jq iproute2
 curl -fsSL https://get.docker.com | sh
 curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs
 curl -fsSL https://tailscale.com/install.sh | sh
-[[ -n "${TAILSCALE_AUTH_KEY:-}" ]] && tailscale up --auth-key="$TAILSCALE_AUTH_KEY" --hostname="$NODE_ID"
+# file: pattern keeps the auth key out of the process list (see Tailscale section)
+[[ -n "${TAILSCALE_AUTH_KEY:-}" ]] && { printf '%s' "$TAILSCALE_AUTH_KEY" > /tmp/ts && chmod 600 /tmp/ts && tailscale up --auth-key="file:/tmp/ts" --hostname="$NODE_ID"; rm -f /tmp/ts; }
 curl -fsSL https://openclaw.ai/install.sh | bash
 TS_IP="$(tailscale ip -4 2>/dev/null || hostname -I | awk '{print $1}')"
 curl -fsS -X POST "http://$PRIMARY_TS_IP:8080/fleet/register" -H "x-api-key: $FLEET_API_KEY" \
@@ -1633,8 +1648,8 @@ setup_ssh_tunnels() {
 # Fleet Manager Access (Primary -> Workers)
 8080:localhost:8080
 
-# OpenClaw API Access
-3000:localhost:3000
+# OpenClaw gateway access (default gateway port 18789)
+18789:localhost:18789
 
 # Health Monitoring
 9090:localhost:9090
@@ -1852,6 +1867,9 @@ backend openclaw_nodes
     default-server check maxconn 50 rise 2 fall 3 inter 2s
     
     # Primary node (higher weight)
+    # NOTE: the port MUST match the service actually exposed on the node: the
+    # OpenClaw gateway's configured port (default 18789, loopback-bound until
+    # you bind it to a reachable interface) or your own app's port.
     server primary-node localhost:3000 weight 150 check
     
     # Worker nodes will be added dynamically
@@ -1898,6 +1916,8 @@ FLEET_MGR_HOST="${BIND_HOST:-127.0.0.1}"
 add_backend_server() {
     local server_name=$1
     local server_ip=$2
+    # Default port must match the service actually exposed on the worker (the
+    # OpenClaw gateway's configured port, default 18789, or your own app).
     local server_port=${3:-3000}
     local weight=${4:-100}
     
@@ -2366,11 +2386,13 @@ echo "Distribution API is internal (localhost:8081 on the primary)."
 echo "From the primary: curl http://127.0.0.1:8081/distribute/node"
 }
 
-> **Metrics note.** `collectNodeMetrics()` below returns **randomized placeholder values** so the strategy code is runnable out of the box. For real distribution, replace it with actual per-node metrics — e.g. scrape `node_exporter`/cAdvisor over the Tailscale mesh, or have each worker POST CPU/mem/conn counts to the fleet manager. See the sibling `monitoring-observability` skill for a production metrics pipeline.
+# NOTE: collectNodeMetrics() returns randomized placeholders; see the Metrics note below.
 
 # Execute setup
 setup_intelligent_distribution
 ```
+
+> **Metrics note.** `collectNodeMetrics()` above returns **randomized placeholder values** so the strategy code is runnable out of the box. For real distribution, replace it with actual per-node metrics, e.g. scrape `node_exporter`/cAdvisor over the Tailscale mesh, or have each worker POST CPU/mem/conn counts to the fleet manager. See the sibling `monitoring-observability` skill for a production metrics pipeline.
 
 ---
 
@@ -2619,8 +2641,10 @@ check_node_health() {
         return 2
     fi
     
-    # Check HTTP response
-    if ! curl -s --max-time 10 "http://$node_ip:3000/health" &>/dev/null; then
+    # Check OpenClaw gateway health via the CLI over SSH (no HTTP /health
+    # endpoint is documented; the gateway binds loopback by default anyway).
+    if ! ssh -i /root/.ssh/aleph_ed25519 \
+            "$ru@$node_ip" "openclaw gateway status || openclaw health" &>/dev/null; then
         return 3
     fi
     
@@ -2691,7 +2715,8 @@ apt-get update && apt-get install -y curl jq iproute2
 curl -fsSL https://get.docker.com | sh
 curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs
 curl -fsSL https://tailscale.com/install.sh | sh
-[[ -n "${TAILSCALE_AUTH_KEY:-}" ]] && tailscale up --auth-key="$TAILSCALE_AUTH_KEY" --hostname="$NODE_ID"
+# file: pattern keeps the auth key out of the process list (see Tailscale section)
+[[ -n "${TAILSCALE_AUTH_KEY:-}" ]] && { printf '%s' "$TAILSCALE_AUTH_KEY" > /tmp/ts && chmod 600 /tmp/ts && tailscale up --auth-key="file:/tmp/ts" --hostname="$NODE_ID"; rm -f /tmp/ts; }
 curl -fsSL https://openclaw.ai/install.sh | bash
 TS_IP="$(tailscale ip -4 2>/dev/null || hostname -I | awk '{print $1}')"
 curl -fsS -X POST "http://$PRIMARY_TS_IP:8080/fleet/register" -H "x-api-key: $FLEET_API_KEY" \
@@ -3133,7 +3158,8 @@ apt-get update && apt-get install -y curl jq iproute2
 curl -fsSL https://get.docker.com | sh
 curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs
 curl -fsSL https://tailscale.com/install.sh | sh
-[[ -n "${TAILSCALE_AUTH_KEY:-}" ]] && tailscale up --auth-key="$TAILSCALE_AUTH_KEY" --hostname="$NODE_ID"
+# file: pattern keeps the auth key out of the process list (see Tailscale section)
+[[ -n "${TAILSCALE_AUTH_KEY:-}" ]] && { printf '%s' "$TAILSCALE_AUTH_KEY" > /tmp/ts && chmod 600 /tmp/ts && tailscale up --auth-key="file:/tmp/ts" --hostname="$NODE_ID"; rm -f /tmp/ts; }
 curl -fsSL https://openclaw.ai/install.sh | bash
 TS_IP="$(tailscale ip -4 2>/dev/null || hostname -I | awk '{print $1}')"
 curl -fsS -X POST "http://$PRIMARY_TS_IP:8080/fleet/register" -H "x-api-key: $FLEET_API_KEY" \
@@ -3449,10 +3475,10 @@ if [[ "$node_type" == "primary" ]]; then
     # 'in on tailscale0' rule). Do NOT open them publicly.
     echo "Primary node firewall rules applied"
 else
-    # Worker: NO public OpenClaw port. The agent runtime (3000) is reachable ONLY
-    # over Tailscale (handled by 'allow in on tailscale0'); HAProxy on the primary
-    # also reaches workers over the mesh. Public 3000 on an agent that can execute
-    # actions is a critical exposure — never do it.
+    # Worker: NO public OpenClaw port. The gateway (default 18789, loopback-bound)
+    # is reachable ONLY over Tailscale (handled by 'allow in on tailscale0');
+    # HAProxy on the primary also reaches workers over the mesh. A public gateway
+    # port on an agent that can execute actions is a critical exposure; never do it.
     echo "Worker node firewall rules applied (OpenClaw private to mesh)"
 fi
 
@@ -3726,30 +3752,32 @@ ignoreip = 127.0.0.1/8 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
 enabled = true
 port = ssh
 filter = sshd
+# fail2ban >= 0.10 merged the old standalone sshd-ddos filter into the sshd
+# filter; "mode = aggressive" covers those patterns. A separate [sshd-ddos]
+# jail would reference a missing filter and abort fail2ban startup entirely.
+mode = aggressive
 logpath = /var/log/auth.log
 maxretry = 3
 bantime = 3600
 
-[sshd-ddos]
-enabled = true
-port = ssh
-filter = sshd-ddos
-logpath = /var/log/auth.log
-maxretry = 2
-bantime = 3600
-
-# OpenClaw service protection
+# OpenClaw service protection. DISABLED by default: fail2ban refuses to start
+# a jail whose logpath is missing, and OpenClaw does not create
+# /var/log/openclaw/access.log out of the box. Enable only after the log file
+# exists (touch it with correct ownership, or point logpath at a real log).
 [openclaw]
-enabled = true
-port = 3000
+enabled = false
+port = 18789
 filter = openclaw
 logpath = /var/log/openclaw/access.log
 maxretry = 10
 bantime = 1800
 
-# Fleet manager protection
+# Fleet manager protection. DISABLED by default for the same reason: the fleet
+# manager logs to journald via systemd, not to /var/log/fleet-manager.log.
+# Enable after either forwarding its journal to that file (syslog rule) or
+# switching this jail to "backend = systemd".
 [fleet-manager]
-enabled = true
+enabled = false
 port = 8080
 filter = fleet-manager
 logpath = /var/log/fleet-manager.log

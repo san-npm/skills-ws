@@ -25,7 +25,7 @@ If anything is ambiguous, stay in read/draft mode.
 
 ### Anti-abuse guardrails (hard stops — never do these for anyone)
 
-These are bannable under Reddit's [Content Policy](https://redditinc.com/policies/content-policy) and break the trust the whole approach depends on. Refuse if asked.
+These are bannable under Reddit's [Reddit Rules](https://redditinc.com/policies/reddit-rules) (formerly the Content Policy) and break the trust the whole approach depends on. Refuse if asked.
 
 - **No sockpuppets / multiple personas.** One real, disclosed identity per account. Never operate several accounts to look like several customers, or to post + then upvote/affirm yourself.
 - **No vote manipulation.** Never ask for, organize, buy, or script upvotes/downvotes; never vote-brigade a thread or coordinate a group to pile on.

@@ -70,7 +70,9 @@ vt ip "203.0.113.10" --include=last_analysis_stats,reputation,country,as_owner,n
 ```bash
 # Re-analyze an item VT already knows, WITHOUT re-uploading the file
 # (recomputes verdicts with today's engine signatures — use this for stale reports):
-vt analysis $(vt scan file --rescan <SHA256> | awk '{print $NF}')
+ANALYSIS_ID=$(curl -s -X POST -H "x-apikey: $VT_API_KEY" \
+  "https://www.virustotal.com/api/v3/files/<SHA256>/analyse" | jq -r '.data.id')
+vt analysis "$ANALYSIS_ID"
 
 # Submit a NEW URL (uploads the URL); capture the analysis id, then poll it:
 ANALYSIS_ID=$(vt scan url "https://suspicious.example/landing" | awk '{print $NF}')
@@ -83,7 +85,7 @@ vt analysis "$ANALYSIS_ID"
 
 **Rescan vs. retrieve vs. submit:**
 - *Retrieve* (`vt file/url/domain/ip`): returns the last stored report. Free, no upload, but may be months old.
-- *Rescan* (`vt scan file --rescan <hash>`, `vt scan url`): asks engines to re-evaluate a *known* item. No file upload for `--rescan`. Use when `last_analysis_date` is stale.
+- *Rescan* (POST `/files/<hash>/analyse` via curl, `vt scan url` for known URLs): asks engines to re-evaluate a *known* item. No file upload. The `vt` CLI has no rescan flag; use the API endpoint. Use when `last_analysis_date` is stale.
 - *Submit* (`vt scan file <path>`): uploads new bytes. Only for genuinely unknown, disclosable samples.
 
 ## Interpreting results — triage rubric (NOT a detection-count threshold)
@@ -222,16 +224,16 @@ These require a Premium/Enterprise (Google Threat Intelligence) key. Reference f
 
 ### Relationship traversal (pivoting)
 
-Fetch objects related to a file/URL/domain/IP without a separate search. Use `--relationship` on the CLI or the `relationships/...` path in the API:
+Fetch objects related to a file/URL/domain/IP without a separate search. Use the relationship subcommands on the CLI (`vt file <relationship> <hash>`) or the `relationships/...` path in the API:
 
 ```bash
 # CLI: what domains/IPs/URLs a sample contacts, and what it drops:
-vt file <SHA256> --relationship=contacted_domains
-vt file <SHA256> --relationship=contacted_ips
-vt file <SHA256> --relationship=dropped_files
-vt url  "https://x.example" --relationship=last_serving_ip_address
-vt domain "evil.example" --relationship=resolutions      # historical A/AAAA records
-vt domain "evil.example" --relationship=communicating_files  # malware seen talking to it
+vt file contacted_domains <SHA256>
+vt file contacted_ips <SHA256>
+vt file dropped_files <SHA256>
+vt url last_serving_ip_address "https://x.example"
+vt domain resolutions "evil.example"           # historical A/AAAA records
+vt domain communicating_files "evil.example"   # malware seen talking to it
 ```
 
 ```python
@@ -246,15 +248,17 @@ Common file relationships: `behaviours`, `contacted_domains`, `contacted_ips`, `
 ### Sandbox behavior reports
 
 ```bash
-vt file <SHA256> --relationship=behaviours        # list available sandbox runs
+vt file behaviours <SHA256>                       # list available sandbox runs
 # or fetch the merged summary via the API path:
 #   GET /files/<sha256>/behaviour_summary
 ```
 
 ```python
 with vt.Client(API_KEY) as client:
-    summ = client.get_object("/files/<sha256>/behaviour_summary")
-    print(summ.processes_tree, summ.network_communication, summ.registry_keys_set)
+    # behaviour_summary returns a plain JSON dict (no type/id), so use
+    # get_json, not get_object:
+    summ = client.get_json("/files/{}/behaviour_summary", "<sha256>")["data"]
+    print(summ.get("processes_tree"), summ.get("registry_keys_set"))
 ```
 
 Behavior is the strongest single signal for low-detection samples: look at process injection, persistence (`registry_keys_set`, scheduled tasks), C2 (`network_communication`, DNS), and dropped/written files.
@@ -284,7 +288,7 @@ Useful query modifiers: `positives:N+` (min detections), `p:N+` (alias), `fs:YYY
 
 ```bash
 # Create a LiveHunt ruleset from a local YARA file:
-vt hunting ruleset add my_rules --rules-file ./rules.yar
+vt hunting ruleset add my_rules ./rules.yar
 vt hunting ruleset list
 vt hunting notification list --filter "ruleset:my_rules"   # recent matches
 ```
@@ -331,7 +335,7 @@ Prefer Private Scanning (or local sandboxing) over public submission whenever th
 2. **Hash-first file lookups** for every artifact (no disclosure). Treat `NotFoundError` as *unknown*, not safe.
 3. **Domain & IP reputation** — check `creation_date`/`registrar` (newly-registered = higher risk), `categories`, and `as_owner`. Flag days-old domains and known-bad ASNs.
 4. **URL checks** — look up URL reputation/categories and inspect `last_final_url` to catch redirects to phishing/malware landing pages.
-5. **Rescan stale reports** (`--rescan` by hash, or `wait_for_completion=True` on a fresh URL scan) so verdicts reflect today's signatures.
+5. **Rescan stale reports** (POST `/files/<hash>/analyse` by hash, or `wait_for_completion=True` on a fresh URL scan) so verdicts reflect today's signatures.
 6. **Pivot on relationships** — for any flagged item, traverse `contacted_domains/ips`, `dropped_files`, and sandbox `behaviour_summary` to map the blast radius.
 7. **Triage with the rubric** above (engine quality, family label, behavior, prevalence) — never on raw counts alone.
 8. **Escalate, document, don't auto-break** — record hash, `last_analysis_date`, flagging engines, family, and a VT permalink; have a human confirm before blocking a dependency or failing CI.

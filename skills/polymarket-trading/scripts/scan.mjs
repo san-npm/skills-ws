@@ -110,7 +110,7 @@ function parseArgs() {
 // ── Odds API ────────────────────────────────────────────────────────────────
 
 async function fetchOdds(sport, apiKey) {
-  // Filter to games starting from now until end of tomorrow (48h window)
+  // Filter to games starting from now through the end of the day after tomorrow (~48-72h window)
   const now = new Date();
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 2);
@@ -467,8 +467,8 @@ async function main() {
       console.log('\n⚽ = Football 3-way market (win/draw/lose) — PM splits probability differently than bookmakers');
     }
 
-    console.log('\n📋 To execute a trade:');
-    console.log('   node ~/.agents/skills/polymarket/trade.mjs buy <token_id> <price> <size>\n');
+    console.log('\n📋 To execute a trade: use your own audited CLOB client (see SKILL.md Step 4).');
+    console.log('   Never trade without explicit per-trade confirmation. Re-do de-vig + EV math first (Step 2).\n');
   }
 
   if (unmatched.length > 0) {

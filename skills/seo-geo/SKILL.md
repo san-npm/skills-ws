@@ -66,14 +66,14 @@ PY
 Then run these hosted validators on the page:
 - Rich Results / schema: `https://search.google.com/test/rich-results`
 - Schema.org validator: `https://validator.schema.org/`
-- Robots parsing: paste robots.txt into `https://www.google.com/webmasters/tools/robots-testing-tool` (or test with `Googlebot` in Search Console's URL Inspection).
+- Robots parsing: Search Console's **robots.txt report** (shows fetch status, parse errors, 30-day version history) plus the URL Inspection tool for per-URL blocking checks; for offline testing use Google's open-source robots.txt parser library. (The old standalone robots.txt Tester was retired.)
 
 **Log analysis** — confirm which AI/search bots actually crawl you (Apache/nginx combined logs):
 
 ```bash
 # Hit counts per known bot UA, last N lines
-grep -aiE 'Googlebot|Bingbot|OAI-SearchBot|GPTBot|ChatGPT-User|ClaudeBot|Claude-SearchBot|Claude-User|PerplexityBot|Google-Extended' access.log \
-  | grep -oiE 'Googlebot|Bingbot|OAI-SearchBot|GPTBot|ChatGPT-User|ClaudeBot|Claude-SearchBot|Claude-User|PerplexityBot|Google-Extended' \
+grep -aiE 'Googlebot|Bingbot|OAI-SearchBot|GPTBot|ChatGPT-User|ClaudeBot|Claude-SearchBot|Claude-User|PerplexityBot|Perplexity-User|Google-Extended' access.log \
+  | grep -oiE 'Googlebot|Bingbot|OAI-SearchBot|GPTBot|ChatGPT-User|ClaudeBot|Claude-SearchBot|Claude-User|PerplexityBot|Perplexity-User|Google-Extended' \
   | sort | uniq -c | sort -rn
 ```
 
@@ -106,7 +106,7 @@ Allow: /
 # AI training crawlers (allow/block per your policy)
 User-agent: GPTBot                 # OpenAI training
 User-agent: ClaudeBot              # Anthropic training
-User-agent: Google-Extended        # Gemini training (NOT Googlebot)
+User-agent: Google-Extended        # Gemini training + grounding (NOT Googlebot)
 User-agent: CCBot                  # Common Crawl
 
 Sitemap: https://example.com/sitemap.xml
@@ -115,15 +115,15 @@ Sitemap: https://example.com/sitemap.xml
 **Key distinctions:**
 - Blocking `GPTBot` does **not** block ChatGPT citations — those use `OAI-SearchBot`.
 - Blocking `ClaudeBot` does **not** block Claude search — that uses `Claude-SearchBot`. Blocking it also doesn't block `Claude-User` retrieval; control each token separately.
-- Blocking `Google-Extended` does **not** affect Google Search ranking — only Gemini training. AI Overviews/AI Mode are governed by `Googlebot` (there is no separate AI-features opt-out crawler).
-- **User-directed fetchers behave differently, so verify per vendor.** Anthropic states all three of its bots — including `Claude-User` (user-directed) — *honor `robots.txt`*. OpenAI states `ChatGPT-User` is user-initiated and *"robots.txt rules may not apply"* — so a `robots.txt` block is **not** a reliable way to stop it; use server-side rules (status 403 / WAF / firewall by IP range) if you must block it.
+- Blocking `Google-Extended` does **not** affect Google Search ranking; it controls use of your content for Gemini model training and for grounding in Gemini Apps and Vertex AI (Grounding with Google Search). AI Overviews/AI Mode are governed by `Googlebot` (there is no separate AI-features opt-out crawler).
+- **User-directed fetchers behave differently, so verify per vendor.** Anthropic states all three of its bots, including `Claude-User` (user-directed), *honor `robots.txt`*. OpenAI states `ChatGPT-User` is user-initiated and *"robots.txt rules may not apply"*, so a `robots.txt` block is **not** a reliable way to stop it; use server-side rules (status 403 / WAF / firewall by IP range) if you must block it. Perplexity's `Perplexity-User` likewise generally ignores robots.txt because a user requested the fetch; block server-side by IP range if needed.
 
 **Current bot reference (as of Jun 2026 — recheck the vendor docs/IP files below before shipping):**
 
 | Vendor | User-agent token | Purpose | Honors robots.txt? |
 |---|---|---|---|
 | Google | `Googlebot` | Search index (and AI Overviews / AI Mode) | Yes |
-| Google | `Google-Extended` | Gemini training opt-out token (not a crawler UA) | Yes |
+| Google | `Google-Extended` | Gemini training + grounding opt-out token (not a crawler UA) | Yes |
 | Bing / Microsoft | `Bingbot` | Search index + Copilot grounding | Yes |
 | OpenAI | `OAI-SearchBot` | ChatGPT search citations | Yes |
 | OpenAI | `GPTBot` | Model training | Yes |
@@ -133,6 +133,7 @@ Sitemap: https://example.com/sitemap.xml
 | Anthropic | `Claude-SearchBot` | Search grounding | Yes |
 | Anthropic | `Claude-User` | User-directed fetch | Yes |
 | Perplexity | `PerplexityBot` | Search index/citations | Yes (declared) |
+| Perplexity | `Perplexity-User` | User-initiated fetch | **Generally ignores** robots.txt |
 | Common Crawl | `CCBot` | Open crawl corpus | Yes |
 
 Verify crawler IP ranges (official JSON files):
@@ -140,6 +141,7 @@ Verify crawler IP ranges (official JSON files):
 - Anthropic: `https://claude.com/crawling/bots.json`
 - Google: `https://developers.google.com/static/search/apis/ipranges/googlebot.json`
 - Bing: `https://www.bing.com/toolbox/bingbot.json`
+- Perplexity: `https://www.perplexity.com/perplexitybot.json`, `https://www.perplexity.com/perplexity-user.json`
 
 ### 3. Per-engine GEO playbook
 

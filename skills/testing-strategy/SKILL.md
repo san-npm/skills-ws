@@ -153,13 +153,14 @@ jobs:
     services:
       postgres:
         # Pin to the SAME major you run in production so tests catch
-        # version-specific SQL/index behavior. Postgres 17 is current GA and
-        # 18 is recent as of mid-2026 — match prod, don't chase latest.
+        # version-specific SQL/index behavior. Postgres 18 is the current GA major
+        # (since Sept 2025) and 17 stays supported into 2029: match prod, don't chase latest.
         image: postgres:17
         env: { POSTGRES_PASSWORD: test }
         ports: ['5432:5432']
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4   # installs pnpm (reads version from packageManager)
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: 'pnpm' }
       - run: pnpm install --frozen-lockfile
@@ -170,51 +171,12 @@ jobs:
         with: { name: playwright-report, path: playwright-report/ }
 ```
 
-## API Testing
-
-```typescript
-import { describe, test, expect } from 'vitest';
-import app from '../src/app';
-import supertest from 'supertest';
-
-const request = supertest(app);
-
-test('POST /api/users returns 201', async () => {
-  const res = await request.post('/api/users')
-    .send({ email: 'new@test.com', name: 'New' })
-    .expect(201);
-  expect(res.body).toHaveProperty('id');
-});
-```
-
-## Load Testing
-
-```javascript
-// k6 script: load-test.js
-import http from 'k6/http';
-import { check, sleep } from 'k6';
-
-export const options = {
-  stages: [
-    { duration: '1m', target: 50 },   // ramp up
-    { duration: '3m', target: 50 },   // sustained
-    { duration: '1m', target: 0 },    // ramp down
-  ],
-  thresholds: { http_req_duration: ['p(95)<500'] },
-};
-
-export default function () {
-  const res = http.get('https://api.example.com/health');
-  check(res, { 'status 200': (r) => r.status === 200 });
-  sleep(1);
-}
-// Run: k6 run load-test.js
-```
+For API testing see API Testing Patterns below; for load testing see Performance Testing below.
 
 ## Flaky Test Management
 
 1. **Quarantine:** Tag flaky tests with `test.skip` + tracking issue
-2. **Retry in CI:** `--retry=2` (Playwright) — max 2 retries, fix root cause within a sprint
+2. **Retry in CI:** `--retries=2` (Playwright), max 2 retries, fix root cause within a sprint
 3. **Common causes:** Shared mutable state, timing/race conditions, external dependencies, date/time
 4. **Fix patterns:** Isolate state per test, use `waitFor` not `sleep`, mock external calls, freeze time
 
@@ -223,16 +185,6 @@ export default function () {
 vi.useFakeTimers();
 vi.setSystemTime(new Date('2026-01-15T12:00:00Z'));
 afterEach(() => vi.useRealTimers());
-```
-
-## Mutation Testing
-
-Validates test quality by introducing code mutations and checking if tests catch them.
-
-```bash
-# Stryker for JS/TS
-npx stryker run
-# Target: >80% mutation score on critical modules
 ```
 
 ## Visual Regression Testing
@@ -256,7 +208,8 @@ export default defineConfig({
 // tests/visual.spec.ts
 test('homepage visual regression', async ({ page }) => {
   await page.goto('/');
-  await page.waitForLoadState('networkidle');
+  // readiness via web-first assertion, not waitForLoadState('networkidle') (discouraged for tests)
+  await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible();
   await expect(page).toHaveScreenshot('homepage.png', {
     fullPage: true,
     mask: [page.locator('.dynamic-timestamp')], // mask flaky elements
@@ -326,7 +279,7 @@ npx chromatic --project-token="$CHROMATIC_PROJECT_TOKEN"
 
 Consumer-driven contracts: the consumer defines what it needs, the provider verifies it can deliver.
 
-> **Version-sensitive.** The `PactV4`/`MatchersV3` API below targets `@pact-foundation/pact` v12–v15. Pin the version (`npm i -D @pact-foundation/pact@^15`) and check the [pact-js docs](https://github.com/pact-foundation/pact-js) before copying — the builder API has changed across majors (older code used `Pact`/`Matchers` and an `.addInteraction({...})` object form). If versions don't match, the `.withRequest(method, path)` and callback-`builder` signatures will differ.
+> **Version-sensitive.** The `PactV4`/`MatchersV3` API below targets `@pact-foundation/pact` v12-v17. Pin the version (`npm i -D @pact-foundation/pact@^17`, requires Node 22+; use `@^15` on older Node) and check the [pact-js docs](https://github.com/pact-foundation/pact-js) before copying: the builder API has changed across majors (older code used `Pact`/`Matchers` and an `.addInteraction({...})` object form). If versions don't match, the `.withRequest(method, path)` and callback-`builder` signatures will differ.
 
 ```typescript
 // consumer.pact.spec.ts — consumer side (@pact-foundation/pact v12+)
@@ -643,6 +596,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4   # installs pnpm (reads version from packageManager)
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: 'pnpm' }
       - run: pnpm install --frozen-lockfile
@@ -799,7 +753,7 @@ A test that depends on wall-clock time, network, ordering, or ambient state is a
 - **No real network.** Mock outbound HTTP at the boundary (msw/nock) or use Testcontainers for real deps you control. A test hitting `api.stripe.com` is not a test, it's an outage waiting to happen.
 - **Freeze time and seed randomness.** `vi.setSystemTime(...)`; seed `faker` (`faker.seed(123)`) and any RNG so failures reproduce.
 - **Pin everything:** `pnpm install --frozen-lockfile`, pinned base images (`postgres:17`, not `:latest`), pinned action SHAs/majors. Cache deps, never test results.
-- **Randomize test order** (Vitest `sequence.shuffle`, Jest `--shuffle`) to surface hidden inter-test coupling before it becomes a flake.
+- **Randomize test order** (Vitest `sequence.shuffle`, Jest `--randomize`, pair with `--seed` to reproduce failures) to surface hidden inter-test coupling before it becomes a flake.
 - **Fail on console.error/unhandled rejections** in CI to catch silent regressions.
 
 ### Contract & Schema Versioning
@@ -928,11 +882,11 @@ test('full order lifecycle', async ({ request }) => {
 import { z } from 'zod';
 
 const OrderResponseSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(), // Zod 4 top-level format validator; z.string().uuid() is deprecated
   status: z.enum(['pending', 'confirmed', 'shipped', 'delivered']),
   items: z.array(z.object({ sku: z.string(), qty: z.number().positive() })),
   total: z.number().nonnegative(),
-  createdAt: z.string().datetime(),
+  createdAt: z.iso.datetime(), // Zod 4; z.string().datetime() is deprecated
 });
 
 test('GET /api/orders/:id matches contract', async () => {
@@ -1091,7 +1045,7 @@ export const options = {
 
 ```bash
 npx @sentry/wizard@latest -i nextjs
-# Automatically configures: sentry.client.config.ts, sentry.server.config.ts,
+# Automatically configures: instrumentation-client.ts, sentry.server.config.ts,
 # sentry.edge.config.ts, instrumentation.ts, next.config.js wrapper
 ```
 
@@ -1114,7 +1068,7 @@ Sentry.captureException(error, { fingerprint: ['checkout-flow', error.code] });
 | Error rate | >1% of transactions | PagerDuty |
 | Performance | p95 > 2s | Slack |
 
-**Performance monitoring (tracing):** *Not* automatic — you must opt in by setting a non-zero `tracesSampleRate` (or `tracesSampler`) in each runtime config (`sentry.client.config.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`). With it unset/`0`, no transactions are sent. Profiling additionally requires `profilesSampleRate` *and* the profiling integration. Start at 10% in production and raise as needed:
+**Performance monitoring (tracing):** *Not* automatic: you must opt in by setting a non-zero `tracesSampleRate` (or `tracesSampler`) in each runtime config (`instrumentation-client.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`). With it unset/`0`, no transactions are sent. Profiling additionally requires `profilesSampleRate` *and* the profiling integration. Start at 10% in production and raise as needed:
 ```typescript
 Sentry.init({
   dsn: process.env.SENTRY_DSN,

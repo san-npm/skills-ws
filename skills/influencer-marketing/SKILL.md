@@ -70,7 +70,7 @@ Score every shortlisted creator on these dimensions, multiply by weight, sum to 
 
 ### Fake-follower / authenticity check (method, not a magic number)
 
-Audience-quality scores are **probabilistic and platform-dependent** — different tools (Modash, HypeAuditor, IG Audit) use different models and will disagree; treat them as a flag to investigate, not a verdict. No single threshold is universal. To verify:
+Audience-quality scores are **probabilistic and platform-dependent**: different tools (Modash, HypeAuditor, Upfluence) use different models and will disagree; treat them as a flag to investigate, not a verdict. No single threshold is universal. To verify:
 
 1. **Tool scan** as a first filter (one tool's "suspicious %"), but corroborate manually.
 2. **Follower-growth chart:** organic accounts grow smoothly; sudden vertical spikes = bought followers or a giveaway loop.
@@ -345,7 +345,7 @@ CAMPAIGN READOUT — [Brand] × [Creator] — [dates]
 
 **4. Recruitment funnel.** Best ambassadors usually come from existing customers/followers. Run a lightweight application (audience, why-us, sample content), vet with the scorecard above, start most in seeding/affiliate, and **promote based on data** (engagement, conversions, reliability).
 
-**5. Enablement & cadence.** Give ambassadors a creative-latitude brief (not scripts), a content kit (product info, do/don't, substantiated claims, disclosure reminder), unique codes/links, and a private channel (Discord/Slack/Geneva) for drops, briefs, and feedback. A monthly "theme + freedom" prompt keeps content fresh without dictating voice.
+**5. Enablement & cadence.** Give ambassadors a creative-latitude brief (not scripts), a content kit (product info, do/don't, substantiated claims, disclosure reminder), unique codes/links, and a private channel (Discord/Slack) for drops, briefs, and feedback. A monthly "theme + freedom" prompt keeps content fresh without dictating voice.
 
 **6. Governance & metrics.** Quarterly reviews against per-ambassador CPA/ROAS/CPE and reliability; renew, promote, or sunset. Track program-level **incremental** revenue, not just summed code redemptions (watch leakage). Monitor disclosure compliance continuously — brand liability persists across the whole program.
 

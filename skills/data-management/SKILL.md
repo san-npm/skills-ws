@@ -85,7 +85,7 @@ CREATE TABLE dim_dates (
 
 ```sql
 CREATE TABLE dim_customers (
-  customer_key   BIGINT PRIMARY KEY,        -- surrogate key, unique per VERSION (e.g. hash or identity)
+  customer_key   VARCHAR(36) PRIMARY KEY,   -- surrogate key, unique per VERSION (deterministic hash)
   customer_id    VARCHAR(50) NOT NULL,      -- natural/business key (repeats across versions)
   name           VARCHAR(200),
   email          VARCHAR(200),
@@ -102,39 +102,38 @@ CREATE UNIQUE INDEX uq_dim_customers_current
 -- Facts join on the surrogate customer_key valid at the order's date → preserves point-in-time truth.
 ```
 
-Upsert/merge logic. **Order matters: INSERT new versions first, then close the old ones** — if you close first, the change-detection join below can no longer find the prior current row and the logic only works by accident. Computing the change-set against the *current* version keeps both branches meaningful:
+Upsert/merge logic. **Order matters: stage the change-set first, then close the old versions, then insert the new ones.** The partial unique index rejects a second current row per key, so you cannot insert before closing; computing the change-set against the *still-current* version (before closing it) keeps change detection unambiguous:
 
 ```sql
--- 1) Insert a new current version for new OR changed natural keys.
---    Compared against the still-current row, so change detection is unambiguous.
-INSERT INTO dim_customers (customer_key, customer_id, name, email, segment, country,
-                           valid_from, valid_to, is_current, row_hash)
-SELECT
-  md5(s.customer_id || '|' || s.loaded_at::text)::uuid::text,  -- deterministic surrogate
-  s.customer_id, s.name, s.email, s.segment, s.country,
-  s.loaded_at, TIMESTAMP '9999-12-31', TRUE,
-  md5(concat_ws('||', s.name, s.email, s.segment, s.country))
+-- 0) Stage new OR changed natural keys, compared against the still-current row
+--    BEFORE touching it, so change detection is unambiguous.
+CREATE TEMP TABLE changed_customers AS
+SELECT s.*
 FROM stg_customers s
 LEFT JOIN dim_customers d
   ON d.customer_id = s.customer_id AND d.is_current
 WHERE d.customer_id IS NULL                          -- brand-new customer
    OR d.row_hash <> md5(concat_ws('||', s.name, s.email, s.segment, s.country));  -- changed
 
--- 2) Close the PREVIOUS current version for keys that just got a newer version.
---    A key now has >1 is_current row; expire every current row except the latest valid_from.
+-- 1) Close the previous current version for keys about to get a newer one.
 UPDATE dim_customers d
-SET valid_to = newer.valid_from, is_current = FALSE
-FROM (
-  SELECT customer_id, MAX(valid_from) AS valid_from
-  FROM dim_customers WHERE is_current
-  GROUP BY customer_id HAVING COUNT(*) > 1
-) newer
-WHERE d.customer_id = newer.customer_id
-  AND d.is_current
-  AND d.valid_from < newer.valid_from;   -- keep only the newest as current
+SET valid_to = c.loaded_at, is_current = FALSE
+FROM changed_customers c
+WHERE d.customer_id = c.customer_id
+  AND d.is_current;
+
+-- 2) Insert the new current versions.
+INSERT INTO dim_customers (customer_key, customer_id, name, email, segment, country,
+                           valid_from, valid_to, is_current, row_hash)
+SELECT
+  md5(c.customer_id || '|' || c.loaded_at::text)::uuid::text,  -- deterministic surrogate
+  c.customer_id, c.name, c.email, c.segment, c.country,
+  c.loaded_at, TIMESTAMP '9999-12-31', TRUE,
+  md5(concat_ws('||', c.name, c.email, c.segment, c.country))
+FROM changed_customers c;
 ```
 
-Wrap both statements in one transaction so the dimension is never observed with two current rows. The partial unique index above is your safety net — it will reject the load if step 2 fails to expire a stale row.
+Wrap the statements in one transaction so the dimension is never observed with two current rows. The partial unique index above is your safety net: it rejects the load if the close step misses a stale current row.
 
 In dbt, prefer the built-in `snapshot` (`strategy='check'` or `'timestamp'`), which generates `dbt_valid_from`/`dbt_valid_to`/`dbt_scd_id` for you instead of hand-writing the merge.
 
@@ -385,7 +384,7 @@ Weights are a business choice — document them next to the metric. Target `> 95
 |-----------|------------------|-----------------------|---------|
 | Account data | Contract + (1–3y) | Contract / legal obligation | Local limitation periods differ |
 | Payment/invoice records | Country tax law (often 6–10y) | Legal obligation | E.g. DE/LU ~10y, varies — confirm locally |
-| Analytics events | Minimize; pseudonymize early | Consent or legitimate interest | "26 months" is a GA default, not a GDPR rule; needs LI balancing test or consent |
+| Analytics events | Minimize; pseudonymize early | Consent or legitimate interest | "26 months" was the old Universal Analytics default, not a GDPR rule (GA4 standard retention is 2 or 14 months); needs LI balancing test or consent |
 | Marketing consent log | Until withdrawn + proof window | Consent | Keep the consent *record* to prove it |
 | Support tickets | As needed (e.g. 1–3y) | Legitimate interest | Strip PII when no longer needed |
 | Deleted-account grace | 30d then purge from prod + backups | Erasure right | Define backup-deletion path (below) |

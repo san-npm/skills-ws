@@ -11,7 +11,7 @@ description: "Build Solidity/TypeScript DeFi integrations — Uniswap V3/V4, Aav
 
 ### Uniswap V3 — Exact Input Swap
 
-`amountOutMin` is the caller's only protection against sandwich attacks and stale routes. **The caller MUST derive it from a fresh quote** (QuoterV2, see §7) times a slippage factor — never `0`, never `1`. We use `SafeERC20` because non-standard tokens (USDT, BNB) return no bool and revert plain `approve`/`transferFrom`. `deadline` is passed in by the caller (computed off-chain), not `block.timestamp`, which a validator can satisfy with an arbitrarily delayed inclusion.
+`amountOutMin` is the caller's only protection against sandwich attacks and stale routes. **The caller MUST derive it from a fresh quote** (QuoterV2, see §7) times a slippage factor (never `0`, never `1`). The templates use `SafeERC20` because non-standard tokens (USDT, BNB) return no bool and revert plain `approve`/`transferFrom`. `deadline` is passed in by the caller (computed off-chain), not `block.timestamp`, which a validator can satisfy with an arbitrarily delayed inclusion.
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -65,7 +65,7 @@ contract SwapHelper is ReentrancyGuard {
 ```
 
 > **Permit2 / Universal Router:** New integrations should prefer the **Universal Router**
-> (`0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD`) with **Permit2**
+> (`0x66a9893cC07D91D95644AEDD05D03f95e1dBA8Af`) with **Permit2**
 > (`0x000000000022D473030F116dDEE9F6B43aC78BA3`). Permit2 lets users sign a single
 > gasless, time-bounded approval instead of one `approve` per token/spender, and supports
 > batched/expiring allowances. `forceApprove(router, amount)` above is the minimal-allowance
@@ -245,11 +245,12 @@ on an L2). Always run the hook through a fork test before mainnet.
 
 Mainnet only. **For L2s (Base, Arbitrum, Optimism, Polygon) and V4 contracts the addresses differ** — resolve them at build time from the official Uniswap deployments docs and your chain config; do not assume a mainnet address is valid elsewhere. Always verify on the chain's block explorer before use.
 ```
-Uniswap V3 Router (SwapRouter):  0xE592427A0AEce92De3Edee1F18E0157C05861564
+Uniswap V3 Router (SwapRouter, deprecated; used in the teaching template above):
+                                 0xE592427A0AEce92De3Edee1F18E0157C05861564
 Uniswap V3 Factory:              0x1F98431c8aD98523631AE4a59f267346ea31F984
 Uniswap V3 Position Manager:     0xC36442b4a4522E871399CD717aBDD847Ab11FE88
 Uniswap V3 Quoter V2:            0x61fFE014bA17989E743c5F6cB21bF9697530B21e
-Universal Router:                0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD
+Universal Router (current):      0x66a9893cC07D91D95644AEDD05D03f95e1dBA8Af
 Permit2 (all chains, CREATE2):   0x000000000022D473030F116dDEE9F6B43aC78BA3
 WETH:                            0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
 USDC:                            0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
@@ -475,9 +476,9 @@ you should set a **minimal** allowance, not `MaxUint256`. Always simulate the re
 env var / server proxy, never inline.
 
 ```typescript
-// 1inch — v6 (https://portal.1inch.dev). $ONEINCH_API_KEY from env; chainId in the path.
+// 1inch Classic Swap v6.1 (docs: https://business.1inch.com/portal). $ONEINCH_API_KEY from env; chainId in the path.
 const chainId = 1;
-const base = `https://api.1inch.dev/swap/v6.0/${chainId}`;
+const base = `https://api.1inch.dev/swap/v6.1/${chainId}`;
 const auth = { headers: { Authorization: `Bearer ${process.env.ONEINCH_API_KEY}` } };
 
 // 1) Ensure the user has approved 1inch's router as spender (minimal allowance).
@@ -549,6 +550,8 @@ pragma solidity ^0.8.24;
 
 import {FlashLoanSimpleReceiverBase}
     from "@aave/core-v3/contracts/flashloan/base/FlashLoanSimpleReceiverBase.sol";
+import {IPoolAddressesProvider}
+    from "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -563,6 +566,11 @@ interface IUniV2Router {
 
 contract FlashArbitrage is FlashLoanSimpleReceiverBase {
     using SafeERC20 for IERC20;
+
+    constructor(IPoolAddressesProvider provider) FlashLoanSimpleReceiverBase(provider) {}
+
+    // An executeFlashLoan entry function (encoding routers/paths/slippageBps/deadline into
+    // params) follows the Section 2 pattern.
 
     function executeOperation(
         address asset,
@@ -747,6 +755,8 @@ computed from the quote rather than `1`, mirroring production.
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
+// Interface imports and address constants (USDC, WETH, A_USDC, POOL, router, quoter)
+// as declared in Sections 1-2.
 
 contract DeFiForkTest is Test {
     uint256 mainnetFork;

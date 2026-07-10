@@ -7,7 +7,16 @@ description: "Defensive code patterns — OWASP Top 10 with real fixes, authN/au
 
 > Disambiguation: this skill = defensive code patterns. For active offensive testing see `security-pentester`. For runtime threat intel (URL/wallet/domain scans) see `security-sentinel`.
 
-## OWASP Top 10 (2021): Vulnerable Code → Fixed Code
+## OWASP Top 10: Vulnerable Code → Fixed Code
+
+> Category numbers below follow the 2021 edition. The current edition is
+> **OWASP Top 10:2025**, which reorders and renames: A01 Broken Access Control
+> (SSRF now folds in here rather than standing alone), A02 Security
+> Misconfiguration, A03 Software Supply Chain Failures, A04 Cryptographic
+> Failures, A05 Injection, A06 Insecure Design, A07 Authentication Failures,
+> A08 Software or Data Integrity Failures, A09 Security Logging and Alerting
+> Failures, A10 Mishandling of Exceptional Conditions. Cite the 2025 numbers
+> when reporting. The fixes below all still apply.
 
 > For HTTP/JSON APIs, also work the **OWASP API Security Top 10 (2023)** — it
 > catches API-specific gaps the web list underweights. The high-impact ones:
@@ -143,7 +152,7 @@ npm audit --omit=dev --audit-level=high
 npx better-npm-audit audit --level moderate
 
 # Check for known vulnerabilities
-npx socket:npm info  # Socket.dev — detects supply chain attacks
+npx socket npm info  # Socket.dev: detects supply chain attacks
 
 # Lock file integrity
 npm ci  # Always use ci, not install, in CI
@@ -169,7 +178,7 @@ import rateLimit from 'express-rate-limit';
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // 10 attempts per IP
+  limit: 10, // 10 attempts per IP (`max` was renamed `limit` in v7)
   skipSuccessfulRequests: true,
   standardHeaders: true,
 });
@@ -323,8 +332,7 @@ app.post('/api/fetch-url', async (req, res) => {
 import { URL } from 'url';
 import ipaddr from 'ipaddr.js';
 import dns from 'dns/promises';
-import http from 'http';
-import https from 'https';
+import { Agent } from 'undici';
 
 // Reserved/dangerous ranges. ipaddr.range() covers most; add cloud metadata
 // and IPv4-mapped-IPv6 explicitly because attackers reach metadata via both.
@@ -362,13 +370,21 @@ async function resolveSafe(hostname: string): Promise<string> {
   return ips[0]; // pin this one for the connection
 }
 
-// Custom agent that connects to the pre-validated IP while preserving the
-// Host header / TLS SNI for the original hostname. This closes the rebinding gap.
-function pinnedAgent(hostname: string, ip: string, isHttps: boolean) {
-  const Agent = isHttps ? https.Agent : http.Agent;
+// Custom undici dispatcher that connects to the pre-validated IP. Node's global
+// fetch is undici-based and silently IGNORES an `agent` option (http/https Agents
+// are not undici dispatchers), so pinning MUST go through a dispatcher. The URL
+// keeps the original hostname, so the Host header and TLS SNI stay correct; only
+// resolution is overridden. This closes the rebinding gap.
+// (If you use node-fetch instead of global fetch, pass an http/https Agent with a
+//  custom `lookup` via its `agent` option to get the same effect.)
+function pinnedDispatcher(ip: string) {
+  const family = ipaddr.parse(ip).kind() === 'ipv6' ? 6 : 4;
   return new Agent({
-    lookup: (_host, _opts, cb) => cb(null, ip, ipaddr.parse(ip).kind() === 'ipv6' ? 6 : 4),
-    servername: isHttps ? hostname : undefined, // correct SNI for cert validation
+    connect: {
+      // net/tls connect option: force resolution to the pre-validated IP
+      lookup: (_host, opts, cb) =>
+        (opts as any).all ? cb(null, [{ address: ip, family }]) : (cb as any)(null, ip, family),
+    },
   });
 }
 
@@ -394,14 +410,12 @@ app.post('/api/fetch-url', async (req, res) => {
     return res.status(400).json({ error: 'URL not allowed' });
   }
 
-  const isHttps = url.protocol === 'https:';
   const response = await fetch(url, {
-    // @ts-expect-error Node fetch accepts a custom agent via `dispatcher`/`agent`
-    agent: pinnedAgent(url.hostname, ip, isHttps),
+    dispatcher: pinnedDispatcher(ip),
     redirect: 'error', // re-validate manually if you must follow redirects:
     //   for each 3xx Location, parse → resolveSafe() again → re-pin → refetch.
     signal: AbortSignal.timeout(5000),
-  });
+  } as RequestInit & { dispatcher: Agent });
   res.json(await response.json());
 });
 ```
@@ -659,7 +673,7 @@ app.post('/api/mfa/setup', async (req, res) => {
 // Verify: user proves they set up their authenticator app
 // Rate-limit MFA attempts (6-digit codes have only 1M possibilities — brute-forceable
 // over a ~90s window of valid steps without throttling).
-const mfaLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5 });
+const mfaLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 5 });
 
 app.post('/api/mfa/verify', mfaLimiter, async (req, res) => {
   const secret = decrypt(await db.getMfaSecret(req.user.id));
@@ -1032,7 +1046,7 @@ console on the first violation), or have your bundler emit them.
 ## Rate Limiting: Distributed with Redis
 
 ```typescript
-import rateLimit from 'express-rate-limit';
+import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
 import RedisStore from 'rate-limit-redis';
 import Redis from 'ioredis';
 
@@ -1042,10 +1056,12 @@ const redis = new Redis(process.env.REDIS_URL);
 const publicLimit = rateLimit({
   store: new RedisStore({ sendCommand: (...args) => redis.call(...args) }),
   windowMs: 60 * 1000,
-  max: 30,
+  limit: 30,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.ip,
+  // Per-IP keying is the default and handles IPv6 correctly; do NOT set
+  // keyGenerator: (req) => req.ip, which v8 flags (ERR_ERL_KEY_GEN_IPV6):
+  // IPv6 clients can rotate through their address block to bypass the limit.
   handler: (req, res) => {
     res.status(429).json({
       type: 'https://api.example.com/errors/rate_limited',
@@ -1059,8 +1075,9 @@ const publicLimit = rateLimit({
 const authenticatedLimit = rateLimit({
   store: new RedisStore({ sendCommand: (...args) => redis.call(...args) }),
   windowMs: 60 * 1000,
-  max: 100,
-  keyGenerator: (req) => req.user?.id || req.ip,
+  limit: 100,
+  // ipKeyGenerator applies IPv6 subnet masking so the fallback stays bypass-proof.
+  keyGenerator: (req) => req.user?.id ?? ipKeyGenerator(req.ip),
 });
 
 app.use('/api/', publicLimit);
@@ -1084,7 +1101,7 @@ npm audit --omit=dev --audit-level=moderate
 # package.json: "express": "4.18.2" (not "^4.18.2")
 
 # 4. Use Socket.dev for supply chain analysis
-npx socket:npm info express  # Check for suspicious patterns
+npx socket npm info express  # Check for suspicious patterns
 
 # 5. Enable npm provenance (verify package comes from expected source)
 npm publish --provenance  # For package authors
@@ -1101,26 +1118,33 @@ levels you actually target in mid-2026:
 | L2 | Provenance is signed by the build service | Hosted CI (GitHub Actions) signs |
 | L3 | Build runs in a hardened, isolated runner; provenance is non-forgeable | Use the official SLSA generator / reusable workflow; no self-hosted runner reuse |
 
-**Publish with provenance (consumers can then verify origin).** npm's
-`--provenance` uses GitHub Actions OIDC to sign a Sigstore attestation binding the
-package to the exact repo, commit, and workflow — no long-lived signing key:
+**Publish with trusted publishing (consumers can then verify origin).** npm's
+trusted publishing uses GitHub Actions OIDC: no long-lived token in CI, and a
+Sigstore provenance attestation binding the package to the exact repo, commit,
+and workflow is generated automatically. Configure a trusted publisher for the
+package on npmjs.com (GitHub Actions repo + workflow), then publish with no token:
 
 ```yaml
 # .github/workflows/publish.yml
 permissions:
-  id-token: write   # REQUIRED for Sigstore keyless OIDC signing
+  id-token: write   # REQUIRED for OIDC trusted publishing + Sigstore provenance
   contents: read
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22, registry-url: 'https://registry.npmjs.org' }
+      - uses: actions/setup-node@v6
+        with: { node-version: 24, registry-url: 'https://registry.npmjs.org' }
       - run: npm ci
-      - run: npm publish --provenance --access public
-        env: { NODE_AUTH_TOKEN: '${{ secrets.NPM_TOKEN }}' }
+      - run: npm publish   # no NODE_AUTH_TOKEN: OIDC auth, provenance published automatically
 ```
+
+Requires npm 11.5.1+ and Node 22.14.0+ (Node 24 bundles a new enough npm; on
+Node 22 add `npm install -g npm@latest` first). `npm publish --provenance` with a
+`NODE_AUTH_TOKEN` remains only as a fallback for legacy token-based flows: classic
+tokens are revoked and granular write tokens are capped at 90 days, so trusted
+publishing is the durable path.
 
 **Verify provenance before installing** (block deps that lack a trusted attestation):
 
@@ -1201,7 +1225,7 @@ cosign verify-attestation "$IMAGE" --type slsaprovenance \
 
 ```bash
 # Environment variables leak:
-# 1. Process listing: ps aux | grep -i secret
+# 1. Process listing: ps auxe shows the environment of your own processes (root sees all)
 # 2. Error logs: unhandled exception dumps process.env
 # 3. Docker inspect: docker inspect container_id
 # 4. /proc filesystem: cat /proc/<pid>/environ

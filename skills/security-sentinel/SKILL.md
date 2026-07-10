@@ -172,7 +172,10 @@ cast call 0x40C57923924B5c5c5455c48D93317139ADDaC8fb \
 # Activity / age signal — does the address have history, or is it freshly funded?
 curl -s "https://api.etherscan.io/v2/api?chainid=1&module=account&action=txlist&address=$ADDRESS&startblock=0&endblock=99999999&page=1&offset=10&sort=asc&apikey=$ETHERSCAN_API_KEY"
 
-# Public name tag / label (e.g. "Phish/Hack", "Fake_Phishing", exchange labels)
+# Public name tag / label (e.g. "Phish/Hack", "Fake_Phishing", exchange labels).
+# NOTE: module=nametag is a PRO endpoint (Pro Plus tier only, 2 req/sec); on a free key
+# this call fails, so treat the label signal as unavailable and lean on getsourcecode
+# plus Chainabuse instead.
 curl -s "https://api.etherscan.io/v2/api?chainid=1&module=nametag&action=getaddresstag&address=$ADDRESS&apikey=$ETHERSCAN_API_KEY"
 
 # Is the address a verified contract? (unverified source on a "token" = elevated risk)
@@ -540,7 +543,7 @@ Free-tier terms change — figures below are "as of Jun 2026, verify at the link
 | OpenPhish | Community feed | Phishing URL feed | Free, no key; `openphish.com/feed.txt`. PhishTank replacement |
 | OTX AlienVault | Free, key required | Threat indicators, IOCs | "Unlimited" no longer guaranteed — verify otx.alienvault.com |
 | Google Safe Browsing v5 | Free, default quota (raise via Cloud Console) | URL safety check | v4 ends 2027-03-31; migrate to v5. No published hard 10k/day cap |
-| Etherscan API V2 | ~5 req/sec, ~100k/day | Multichain contract/tx/label lookups | One key, 50+ chains via `chainid`; verify etherscan.io/apis |
+| Etherscan API V2 | ~5 req/sec, ~100k/day | Multichain contract/tx lookups | One key, 50+ chains via `chainid`; nametag/label endpoint is Pro Plus only; verify etherscan.io/apis |
 | Chainabuse (Public API v1.2) | ~10 calls/month (≤50 reports each) | Crypto scam reports | Basic auth; very low free quota — cache hard. docs.chainabuse.com |
 | Honeypot.is | Generous free tier | Token honeypot detection | verify honeypot.is |
 | WHOIS / RDAP (CLI) | ~30-50/min per registrar | Domain age and registrar | RDAP is the modern replacement for port-43 WHOIS; backoff on failures |

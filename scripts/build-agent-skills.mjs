@@ -53,7 +53,6 @@ async function main() {
       url: `/.well-known/agent-skills/${name}/SKILL.md`,
       digest,
       ...(meta.category ? { category: meta.category } : {}),
-      ...(meta.version ? { version: meta.version } : {}),
     });
   }
 

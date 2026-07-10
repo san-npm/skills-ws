@@ -1,16 +1,16 @@
 {
   "name": "skills-ws",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node scripts/build-agent-skills.mjs",
+    "prebuild": "node scripts/build-agent-skills.mjs && node scripts/build-llms.mjs",
     "build": "next build",
     "start": "next start",
     "indexnow": "node scripts/indexnow-submit.mjs",
     "lint": "eslint .",
     "test": "node test/cli.test.mjs",
-    "prepublishOnly": "cp package.json package.json.bak && cp npm-package.json package.json",
-    "postpublish": "mv package.json.bak package.json"
+    "publish:npm": "node scripts/publish-npm.mjs",
+    "publish:npm:dry": "node scripts/publish-npm.mjs --dry-run"
   },
   "dependencies": {
     "@vercel/analytics": "^1.6.1",

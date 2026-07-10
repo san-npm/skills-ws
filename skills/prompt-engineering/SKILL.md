@@ -7,7 +7,7 @@ description: "Production prompt engineering across OpenAI, Anthropic, Gemini, lo
 
 Provider-specific, production-grade prompting. For full agent loops (planning, memory, multi-agent orchestration, RAG retrieval architecture) see the sibling `ai-agent-building` skill; for the tool-call wire protocol see `mcp-server-builder` / `mcp-client`. This skill is about the prompt itself: how to write it, constrain it, evaluate it, and defend it.
 
-> **Model landscape (verify before shipping).** Names/prices below are current as of **Jun 2026**. Vendors ship monthly — confirm at the official model/pricing pages cited in each section before hardcoding a model ID. Never pin to an unverified ID in production code.
+> **Model landscape (verify before shipping).** Names/prices below are current as of **Jul 2026**. Anthropic's current lineup: `claude-fable-5` (most capable), `claude-opus-4-8` (agentic coding default), `claude-sonnet-5` (speed/intelligence balance), `claude-haiku-4-5` (fastest). Vendors ship monthly; confirm at the official model/pricing pages cited in each section before hardcoding a model ID. Never pin to an unverified ID in production code.
 
 ## System Prompt Design Pattern
 
@@ -55,12 +55,12 @@ The 2022-era trick of appending `"Think step by step"` and reading `<thinking>` 
 
 | Provider | Reasoning surface (Jun 2026) | How to dial it |
 |---|---|---|
-| Anthropic — newest Opus (e.g. `claude-opus-4-8`) | `effort` parameter (defaults `high`); "adaptive thinking" decides when to reason. **No `thinking` block on the newest Opus.** | `effort: "low"｜"medium"｜"high"` |
-| Anthropic — Sonnet/Haiku (e.g. `claude-sonnet-4-6`, `claude-haiku-4-5`) | Extended thinking | `thinking={"type":"enabled","budget_tokens":N}` (min 1024; counts toward `max_tokens`) |
+| Anthropic, current models (`claude-fable-5`, `claude-opus-4-8`, `claude-sonnet-5`) | Adaptive thinking: `thinking={"type":"adaptive"}` (opt in on Opus 4.8/4.7, default on for Sonnet 5, always on for Fable 5) | `output_config={"effort":"low"｜"medium"｜"high"｜"xhigh"｜"max"}` (default `high`) |
+| Anthropic, older models (`claude-haiku-4-5`, pre-4.6 Sonnet/Opus) | Extended thinking | `thinking={"type":"enabled","budget_tokens":N}` (min 1024; counts toward `max_tokens`). Deprecated on Sonnet/Opus 4.6; returns a 400 error on Sonnet 5, Opus 4.8/4.7, and Fable 5 |
 | OpenAI — reasoning models (o-series / GPT-5-class) | `reasoning.effort` on the Responses API | `reasoning={"effort":"low"｜"medium"｜"high"}` |
 | Google — Gemini 2.5+/3.x | Thinking budget | `thinking_config={"thinking_budget":N}` (model-dependent; `-1` for dynamic on supported models) |
 
-> Capabilities differ **per model within a vendor** — e.g. the newest Anthropic Opus exposes `effort`, not a `thinking` budget, while Sonnet/Haiku expose extended thinking. Check the vendor's model table (Anthropic: platform.claude.com/docs models overview) before assuming a knob exists. Over-budgeting reasoning wastes tokens and latency; start low and raise only if eval accuracy demands it.
+> Capabilities differ **per model within a vendor**: e.g. Anthropic's current models use adaptive thinking dialed with `output_config` `effort`, while Haiku 4.5 and pre-4.6 Sonnet/Opus expose extended-thinking `budget_tokens`. Check the vendor's model table (Anthropic: platform.claude.com/docs models overview) before assuming a knob exists. Over-budgeting reasoning wastes tokens and latency; start low and raise only if eval accuracy demands it.
 
 **Self-consistency** (sample N times at temp>0, majority-vote) still helps on high-stakes, hard-to-verify answers — but it's N× the cost and largely redundant on reasoning models. Reach for it only when a single reasoning pass is measurably unstable on your eval set.
 
@@ -98,7 +98,7 @@ The 2022-era trick of appending `"Think step by step"` and reading `<thinking>` 
 | Method | Where | What it actually guarantees |
 |---|---|---|
 | OpenAI Structured Outputs (`text.format` → `json_schema`, `strict:true`) | OpenAI Responses API | Bytes conform to schema. Still can refuse / truncate / filter. Evolution of legacy "JSON mode". |
-| Anthropic forced tool use / prefilling | Anthropic Messages API | No dedicated JSON-schema flag: force a single tool call whose `input_schema` is your shape and read the tool input, or prefill the assistant turn with `{`. Validate the result. |
+| Anthropic Structured Outputs (`output_config.format` with `{"type": "json_schema", "schema": ...}`) | Anthropic Messages API | Native schema-constrained JSON, GA, no beta header, on all current models. Forced tool use (`tool_choice` pinning one tool whose `input_schema` is your shape) remains a portable alternative; validate either way. |
 | Gemini structured output (`response_format`) | Gemini API | Constrained JSON to a supplied schema (see migration note below). |
 | XML tag wrapping | Any model (esp. Anthropic) | No hard guarantee, but very high adherence; trivial to parse `<answer>…</answer>` and robust to leading prose. |
 | Grammar / GBNF constrained decoding | Local (`llama.cpp`, vLLM, Outlines, SGLang) | Hard format guarantee at the sampler — the only true "cannot emit invalid tokens" option. |
@@ -115,7 +115,7 @@ class Finding(BaseModel):
     file: str; line: int; severity: str; rationale: str
 
 resp = client.responses.parse(
-    model="gpt-5",                       # verify current id at platform.openai.com/docs/models
+    model="gpt-5.5",                     # or a gpt-5.6 tier (sol/terra/luna); verify current id at developers.openai.com/api/docs/models
     input=[{"role": "user", "content": code_diff}],
     text_format=Finding,                 # SDK builds the strict json_schema for you
 )
@@ -126,7 +126,7 @@ finding = resp.output_parsed
 
 Raw (non-SDK) form sets `text={"format":{"type":"json_schema","name":"finding","strict":True,"schema":{...}}}`. Detect failure via `response.status` and any `refusal` content part; treat `incomplete` as "raise `max_tokens` and retry".
 
-**Anthropic — force a tool to pin the schema:**
+**Anthropic native Structured Outputs (`output_config.format`):**
 
 ```python
 import anthropic, json
@@ -137,7 +137,20 @@ schema = {"type": "object",
                          "sentiment": {"enum": ["neutral", "angry", "happy"]}},
           "required": ["intent", "order_id", "sentiment"]}
 msg = client.messages.create(
-    model="claude-sonnet-4-6",           # verify at platform.claude.com/docs models overview
+    model="claude-sonnet-5",             # verify at platform.claude.com/docs models overview
+    max_tokens=512,
+    output_config={"format": {"type": "json_schema", "schema": schema}},
+    messages=[{"role": "user", "content": text}],
+)
+text = next(b.text for b in msg.content if b.type == "text")  # skip any thinking block
+result = json.loads(text)                 # schema-constrained JSON
+```
+
+**Anthropic forced tool use (portable alternative):**
+
+```python
+msg = client.messages.create(
+    model="claude-sonnet-5",
     max_tokens=512,
     tools=[{"name": "emit", "description": "Return the classification.", "input_schema": schema}],
     tool_choice={"type": "tool", "name": "emit"},  # force exactly this tool
@@ -187,7 +200,7 @@ Break complex tasks into a pipeline of single-responsibility stages:
 
 - **top_p:** 0.9-0.95 for most tasks. Tune temperature *or* top_p, not both at once.
 - **Code / extraction / anything you'll diff or test:** temp=0.
-- **Reasoning models** ignore or constrain these — control behavior via the reasoning/`effort` knob, not temperature.
+- **Reasoning models** ignore or constrain these; on Anthropic's current models (Opus 4.7 and later including Opus 4.8, Sonnet 5, Fable 5) any non-default `temperature`, `top_p`, or `top_k` returns a **400 error**: omit the parameters entirely and steer style/variability via prompting or the `effort` knob. The temperature table above applies to OpenAI non-reasoning models, Gemini, and local models.
 - **Determinism caveat:** temp=0 reduces but does not guarantee identical outputs (floating-point/routing nondeterminism, MoE). Set a `seed` where the API supports one, and never assume bit-exact reproducibility in tests — assert on *properties*, not on an exact string.
 
 ## Production Evaluation
@@ -322,7 +335,7 @@ For end-to-end retrieval architecture (embeddings, vector store, hybrid search, 
 
 ## Prompt Caching & Reasoning Budgets
 
-> Caching multipliers and per-token prices change; figures below are **as of Jun 2026**. Verify Anthropic at `platform.claude.com/docs` (prompt caching + pricing), OpenAI at `platform.openai.com/docs/guides/prompt-caching`, Gemini at `ai.google.dev/gemini-api/docs/caching`.
+> Caching multipliers and per-token prices change; figures below are **as of Jun 2026**. Verify Anthropic at `platform.claude.com/docs` (prompt caching + pricing), OpenAI at `developers.openai.com/api/docs/guides/prompt-caching`, Gemini at `ai.google.dev/gemini-api/docs/caching`.
 
 ### Anthropic prompt caching (`cache_control`)
 
@@ -334,7 +347,7 @@ client = anthropic.Anthropic()
 # Mark the system prompt + a tool definition for caching (5-minute TTL by default).
 # Use {"type": "ephemeral", "ttl": "1h"} for the 1-hour cache.
 msg = client.messages.create(
-    model="claude-sonnet-4-6",           # verify current id; see models overview
+    model="claude-sonnet-5",             # verify current id; see models overview
     max_tokens=1024,
     system=[
         {"type": "text", "text": LONG_INSTRUCTIONS, "cache_control": {"type": "ephemeral"}},
@@ -380,11 +393,11 @@ resp = client.models.generate_content(
 
 Minimum cacheable token count varies by model; billed as a per-hour storage rate plus a discounted per-call read rate. (Gemini also does some implicit caching on supported models — verify on the caching docs.)
 
-### Reasoning budgets (Anthropic Sonnet/Haiku — extended thinking)
+### Reasoning budgets (Anthropic older models: extended thinking)
 
 ```python
 msg = client.messages.create(
-    model="claude-sonnet-4-6",           # extended thinking is on Sonnet/Haiku, NOT the newest Opus
+    model="claude-haiku-4-5",            # legacy config: Haiku 4.5 and pre-4.6 Sonnet/Opus only
     max_tokens=16000,
     thinking={"type": "enabled", "budget_tokens": 8000},  # min 1024; counts toward max_tokens
     messages=[{"role": "user", "content": "Prove √2 is irrational."}],
@@ -396,7 +409,7 @@ for block in msg.content:
         print(block.text)                 # the answer
 ```
 
-For the newest Anthropic **Opus** (e.g. `claude-opus-4-8`) there is **no `thinking` budget block** — set `effort` instead (defaults to `high`; lower it to save tokens/latency). Match the reasoning surface to the *model*, not the vendor (see the Reasoning table above). Keep any reasoning text internal: do not echo it to end users or write it to user-visible logs.
+On Sonnet 4.6/Opus 4.6 this `enabled`+`budget_tokens` config is deprecated; on Sonnet 5, Opus 4.8/4.7, and Fable 5 it returns a **400 error**. For current Opus/Sonnet/Fable models set `thinking={"type": "adaptive"}` and dial depth with `output_config` `effort` (defaults to `high`; lower it to save tokens/latency); thinking blocks are returned but their text defaults to display `"omitted"` on the newest models (set `display: "summarized"` to log it internally). Match the reasoning surface to the *model*, not the vendor (see the Reasoning table above). Keep any reasoning text internal: do not echo it to end users or write it to user-visible logs.
 
 ## Provider-Specific Prompting Cheatsheet
 
@@ -405,15 +418,15 @@ Same prompt, different idioms. Tune to the model you actually call.
 ### Anthropic (Claude)
 - **XML tags are first-class** — `<context>`, `<example>`, `<instructions>`, `<answer>`. Claude follows them tightly; use them for both input structure and to fence untrusted data.
 - **System prompt = role + rules; long context goes in the first user turn**, marked for caching.
-- **Prefilling:** seed the start of the assistant turn (e.g. `{` or `<answer>`) to force format and skip preamble.
-- **Reasoning:** `effort` on newest Opus; extended-thinking `budget_tokens` on Sonnet/Haiku. Be explicit about output length — Claude defaults verbose; say "be concise" or give a length cap.
+- **Prefilling is retired on current models:** prefilling the last assistant turn returns a **400 error** on Claude 4.6 and later (all current models). Use Structured Outputs (`output_config.format`), XML output tags, or a direct instruction ("respond with JSON only, no preamble") instead. Prefill still works only on older models (Sonnet 4.5, Haiku 4.5 and earlier).
+- **Reasoning:** `thinking={"type": "adaptive"}` plus `output_config` `effort` on current models (Fable 5, Opus 4.8, Sonnet 5); extended-thinking `budget_tokens` only on older models (Haiku 4.5, pre-4.6 Sonnet/Opus). Be explicit about output length: Claude defaults verbose; say "be concise" or give a length cap.
 - Docs: `platform.claude.com/docs` → prompt-engineering + "Claude prompting best practices".
 
 ### OpenAI (GPT / reasoning models)
 - **Prefer the Responses API** over Chat Completions for new builds; structured output lives at `text.format` (`json_schema`, `strict:true`).
 - **Reasoning models (o-series / GPT-5-class):** give the goal and constraints, *not* a hand-written CoT — they reason internally; control depth with `reasoning.effort`. Don't tell them to "think step by step."
 - **Developer message** (Responses API) carries app instructions and outranks user input — put rules there, not in the user turn.
-- Markdown headings/numbered lists work well as structure. Docs: `platform.openai.com/docs`.
+- Markdown headings/numbered lists work well as structure. Docs: `developers.openai.com/api/docs`.
 
 ### Google (Gemini)
 - **Structured output** via `response_format` (migrating off the legacy `response_mime_type`/`response_schema` — see Gemini warning above); pin your `google-genai` SDK version.

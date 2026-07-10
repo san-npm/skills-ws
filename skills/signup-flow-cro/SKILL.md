@@ -415,7 +415,8 @@ average as your expected result.
 // Social Login Analytics — self-contained and runnable.
 // Use ONE shared instance (see initiateSocialLogin below); a fresh instance
 // per click would reset the metrics. Timing is tracked per provider so
-// overlapping attempts don't clobber a single shared start time.
+// overlapping attempts don't clobber a single shared start time; note it
+// stores only the LATEST completion time per provider, not an average.
 class SocialLoginAnalytics {
   constructor() {
     this.providers = ['google', 'microsoft', 'apple', 'linkedin'];
@@ -488,7 +489,7 @@ class SocialLoginAnalytics {
       errors: this.metrics.errors[provider] || 0,
       conversions: this.metrics.conversions[provider] || 0,
       conversionRate: this.calculateConversionRate(provider),
-      avgCompletionTimeMs: this.metrics.timeToComplete[provider] ?? null,
+      lastCompletionTimeMs: this.metrics.timeToComplete[provider] ?? null,
     }));
   }
 
@@ -1340,7 +1341,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <div class="verification-content">
     <div class="verification-icon">
       <svg class="check-email-icon" viewBox="0 0 24 24">
-        <path d="M20,8L12,13L4,8V6L12,11L20,6M20,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6C2.89,4 20,4.89 20,4Z"/>
+        <path d="M20,8L12,13L4,8V6L12,11L20,6M20,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6C22,4.89 21.1,4 20,4Z"/>
       </svg>
     </div>
     

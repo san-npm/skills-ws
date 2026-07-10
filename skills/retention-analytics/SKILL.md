@@ -42,6 +42,8 @@ LEFT JOIN activity a ON c.user_id = a.user_id
 GROUP BY c.cohort ORDER BY c.cohort;
 ```
 
+Caution: cohorts younger than N weeks show 0% for wN_pct (right-censoring). NULL those cells or filter immature cohorts before reading the table.
+
 **SQL — rolling retention (active in week N OR later), more forgiving:**
 ```sql
 WITH cohorts AS (
@@ -62,6 +64,8 @@ LEFT JOIN activity a ON c.user_id = a.user_id
 GROUP BY c.cohort ORDER BY c.cohort;
 ```
 
+Caution: cohorts younger than N weeks show 0% for rolling_wN_pct (right-censoring). NULL those cells or filter immature cohorts before reading the table.
+
 **Retention benchmarks — segment before you compare.** There is no single "good" curve; the right target depends on your motion, ACV, and natural usage cadence. The ranges below are directional rules of thumb (as of mid-2026, no single authoritative source — calibrate against your own historical cohorts before setting goals):
 
 | Motion / segment | W1 (return) | M1 | M3 | M12 | Notes |
@@ -73,7 +77,7 @@ GROUP BY c.cohort ORDER BY c.cohort;
 | **Consumer subscription** | 45–60% | 25–40% | 15–25% | 10–20% | High early churn is normal; "smile curve" resurrection matters |
 | **Prosumer / vertical SaaS** | varies by cadence | — | — | — | Match the window to expected usage (weekly tool ≠ daily tool) |
 
-**If W1 return retention is below your segment band:** Activation problem — fix onboarding / time-to-first-value (§6).
+**If W1 return retention is below your segment band:** Activation problem: fix onboarding / time-to-first-value (§3).
 **If early retention is fine but M3 drops:** Value-delivery problem — users aren't finding ongoing value or the use case was one-off.
 **Always read the cohort *curve shape*, not one number:** a flattening tail (the curve asymptotes above zero) signals a sticky core; a curve trending to zero signals no durable value regardless of how high W1 starts.
 
@@ -150,11 +154,13 @@ WHERE u.status = 'active'
 -- Do NOT sort by the string label: `ORDER BY risk_level DESC` sorts
 -- lexicographically (medium_risk > high_risk > critical), burying the worst
 -- accounts. Sort by explicit severity rank instead.
+-- (PostgreSQL only allows output aliases like risk_level unadorned in ORDER BY,
+-- not inside an expression, so repeat the conditions here.)
 ORDER BY
-  CASE risk_level
-    WHEN 'critical'    THEN 1
-    WHEN 'high_risk'   THEN 2
-    WHEN 'medium_risk' THEN 3
+  CASE
+    WHEN COALESCE(recent.sessions_7d, 0) = 0 THEN 1
+    WHEN recent.sessions_7d < prior.sessions_7d * 0.5 THEN 2
+    WHEN recent.sessions_7d < prior.sessions_7d * 0.75 THEN 3
     ELSE 4
   END,
   u.contract_end ASC NULLS LAST;

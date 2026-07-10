@@ -114,6 +114,7 @@ What it shows:
 - How often your content is cited in Copilot, Bing AI summaries, and partner integrations
 - Which URLs are referenced
 - Citation activity over time
+- Since June 2026 (preview rollout): Intents (query-intent categories behind citations), Topics (thematic query clusters), Citation Share (your share of all citations for a grounding query), and Compare (overlay prior time periods)
 
 How to use it:
 - **Audit gaps:** URLs ranking well in classic Search but missing from AI citations are GEO opportunities.
@@ -217,7 +218,8 @@ Bing Webmaster provides free backlink data:
 
 URLs and policy wording shift fast in this area — confirm against the live page before citing. Retrieval dates below are when wording in this skill was last checked.
 
-- Bing AI Performance announcement (public preview, Feb 2026): https://blogs.bing.com/webmaster (Bing Webmaster Blog index — open the "AI Performance" announcement; retrieved Jun 2026)
+- Bing AI Performance announcement (public preview, Feb 2026): https://blogs.bing.com/webmaster/February-2026/Introducing-AI-Performance-in-Bing-Webmaster-Tools-Public-Preview (retrieved Jul 2026)
+- AI Performance expansion, Intents/Topics/Citation Share/Compare (Jun 16, 2026): https://blogs.bing.com/search/June-2026/New-AI-Visibility-Insights-in-Bing-Webmaster-Tools-Intents-Topics-Citation-Share-Compare (retrieved Jul 2026)
 - Bing Webmaster Guidelines — GEO definition, per-directive AI behavior, and the updated abuse/scaled-content policies (the primary source for §4–§6, not third-party coverage): https://www.bing.com/webmasters/help/webmaster-guidelines-30fba23a (retrieved Jun 2026)
 - IndexNow protocol + endpoints, response codes, and key-file rules: https://www.indexnow.org/documentation (retrieved Jun 2026)
 - Bing URL Submission API reference: https://learn.microsoft.com/bingwebmaster/ (retrieved Jun 2026)

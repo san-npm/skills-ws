@@ -103,7 +103,7 @@ Even a one-liner in #introductions helps us point you to the right people.
 | New member activation | % of joiners who post within 7 days | >30% |
 | Lurker ratio | Read-only members / total | <80% (some lurking is fine) |
 
-Track weekly. Tooling: Discord's built-in Server Insights (needs Community enabled, ~500+ members for full data), **Common Room** or **Orbit** (note: the original Orbit shut down in 2023 and Common Room acquired the team; "Orbit" today refers to other products — default to Common Room), **Commsor**, or a DIY pipeline (below). For <500 members, weekly manual sampling beats any dashboard.
+Track weekly. Tooling: Discord's built-in Server Insights (needs Community enabled, ~500+ members for full data), **Common Room** (note: the original Orbit was acquired by Postman in April 2024 and the standalone product was sunset shortly after; "Orbit" today refers to unrelated products, so default to Common Room), or a DIY pipeline (below). For <500 members, weekly manual sampling beats any dashboard.
 
 ### Instrumentation plan (DIY)
 

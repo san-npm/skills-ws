@@ -316,9 +316,9 @@ CREATE TABLE documents (
 |-------|-------------|-------|
 | `text-embedding-3-small` | 1536 | Cheaper; can shorten via `dimensions` param |
 | `text-embedding-3-large` | 3072 | Highest quality; shorten to 1024/256 for storage/speed |
-| Cohere `embed-v3` / open models | 1024 / varies | Check the model card before choosing `N` |
+| Cohere `embed-v4.0` / open models | 1536 default (256/512/1024 options) / varies | Check the model card before choosing `N` |
 
-The `text-embedding-3-*` models support Matryoshka truncation: request fewer `dimensions` (e.g. 256) for ~6x smaller indexes with modest recall loss. Whatever you pick, `vector(N)` must equal the stored vector length exactly, so verify against current model docs (e.g. https://platform.openai.com/docs/guides/embeddings) before committing to a column type.
+The `text-embedding-3-*` models support Matryoshka truncation: request fewer `dimensions` (e.g. 256) for ~6x smaller indexes with modest recall loss. Whatever you pick, `vector(N)` must equal the stored vector length exactly, so verify against current model docs (e.g. https://developers.openai.com/api/docs/guides/embeddings) before committing to a column type.
 
 **Storage types (pgvector 0.7+).** For high-dimension models, `halfvec` (16-bit floats) halves index size and memory with negligible recall loss, and dodges the `vector`/`hnsw` ~2000-dim index limit:
 
@@ -618,7 +618,9 @@ archive_mode = on
 # (it will keep the WAL segment until success — never return 0 on a failed copy),
 # and (2) refuse to overwrite an already-archived segment with DIFFERENT content.
 # Naive `aws s3 cp` silently overwrites and masks corruption. Guard it:
-archive_command = 'test ! -f /mnt/wal/%f && aws s3 cp %p s3://my-wal-archive/%f --only-show-errors'
+archive_command = 'test ! -f /mnt/wal/%f && cp %p /mnt/wal/%f'
+# A plain `aws s3 cp` cannot refuse to overwrite an existing object; if archiving
+# straight to S3, use pgBackRest (below) or a wrapper that checks object existence first.
 archive_timeout = 300  # Archive at least every 5 minutes
 ```
 
@@ -729,7 +731,7 @@ pg_basebackup -h primary-host -U replicator -D /var/lib/postgresql/data -Fp -Xs 
 
 ```ini
 # Replica postgresql.conf
-primary_conninfo = 'host=primary-host user=replicator password=xxx'
+primary_conninfo = 'host=primary-host user=replicator'  # credentials via ~/.pgpass (or passfile=), never inline in postgresql.conf
 hot_standby = on
 ```
 

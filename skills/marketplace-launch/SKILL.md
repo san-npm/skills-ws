@@ -108,12 +108,12 @@ Would love your feedback. I'm here all day answering questions! 🙏
 - Newsletter: share with your subscriber base
 - Case study: if results are strong, use for sales
 
-**Golden Kitty Awards:**
-- Nominations open annually (usually December)
-- Categories: AI, Developer Tools, Design Tools, Productivity, etc.
-- Being Product of the Day/Week/Month helps visibility for nominations
-- Campaign for votes when nominations open
-- Add "Golden Kitty Nominee" badge if nominated
+**Product Hunt Orbit Awards:**
+- PH sunset the annual Golden Kitty Awards and replaced them with the quarterly Orbit Awards (traction-focused, first edition December 2025)
+- Winners are selected from verified reviews, with extra weight on detailed reviews and founder reviews, so there is no vote campaign to run
+- Categories are dynamic and follow emerging spaces (AI dictation, vibecoding tools, coding agents, etc.), refreshed quarterly
+- Practical play: keep a steady stream of detailed verified reviews flowing to your PH product page all year; that is what feeds Orbit eligibility
+- Being Product of the Day/Week/Month still helps visibility; add any earned award badge to your site
 
 ## 2. AppSumo Launch
 
@@ -285,7 +285,7 @@ for an honest review, regardless of rating."]
 **Niche directories (submit based on your category):**
 - AI tools: There's An AI For That, Futurepedia, AI Tool Directory
 - Developer tools: StackShare, LibHunt, Awesome lists (GitHub)
-- No-code: NoCodeList, Makerpad, NocodeHQ
+- No-code: NoCodeList, NocodeHQ (this niche churns fast: confirm each site is still live and still accepts listings before spending time on it)
 - Remote work: RemoteTools, Remote.tools
 - Startups: Crunchbase, AngelList, StartupBase
 

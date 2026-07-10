@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { readdir, readFile, copyFile, mkdir, stat } from "node:fs/promises";
+import { homedir } from "node:os";
 import { join, dirname } from "node:path";
 import readline from "node:readline";
 import { fileURLToPath } from "node:url";
@@ -249,20 +250,41 @@ async function copyDir(src, dest) {
   }
 }
 
-async function detectTarget() {
-  const candidates = [
-    join(process.cwd(), ".claude", "skills"),
-    join(process.cwd(), "skills"),
-    join(process.env.HOME || "~", "openclaw", "skills"),
-    join(process.env.HOME || "~", ".claude", "skills"),
-  ];
-  for (const c of candidates) {
-    try { await stat(c); return c; } catch {}
+function targetCandidates() {
+  const home = homedir();
+  if (!home) {
+    process.stderr.write(`  ${YELLOW}Error:${R} cannot resolve your home directory.\n`);
+    process.exit(1);
   }
-  // Default: create ~/.claude/skills if nothing found
-  const defaultTarget = join(process.env.HOME || "~", ".claude", "skills");
-  await mkdir(defaultTarget, { recursive: true });
-  return defaultTarget;
+  const cwd = process.cwd();
+  // Paths each tool actually reads, per official docs (2026):
+  // Claude Code: .claude/skills + ~/.claude/skills
+  // Cursor: .cursor/skills, .agents/skills, ~/.cursor/skills, ~/.agents/skills
+  // Codex: .agents/skills + ~/.agents/skills
+  // OpenClaw: <workspace>/skills, <workspace>/.agents/skills, ~/.agents/skills, ~/.openclaw/skills
+  return [
+    { path: join(cwd, ".claude", "skills"), agent: "Claude Code (project)" },
+    { path: join(cwd, ".cursor", "skills"), agent: "Cursor (project)" },
+    { path: join(cwd, ".agents", "skills"), agent: "Codex/Cursor/OpenClaw (project)" },
+    { path: join(cwd, "skills"), agent: "OpenClaw workspace" },
+    { path: join(home, ".claude", "skills"), agent: "Claude Code (user)" },
+    { path: join(home, ".cursor", "skills"), agent: "Cursor (user)" },
+    { path: join(home, ".agents", "skills"), agent: "Codex/Cursor/Copilot/OpenClaw (user)" },
+    { path: join(home, ".openclaw", "skills"), agent: "OpenClaw (global)" },
+  ];
+}
+
+async function detectTarget() {
+  const candidates = targetCandidates();
+  for (const c of candidates) {
+    try { await stat(c.path); process.stdout.write(`  ${DIM}detected: ${c.agent}${R}\n`); return c.path; } catch {}
+  }
+  // Default: ~/.agents/skills, the cross-tool path read by Cursor, Codex,
+  // Copilot, and OpenClaw. Claude Code users will already have ~/.claude/skills.
+  const fallback = join(homedir(), ".agents", "skills");
+  process.stdout.write(`  ${DIM}no agent skills directory found, using cross-tool default${R}\n`);
+  await mkdir(fallback, { recursive: true });
+  return fallback;
 }
 
 // ── Interactive Picker ───────────────────────────────────────
@@ -357,7 +379,7 @@ async function main() {
     return;
   }
 
-  if (args[0] === "install" || args[0] === "add") {
+  if (args[0] === "install" || args[0] === "add" || args[0] === "--skill") {
     let names = args.slice(1);
 
     // Handle "all" keyword
@@ -388,6 +410,11 @@ async function main() {
     await installSkills(names, skills, customDir);
     return;
   }
+
+  // Unknown argument: print usage and fail loudly instead of a silent no-op
+  process.stderr.write(`  ${YELLOW}Unknown command:${R} ${args[0]}\n\n`);
+  process.stderr.write(`  ${B}Usage:${R} npx skills-ws [list | install <name...> | install all | help]\n\n`);
+  process.exit(1);
 }
 
 process.on("SIGINT", () => { showCursor(); process.exit(0); });

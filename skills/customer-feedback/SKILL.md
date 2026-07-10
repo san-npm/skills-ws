@@ -347,15 +347,15 @@ Stratify by the segments that matter for the feature (plan tier, company size, g
 
 ## Tools Comparison
 
-> Pricing **models** below are directional and change frequently — vendors repackage tiers, rename plans, meter on different units, and move features behind add-ons regularly. Treat these as "how they tend to charge," not quotes. **As of Jun 2026, verify current packaging and price on each vendor's pricing page** (canny.io, productboard.com, pendo.io, hotjar.com, delighted.com) before committing, and re-check at renewal. Watch for unit traps: "per tracked user" and "per MAU" scale with your growth, "per response" punishes high survey volume, and seat-based tools meter *makers/admins*, not viewers.
+> Pricing **models** below are directional and change frequently: vendors repackage tiers, rename plans, meter on different units, and move features behind add-ons regularly. Treat these as "how they tend to charge," not quotes. **As of Jun 2026, verify current packaging and price on each vendor's pricing page** (canny.io, productboard.com, pendo.io, contentsquare.com, qualtrics.com) before committing, and re-check at renewal. Watch for unit traps: "per tracked user" and "per MAU" scale with your growth, "per response" punishes high survey volume, and seat-based tools meter *makers/admins*, not viewers.
 
 | Tool | Best For | Pricing Model (verify) | Key Strength |
 |------|----------|--------------|--------------|
 | **Canny** | Public feature voting boards | Tiered; tracked-users/admins | Transparent roadmap |
 | **Productboard** | Feedback→roadmap workflow | Per-maker seat | Prioritization frameworks |
 | **Pendo** | In-app guides + analytics | Per-MAU | Combines feedback with usage data |
-| **Hotjar** | On-page surveys + heatmaps | Per-session/identified user | Visual context |
-| **Delighted** | NPS/CSAT automation | Per-response/tiered | Simple, fast setup |
+| **Contentsquare (formerly Hotjar)** | On-page surveys + heatmaps | Per-session/identified user | Visual context (Hotjar is now part of Contentsquare; the platforms have merged) |
+| **Qualtrics Customer Feedback** (successor to the retired Delighted) | NPS/CSAT automation | Tiered/quote-based | Fast setup, AI analysis |
 
 Adjacent categories worth a look (also verify pricing): **Dovetail / Marvin** (AI research repository + verbatim tagging), **Sprig** (in-product surveys + AI analysis), **Enterpret / Unwrap.ai** (LLM auto-tagging across all feedback sources), **Typeform / Qualtrics** (general survey), **Intercom / Zendesk** (support-embedded CSAT). For B2B, confirm the tool can **stitch feedback to CRM accounts and ARR** (see data model) — a pretty voting board that can't tie a request to a $-value is half the value.
 

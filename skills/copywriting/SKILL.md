@@ -803,7 +803,7 @@ Transformation Elements:
 
 ### A/B Testing Framework for Copy
 
-**Test in priority order, not by guessed "impact weights."** Headline/value-prop and CTA usually move conversions most, but the only honest weight is your own historical test data — do NOT promise "headline = 30% of conversions." Rank tests by *expected lift × ease*, then validate with statistics. A "winner" that isn't statistically significant is noise: shipping it is how teams convince themselves copy works when it doesn't.
+**Test in priority order, not by guessed "impact weights."** Headline/value-prop and CTA usually move conversions most, but the only defensible weight is your own historical test data; do NOT promise "headline = 30% of conversions." Rank tests by *expected lift × ease*, then validate with statistics. A "winner" that isn't statistically significant is noise: shipping it is how teams convince themselves copy works when it doesn't.
 
 **Before you test — size it.** The single biggest A/B-test mistake is stopping early ("peeking") the moment a variant looks ahead. Decide the sample size up front, run to it, then evaluate once. Here is a self-contained, runnable Python implementation (standard library only — no external deps) for sample size and a two-proportion z-test:
 
@@ -915,7 +915,7 @@ Every objective or quantified claim must be **true and provable before it ships.
 
 ### Email & messaging consent
 
-- **US (CAN-SPAM):** accurate "From"/subject lines, identify the message as an ad where required, include a valid physical postal address, provide a working one-click unsubscribe, and honor opt-outs promptly. No deceptive headers.
+- **US (CAN-SPAM):** accurate "From"/subject lines, identify the message as an ad where required, include a valid physical postal address, provide a clear and conspicuous opt-out mechanism, and honor opt-outs within 10 business days. (Separately, Gmail and Yahoo require one-click unsubscribe headers, RFC 8058, for bulk senders: build it in regardless.) No deceptive headers.
 - **EU/UK (GDPR + ePrivacy) and CASL (Canada):** generally require **prior opt-in consent** to email marketing; keep proof of consent; offer easy withdrawal. Pre-checked consent boxes are not valid consent under GDPR.
 - Write the unsubscribe and consent microcopy as part of the deliverable — it's copy, not an afterthought.
 

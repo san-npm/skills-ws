@@ -106,10 +106,11 @@ export default async function LocationPage({ params }: { params: Params }) {
 
   return (
     <>
+      {/* Escape < so scraped or user-supplied strings cannot break out of the script tag (XSS). */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(generateLocationSchema(service, location, providers, faqs)),
+          __html: JSON.stringify(generateLocationSchema(service, location, providers, faqs)).replace(/</g, '\\u003c'),
         }}
       />
 
@@ -279,7 +280,7 @@ export const getProductData = unstable_cache(
 );
 ```
 
-**Modern alternative — `'use cache'` (Next 15.x stable / 16):** the new cache model is opt-in via the `cacheComponents` flag in `next.config.js` (this flag was named `dynamicIO` in earlier 15.x canaries — check your version). Inside a cached scope you set freshness with `cacheLife` and invalidation keys with `cacheTag`. Verify the directive's stability for your exact version at `nextjs.org/docs`.
+**Modern alternative: `'use cache'` (stable in Next 16 via Cache Components; experimental behind a flag in 15.x).** The new cache model is opt-in via the `cacheComponents` flag in `next.config.js` (this flag was named `dynamicIO` in earlier 15.x canaries; check your version). Inside a cached scope you set freshness with `cacheLife` and invalidation keys with `cacheTag`. Verify the directive's stability for your exact version at `nextjs.org/docs`.
 
 ```typescript
 import { cacheLife, cacheTag } from 'next/cache';
@@ -616,7 +617,7 @@ function Breadcrumbs({ items }: { items: { label: string; href: string }[] }) {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, '\\u003c') }} />
       <nav aria-label="Breadcrumb">
         <ol className="flex gap-2 text-sm text-gray-500">
           {items.map((item, i) => (
@@ -781,12 +782,13 @@ export async function GET(
   const chunk = parseInt(chunkStr);
   const pages = await getPagesByType(type, { skip: chunk * 10000, take: 10000 });
 
+  // Google ignores <changefreq> and <priority>; invest in an accurate <lastmod>
+  // instead (other engines may still read changefreq).
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   ${pages.map(p => `<url>
     <loc>https://example.com${p.path}</loc>
     <lastmod>${p.updatedAt.toISOString()}</lastmod>
-    <changefreq>${p.changefreq ?? 'weekly'}</changefreq>
   </url>`).join('\n  ')}
 </urlset>`;
 
@@ -994,7 +996,7 @@ checkIndexingHealth().catch((e) => {
 | `ItemList` / `Product` | Shown (Product needs price/availability) | Directory & listing pages |
 | `LocalBusiness` | Shown for genuine businesses | Location/provider pages |
 | `Review` / `AggregateRating` | Shown, but **only for content the page is genuinely about**; self-serving/site-wide ratings are ineligible | Provider/product pages with real reviews |
-| `FAQPage` | **Sharply restricted since Aug 2023** — rich results now limited mainly to authoritative gov/health sites. For most sites it renders nothing | Keep only as on-page UX; do NOT add at scale expecting SERP real estate |
+| `FAQPage` | **Removed entirely: not shown in Google Search since May 7, 2026** (was gov/health only from Aug 2023; Google deleted the feature docs Jun 2026) | Keep only as on-page UX; do NOT add at scale expecting SERP real estate |
 | `HowTo` | **Deprecated as a rich result** (rolled back, ~2023) | Don't rely on it |
 
 Rule of thumb: ship `BreadcrumbList` + the page's primary type (`Product`/`LocalBusiness`/`ItemList`) everywhere; add `Review`/`AggregateRating` only where real, on-page reviews exist. Validate with the Rich Results Test (`search.google.com/test/rich-results`) and confirm current eligibility at `developers.google.com/search/docs/appearance/structured-data`. Never mark up ratings/reviews/FAQs that aren't actually visible to the user.
@@ -1029,10 +1031,10 @@ export function generateLocalBusinessSchema(service: Service, location: Location
   };
 }
 
-// NOTE: FAQPage rich results are heavily restricted (see table above). Only emit
-// this if the Q&A is genuinely on-page; do not roll it out site-wide expecting
-// SERP FAQ accordions — for most sites that real estate no longer exists, and
-// marking up hidden/duplicated FAQs risks a structured-data spam action.
+// NOTE: FAQPage rich results no longer exist in Google Search (removed May 7, 2026;
+// see table above). Only emit this if the Q&A is genuinely on-page and you want it
+// for other engines or AI answer surfaces; expect zero Google SERP real estate, and
+// marking up hidden or duplicated FAQs still risks a structured-data spam action.
 export function generateFAQSchema(faqs: FAQ[]) {
   return {
     '@context': 'https://schema.org',

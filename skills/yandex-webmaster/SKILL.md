@@ -83,7 +83,7 @@ Note: multi-region assignment through the old Yandex Catalog no longer applies (
 
 ## 5. Mobile & page experience (Turbo Pages are discontinued)
 
-**Turbo Pages — historical only.** Turbo Pages were Yandex's AMP-style fast-mobile format. **Yandex discontinued Turbo Pages** (per the Webmaster changelog the feature was retired on 2026-06-02; Yandex's developer/Metrica Turbo docs and legal terms now mark it unavailable). Do **not** build Turbo RSS feeds or `turbo:content` markup for new work, and ignore legacy claims like "15x faster" or "higher mobile position via Turbo." If you have legacy Turbo feeds, treat them as deprecated and migrate to a fast responsive site. (Verify status at `yandex.com/dev/turbo/`.)
+**Turbo Pages: historical only.** Turbo Pages were Yandex's AMP-style fast-mobile format. **Yandex discontinued Turbo Pages** (the Yandex Webmaster changelog lists Turbo pages as discontinued on April 1, 2025). Do **not** build Turbo RSS feeds or `turbo:content` markup for new work, and ignore legacy claims like "15x faster" or "higher mobile position via Turbo." If you have legacy Turbo feeds, treat them as deprecated and migrate to a fast responsive site. (Verify status in the Webmaster changelog at `yandex.com/support/webmaster/en/service/about`.)
 
 **What to do instead in 2026** — optimize the real site:
 - Responsive, mobile-first layout; no separate `m.` site unless already established (and if so, configure it as a mobile mirror, not a duplicate).
@@ -168,8 +168,8 @@ print("problems:", s["site_problems"])  # {FATAL, CRITICAL, POSSIBLE_PROBLEM, RE
 
 ```python
 diag = requests.get(f"{BASE}/user/{user_id}/hosts/{host_id}/diagnostics", headers=H).json()
-for p in diag.get("problems", []):
-    print(p.get("severity"), p.get("problem_type"), p.get("state"))
+for ptype, p in diag.get("problems", {}).items():
+    print(p.get("severity"), ptype, p.get("state"))
 ```
 
 **Step 3 — popular search queries (CTR is the lever to optimize).**
@@ -205,7 +205,7 @@ resp = requests.post(
 print(resp.status_code, resp.json())   # returns a task_id; poll .../recrawl/queue/{task_id}
 ```
 
-Other useful host-scoped resources (same `…/hosts/{host_id}/<suffix>` pattern): `sitemaps`, `indexing/history`, `pages-in-search/history`, `external-links/samples`, `links/internal`, `site-quality`. Treat exact field names as authoritative only at `yandex.com/dev/webmaster/doc/en/`.
+Other useful host-scoped resources (same `…/hosts/{host_id}/<suffix>` pattern): `sitemaps`, `indexing/history`, `search-urls/in-search/history`, `search-urls/in-search/samples`, `search-urls/events/samples`, `links/external/samples`, `links/internal/broken/samples`, `sqi-history`. Treat exact field names as authoritative only at `yandex.com/dev/webmaster/doc/en/`.
 
 ## 9. Russian-market specifics
 

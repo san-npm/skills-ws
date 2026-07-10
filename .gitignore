@@ -18,3 +18,4 @@ package.json.bak
 coverage/
 *.log
 npm-debug.log*
+dist-npm/

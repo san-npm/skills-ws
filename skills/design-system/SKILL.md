@@ -1,6 +1,6 @@
 ---
 name: design-system
-description: "Build and audit React/Tailwind design systems — design tokens, CVA component libraries, Storybook 9 docs/tests, WCAG 2.2 accessibility, theming, Figma-to-code token pipelines, npm publishing. Use when building or reviewing a component library, token pipeline, Storybook setup, theming, or Figma handoff on React 18/19 + Tailwind v4."
+description: "Build and audit React/Tailwind design systems: design tokens, CVA component libraries, Storybook 10 docs/tests, WCAG 2.2 accessibility, theming, Figma-to-code token pipelines, npm publishing. Use when building or reviewing a component library, token pipeline, Storybook setup, theming, or Figma handoff on React 18/19 + Tailwind v4."
 ---
 
 # Design System Implementation
@@ -367,14 +367,14 @@ Button.displayName = 'Button';
 
 ---
 
-## 4. Storybook Setup (Storybook 9)
+## 4. Storybook Setup (Storybook 10)
 
-Storybook 9 (stable June 2025) is a major shift from the 7/8 era:
+Storybook 10 (stable Oct 2025; ESM-only, Node 20.19+ or 22.12+) keeps the big 9.x shifts in place:
 
 - **`addon-essentials`, `addon-docs`, `addon-controls`, `addon-interactions`, `addon-viewport`, `addon-backgrounds` are folded into the core.** Do not list them in `addons` anymore — `init` strips them. Autodocs and controls work out of the box.
 - **Component testing moved to Vitest.** The old `@storybook/test-runner` (Jest + Playwright) is superseded by **`@storybook/addon-vitest`**, which runs every story as a real Vitest browser-mode test. `play` functions become assertions; failures fail `vitest`/CI.
 - **`@storybook/test` is deprecated** in favor of importing `within`, `userEvent`, `expect`, `waitFor` from `storybook/test`.
-- Bundle is ~50% lighter; Node ≥20 and a Vite-based framework are expected.
+- Bundle is another ~29% lighter than v9; ESM-only and a Vite-based framework are expected.
 
 ### Installation
 
@@ -396,14 +396,14 @@ import type { StorybookConfig } from '@storybook/react-vite';
 
 const config: StorybookConfig = {
   stories: ['../src/**/*.mdx', '../src/**/*.stories.@(ts|tsx)'],
-  // Only NON-core addons go here in SB9. essentials/docs/controls are built in.
+  // Only NON-core addons go here in SB10. essentials/docs/controls are built in.
   addons: ['@storybook/addon-a11y', '@storybook/addon-vitest'],
   framework: '@storybook/react-vite',
-  // autodocs defaults on for stories tagged 'autodocs'; 'tag' is the SB9 value.
-  docs: { autodocs: 'tag' },
 };
 export default config;
 ```
+
+> Autodocs is driven by the `'autodocs'` tag (per story/component, or project-wide via `tags: ['autodocs']` in `preview.ts`); the old `docs.autodocs` option in `main.ts` was removed in 9.0.
 
 ```typescript
 // .storybook/preview.ts — turn the a11y addon into a hard gate
@@ -424,7 +424,7 @@ export default preview;
 
 ```tsx
 // components/button/button.stories.tsx
-// SB9: import the typed helpers from the framework package, not '@storybook/react'.
+// SB10: import the typed helpers from the framework package, not '@storybook/react'.
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Button } from './button';
 
@@ -492,13 +492,13 @@ export const AllSizes: Story = {
 
 ### Component Accessibility Checklist (WCAG 2.2 AA)
 
-WCAG 2.2 (W3C Recommendation, Oct 2023) is the target baseline in 2026 — it adds **2.4.11 Focus Not Obscured**, **2.4.13 Focus Appearance**, **2.5.8 Target Size (min 24×24 CSS px)**, and **3.3.8 Accessible Authentication**. Every component must meet:
+WCAG 2.2 (W3C Recommendation, Oct 2023) is the target baseline in 2026; it adds **2.4.11 Focus Not Obscured**, **2.4.13 Focus Appearance**, **2.5.8 Target Size (min 24×24 CSS px)**, and **3.3.8 Accessible Authentication** (2.4.13 is Level AAA; rows marked AAA exceed the AA baseline and are recommended, not required, for AA conformance). Every component must meet:
 
 | Requirement | WCAG SC | Implementation |
 |-------------|---------|----------------|
 | Keyboard navigation | 2.1.1 | Tab, Enter, Space, Escape, Arrow keys per the WAI-ARIA APG pattern |
 | Focus visible | 2.4.7 | `focus-visible:ring-2 focus-visible:ring-ring` |
-| Focus appearance | 2.4.13 | Indicator ≥ 2px thick, ≥ 3:1 contrast vs adjacent colors (`ring-offset-2` helps) |
+| Focus appearance | 2.4.13 (AAA) | Indicator ≥ 2px thick, ≥ 3:1 contrast vs adjacent colors (`ring-offset-2` helps) |
 | Focus not obscured | 2.4.11 | Sticky headers/toolbars must not cover the focused element |
 | Target size | 2.5.8 | Interactive targets ≥ 24×24px (our `size="sm"` button is `h-8`=32px ✓; `size="icon"` is 40px ✓) |
 | ARIA labels | 4.1.2 | `aria-label`, `aria-labelledby`, `aria-describedby` |
@@ -506,7 +506,7 @@ WCAG 2.2 (W3C Recommendation, Oct 2023) is the target baseline in 2026 — it ad
 | Screen reader text | 1.1.1 | `sr-only` class for visually-hidden labels; `aria-hidden` on decorative icons |
 | Color contrast | 1.4.3 / 1.4.11 | 4.5:1 text, 3:1 large text **and** non-text UI (borders, icons, focus rings) |
 | High-contrast / forced colors | 1.4.1 | Don't convey state by color alone; test Windows High Contrast / `forced-colors` |
-| Motion | 2.3.3 | `prefers-reduced-motion` media query |
+| Motion | 2.3.3 (AAA) | `prefers-reduced-motion` media query |
 
 ### Accessible Dialog Example
 
@@ -609,13 +609,12 @@ Catch ~30-40% of issues automatically with **axe-core**; the rest needs manual k
 
 ```typescript
 // .storybook/vitest.setup.ts
-import { beforeAll } from 'vitest';
 import { setProjectAnnotations } from '@storybook/react-vite';
 import * as a11yAddonAnnotations from '@storybook/addon-a11y/preview';
 import * as previewAnnotations from './preview';
 
-const annotations = setProjectAnnotations([previewAnnotations, a11yAddonAnnotations]);
-beforeAll(annotations.beforeAll);
+// addon-vitest loads Storybook's beforeAll hook automatically; no manual wiring.
+setProjectAnnotations([previewAnnotations, a11yAddonAnnotations]);
 ```
 
 **2. Jest/Vitest unit assertion with `jest-axe`** for components tested outside Storybook:
@@ -761,7 +760,7 @@ export function ThemeToggle() {
 | Step | Tool (2026) | Action |
 |------|-------------|--------|
 | Token source of truth | **Native Figma variables** (Dev Mode → Variables) or **Tokens Studio** plugin | Author colors/spacing/typography as variables with light/dark modes |
-| Token export | Tokens Studio (→ GitHub/JSON sync) or Figma Variables REST API / Dev Mode "Export variables" | Emit **W3C DTCG** JSON (`$value`/`$type`) |
+| Token export | Tokens Studio (→ GitHub/JSON sync) or Figma Variables REST API / Dev Mode "Export variables" | Emit **DTCG** JSON (`$value`/`$type`) |
 | Component specs | Figma **Dev Mode** | Inspect spacing, colors, typography; copy values as CSS vars |
 | Code linkage | Figma **Code Connect** | Map a Figma component to its real `<Button />` so Dev Mode shows your code |
 | Asset export | Dev Mode → SVG/PNG, or SVGR for React icons | Export icons/images |
@@ -772,7 +771,7 @@ export function ThemeToggle() {
 
 ### Token Transform Pipeline (DTCG → CSS/TS)
 
-Tokens Studio and Figma variables export the **W3C Design Tokens (DTCG)** format. Style Dictionary v4+ consumes it natively (enable the preprocessor) and outputs platform files. For a **Tailwind v4** target, emit a `@theme {}` block instead of `:root` so tokens become utilities automatically (see §1).
+Tokens Studio and Figma variables export the **Design Tokens Community Group (DTCG)** format (a community group draft, not a W3C standard). Style Dictionary v4+ consumes it natively and outputs platform files. For a **Tailwind v4** target, emit a `@theme {}` block instead of `:root` so tokens become utilities automatically (see §1).
 
 ```bash
 npm i -D style-dictionary
@@ -794,7 +793,7 @@ StyleDictionary.registerFormat({
 
 export default {
   source: ['tokens/**/*.json'],
-  preprocessors: ['tokens-studio'], // parses DTCG $value/$type + resolves aliases
+  // Style Dictionary v4+ parses DTCG $value/$type natively; no preprocessor needed for plain DTCG.
   platforms: {
     tailwind: {
       transformGroup: 'css',
@@ -834,7 +833,8 @@ Add to CI so visual diffs **block the PR** until a reviewer accepts them. Do **n
 ```yaml
 # .github/workflows/ui.yml
 - name: Visual regression (blocks PR on unreviewed diffs)
-  uses: chromaui/action@latest
+  # Pin the action (major tag or, stricter, a full commit SHA); avoid @latest in CI.
+  uses: chromaui/action@v18
   with:
     projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
     # Auto-accept baselines only on the trunk; PRs must be reviewed.
@@ -843,9 +843,9 @@ Add to CI so visual diffs **block the PR** until a reviewer accepts them. Do **n
     onlyChanged: true          # TurboSnap: snapshot only stories affected by the diff
 ```
 
-### Component / Interaction Tests with Vitest (Storybook 9)
+### Component / Interaction Tests with Vitest (Storybook 10)
 
-In SB9, stories run as Vitest browser tests via `@storybook/addon-vitest`. Run them in CI alongside Chromatic; `play` failures and `a11y: 'error'` violations turn the check red. Import test utilities from **`storybook/test`** (the `@storybook/test` package is deprecated).
+In SB10, stories run as Vitest browser tests via `@storybook/addon-vitest`. Run them in CI alongside Chromatic; `play` failures and `a11y: 'error'` violations turn the check red. Import test utilities from **`storybook/test`** (the `@storybook/test` package is deprecated).
 
 ```yaml
 - name: Component + a11y tests (Storybook stories via Vitest)

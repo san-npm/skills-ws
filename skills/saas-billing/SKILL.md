@@ -5,7 +5,7 @@ description: "Express/Node SaaS billing with Stripe — subscriptions, usage bil
 
 # SaaS Billing with Stripe — Expert Skill
 
-> Disambiguation: this skill = Express/Node stack. For Next.js App Router + Server Actions billing, see `stripe-billing`. Both pin Stripe `apiVersion: '2025-09-30.clover'`.
+> Disambiguation: this skill = Express/Node stack. For Next.js App Router + Server Actions billing, see `stripe-billing`. This skill pins Stripe `apiVersion: '2026-06-24.dahlia'`; `stripe-billing` currently pins `2025-09-30.clover`.
 
 > Production-grade billing integration for SaaS applications using Stripe.
 > Covers subscription, usage-based, and hybrid billing models with complete Express.js examples.
@@ -56,7 +56,7 @@ npm install stripe express dotenv express-rate-limit
 # `body-parser` is unnecessary — Express 4.16+/5 ship `express.raw()` and `express.json()` built in.
 ```
 
-Pin the Stripe SDK to a known major (`npm install stripe@^19`); the SDK major and the pinned `apiVersion` evolve together.
+Pin the Stripe SDK to a known major (`npm install stripe@^22`); the SDK major and the pinned `apiVersion` evolve together.
 
 ### Environment Variables
 
@@ -72,14 +72,14 @@ DATABASE_URL=postgres://...
 
 ```js
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2025-09-30.clover',   // pin the API version
+  apiVersion: '2026-06-24.dahlia',   // pin the API version
   maxNetworkRetries: 2,
 });
 ```
 
 **Always pin your API version.** Stripe changes behavior across versions. Pinning prevents silent breakage.
 
-> Version note (as of Jun 2026): `2025-09-30.clover` is the Clover-era pinned version used throughout this skill. Before copying these examples, confirm the version your account defaults to (Dashboard → Developers → API version / Workbench) and the version your installed SDK major expects — the SDK major (`stripe@19` here) and the API version evolve together. Verify the latest at https://docs.stripe.com/api/versioning and https://docs.stripe.com/changelog. Bumping the version may change object shapes (e.g. invoice/subscription fields), so test webhooks against the new version before deploying.
+> Version note (as of Jul 2026): `2026-06-24.dahlia` is the current GA version and stripe-node v22 pins it. Before copying these examples, confirm the version your account defaults to (Dashboard → Developers → API version / Workbench) and the version your installed SDK major expects, then verify the latest at https://docs.stripe.com/api/versioning and https://docs.stripe.com/changelog. Bumping the version may change object shapes (e.g. invoice/subscription fields), so test webhooks against the new version before deploying.
 
 ---
 
@@ -439,7 +439,7 @@ The Customer must have a valid `address` (or `tax.ip_address`) or Stripe cannot 
 - Use a Checkout test address in a jurisdiction where you've added a (test-mode) registration — e.g. a California ZIP — and confirm a tax line appears.
 - Confirm a non-registered jurisdiction yields a zero-rate "not registered" line, not a hard failure.
 - Enter a valid EU VAT ID as a business customer and verify reverse-charge wording on the invoice.
-- Inspect `invoice.total_tax_amounts` (and the `tax` breakdown) in the webhook payload to reconcile what was collected.
+- Inspect `invoice.total_taxes` (check `total_taxes[0].type` is `tax_rate_details` before reading amounts) in the webhook payload to reconcile what was collected.
 
 > Filing/remittance is **not** automatic on standard Tax. Stripe calculates and collects; remittance is handled via Stripe Tax filing/exports or your accountant. Treat collected tax as a liability you owe, not revenue.
 
@@ -529,7 +529,10 @@ const subscription = await stripe.subscriptions.create({
   items: [{ price: priceId }],
   trial_period_days: 14,
   payment_behavior: 'default_incomplete',
-  expand: ['latest_invoice.payment_intent'],
+  // basil and later removed invoice.payment_intent; read the client secret from
+  // subscription.latest_invoice.confirmation_secret.client_secret, and list
+  // payments via the invoice.payments array if you need PaymentIntent records.
+  expand: ['latest_invoice.confirmation_secret'],
 });
 ```
 
@@ -557,6 +560,16 @@ function findSubscriptionItem(subscription, { lookupKey, match } = {}) {
     );
   }
   return found;
+}
+
+// 2025-03-31.basil and later removed current_period_start/current_period_end
+// from the Subscription object: they now live on each subscription item.
+// Read the period end from the base (non-metered) item.
+function periodEnd(subscription) {
+  const item = subscription.items.data.find(
+    (it) => it.price.recurring?.usage_type !== 'metered'
+  ) || subscription.items.data[0];
+  return item.current_period_end;
 }
 
 // Change the BASE plan item only, leaving any metered item untouched.
@@ -592,6 +605,7 @@ await changePlan(subId, 'price_enterprise_monthly', { prorate: true, lookupKey: 
 // the price object on the subscription changes right away).
 async function downgradeAtPeriodEnd(subscriptionId, newPriceId) {
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  const endTs = periodEnd(subscription); // item-level period end (basil+)
 
   // Create a schedule from the existing subscription
   const schedule = await stripe.subscriptionSchedules.create({
@@ -608,11 +622,11 @@ async function downgradeAtPeriodEnd(subscriptionId, newPriceId) {
       {
         items: [{ price: subscription.items.data[0].price.id, quantity: 1 }],
         start_date: 'now',
-        end_date: subscription.current_period_end,
+        end_date: endTs,
       },
       {
         items: [{ price: newPriceId, quantity: 1 }],
-        start_date: subscription.current_period_end,
+        start_date: endTs,
         iterations: 1,
       },
     ],
@@ -720,7 +734,7 @@ Stripe webhook signature verification requires the **raw request body**. If `exp
 const express = require('express');
 // Always pin your API version — see "Stripe Client Initialization" above.
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2025-09-30.clover',
+  apiVersion: '2026-06-24.dahlia',
 });
 
 const app = express();
@@ -882,6 +896,10 @@ async function handleEvent(event) {
 ### Event Handlers — Complete Implementations
 
 ```js
+// NOTE: these handlers reuse the periodEnd() helper from "Upgrade / Downgrade"
+// above. basil+ removed current_period_end from the Subscription object, so it
+// must be read from the subscription items.
+
 // ─── checkout.session.completed ────────────────────────────
 // This is your PRIMARY provisioning trigger.
 async function handleCheckoutCompleted(session) {
@@ -922,7 +940,7 @@ async function handleCheckoutCompleted(session) {
         subscription.id,
         tier,
         subscription.status,
-        subscription.current_period_end,
+        periodEnd(subscription),
         userId,
       ]
     );
@@ -953,7 +971,7 @@ async function handleSubscriptionCreated(subscription) {
       subscription_status = $2,
       current_period_end = to_timestamp($3)
     WHERE id = $4`,
-    [subscription.id, subscription.status, subscription.current_period_end, userId]
+    [subscription.id, subscription.status, periodEnd(subscription), userId]
   );
 }
 
@@ -1008,7 +1026,7 @@ async function handleSubscriptionUpdated(subscription, previousAttributes = {}) 
     WHERE stripe_customer_id = $5`,
     [
       subscription.status,
-      subscription.current_period_end,
+      periodEnd(subscription),
       newTier || subscription.metadata?.plan || null,
       subscription.cancel_at_period_end,
       subscription.customer,
@@ -1052,7 +1070,13 @@ async function handleInvoicePaymentSucceeded(invoice) {
   const userId = await getUserByCustomerId(invoice.customer);
   if (!userId) return;
 
-  const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
+  // basil+ removed invoice.subscription; the subscription id now lives under
+  // invoice.parent.subscription_details (check parent.type first).
+  const subId = invoice.parent?.type === 'subscription_details'
+    ? invoice.parent.subscription_details.subscription
+    : null;
+  if (!subId) return;
+  const subscription = await stripe.subscriptions.retrieve(subId);
 
   await db.query(
     `UPDATE users SET
@@ -1060,7 +1084,7 @@ async function handleInvoicePaymentSucceeded(invoice) {
       current_period_end = to_timestamp($1),
       failed_payment_count = 0
     WHERE id = $2`,
-    [subscription.current_period_end, userId]
+    [periodEnd(subscription), userId]
   );
 
   console.log(`Renewal payment succeeded for user ${userId}`);
@@ -1452,7 +1476,13 @@ process.on('SIGTERM', async () => { await usageTracker.shutdown(); process.exit(
 ### Legacy appendix — `createUsageRecord` (maintenance mode, existing integrations only)
 
 Only for subscriptions on **legacy metered prices created without a `meter`**.
-Do not use for new builds.
+Do not use for new builds. This endpoint only exists on API versions before
+2025-03-31.basil; it was removed in basil and from current SDK majors. Existing
+integrations must keep a pre-basil pinned version (2025-02-24.acacia or earlier)
+or call it via `stripe.rawRequest` with a pre-basil `Stripe-Version` header after
+upgrading the SDK (see
+https://docs.stripe.com/billing/subscriptions/usage-based-legacy/sdk-upgrade).
+It will not run against the client pinned above.
 
 ```js
 // LEGACY — keyed by subscription ITEM id, not customer. Prefer meter events above.
@@ -1850,7 +1880,7 @@ const stripe = require('stripe')(key);  // Uses latest version — may break une
 
 **Right:**
 ```js
-const stripe = require('stripe')(key, { apiVersion: '2025-09-30.clover' });
+const stripe = require('stripe')(key, { apiVersion: '2026-06-24.dahlia' });
 ```
 
 ### 6. Ignoring `past_due` Status
@@ -1912,7 +1942,7 @@ const express = require('express');
 const crypto = require('crypto');
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2025-09-30.clover',
+  apiVersion: '2026-06-24.dahlia',
   maxNetworkRetries: 2,
 });
 
@@ -2061,7 +2091,7 @@ async function routeEvent(event) {
         stripe_subscription_id: sub.id,
         plan,
         status: sub.status,
-        current_period_end: sub.current_period_end,
+        current_period_end: periodEnd(sub),
       });
 
       // Provision API key
@@ -2077,11 +2107,15 @@ async function routeEvent(event) {
       const userId = findUserByCustomer(obj.customer);
       if (!userId) break;
 
+      // basil+ moved current_period_end onto subscription items; re-fetch the
+      // subscription so the items (with their period fields) are available.
+      const sub = await stripe.subscriptions.retrieve(obj.id);
+
       const user = users.get(userId);
       users.set(userId, {
         ...user,
         status: obj.status,
-        current_period_end: obj.current_period_end,
+        current_period_end: periodEnd(sub),
         cancel_at_period_end: obj.cancel_at_period_end,
       });
 
@@ -2168,6 +2202,15 @@ async function routeEvent(event) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function generateApiKey(prefix = 'myapp_live') { // product-specific, never `sk_`
   return `${prefix}_${crypto.randomBytes(32).toString('hex')}`;
+}
+
+// basil+ removed current_period_end from the Subscription object; read it from
+// the base (non-metered) subscription item instead.
+function periodEnd(subscription) {
+  const item = subscription.items.data.find(
+    (it) => it.price.recurring?.usage_type !== 'metered'
+  ) || subscription.items.data[0];
+  return item.current_period_end;
 }
 
 function hashKey(key) {

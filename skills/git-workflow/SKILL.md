@@ -202,7 +202,7 @@ Automate instead of tagging by hand. Two mainstream choices:
 | **semantic-release** | Analyzes Conventional Commits on push → bumps, tags, publishes npm, writes changelog, creates GH release — all in CI | Libraries / npm packages, fully hands-off releasing |
 | **release-please** (Google) | Opens/maintains a "release PR" that accrues changelog + version bump; you merge it to cut the release | Apps & monorepos, teams that want a human gate before publishing |
 
-> **Runtime (as of Jun 2026):** semantic-release v24+ requires an actively maintained Node LTS (Node 20+; Node 18 reached end-of-life Apr 2025). It must run against the **full git history** — set `fetch-depth: 0` in the checkout. Pin exact major versions and verify current support at https://github.com/semantic-release/semantic-release/releases and https://github.com/googleapis/release-please.
+> **Runtime (as of Jul 2026):** semantic-release v25 (current) requires Node ^22.14.0 or >= 24.10.0; Node 18 and Node 20 are both end-of-life (Apr 2025 and Apr 2026). It must run against the **full git history**: set `fetch-depth: 0` in the checkout. Pin exact major versions and verify current support at https://github.com/semantic-release/semantic-release/releases and https://github.com/googleapis/release-please.
 
 **semantic-release config** — save as `.releaserc.json`:
 
@@ -237,7 +237,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         with:
           release-type: node   # or: simple, python, rust, ...
 ```
@@ -265,7 +265,7 @@ Both `affected`/`--filter` compare against a base ref, so CI **must fetch git hi
 *.md                    @org/docs
 ```
 
-> **CI runner versions (as of Jun 2026):** target Node LTS — Node 22 (LTS "Jet") is the safe default; Node 24 entered LTS in Oct 2025. Node 18 is EOL, so drop it from the matrix. Pin the patch via `.nvmrc`/`actions/setup-node` `node-version-file`, and watch GitHub's runner-image changelog (https://github.com/actions/runner-images) since `ubuntu-latest` periodically moves to a newer default Node.
+> **CI runner versions (as of Jun 2026):** target Node LTS: Node 22 (LTS "Jod") is the safe default; Node 24 entered LTS in Oct 2025. Node 18 is EOL, so drop it from the matrix. Pin the patch via `.nvmrc`/`actions/setup-node` `node-version-file`, and watch GitHub's runner-image changelog (https://github.com/actions/runner-images) since `ubuntu-latest` periodically moves to a newer default Node.
 
 ```yaml
 # .github/workflows/ci.yml — typical matrix
@@ -276,9 +276,9 @@ jobs:
       matrix:
         node: [22, 24]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: { fetch-depth: 0 }      # needed for affected/--filter and release tooling
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with: { node-version: ${{ matrix.node }}, cache: npm }
       - run: npm ci
       - run: npm test

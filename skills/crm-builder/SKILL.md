@@ -250,7 +250,7 @@ A CRM is a regulated store of personal data (names, emails, phones, behavior, re
 
 - **Establish a lawful basis** for each processing purpose. Under GDPR the common ones are *legitimate interest* (B2B prospecting, with a balancing test + opt-out) and *consent* (newsletters/marketing email in much of the EU under ePrivacy). Document which applies where.
 - **Capture consent properly:** store `consent_marketing` *with* timestamp, source/method (form name), and the exact text shown. A boolean alone is not defensible — you must be able to prove *when and how* consent was given. Opt-in must be unticked-by-default in the EU.
-- **CAN-SPAM (US) / CASL (Canada):** every marketing email needs a working unsubscribe (honored ≤10 days under CAN-SPAM; immediately is best practice), a physical postal address, and no deceptive headers/subjects. CASL is opt-in for commercial email to Canadian recipients.
+- **CAN-SPAM (US) / CASL (Canada):** every marketing email needs a working unsubscribe (honored within 10 business days under CAN-SPAM; immediately is best practice), a physical postal address, and no deceptive headers/subjects. CASL is opt-in for commercial email to Canadian recipients.
 - **Suppression list is sacred:** an unsubscribe/`opted_out` flag must survive merges, imports, and re-enrichment, and must suppress the contact across *all* sequences. Test this explicitly.
 
 ### Data subject rights (GDPR / CCPA/CPRA)

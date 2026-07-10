@@ -13,10 +13,10 @@ These versions were verified to work together. Always confirm latest at each pac
 
 | Package / runtime | Pin used here | Notes |
 |---|---|---|
-| Node.js | **20 LTS or 22 LTS** | Node 18 is EOL — do not target it for new deploys. |
+| Node.js | **22 LTS or 24 LTS** | Node 18 and 20 are both EOL, do not target them for new deploys. |
 | `@telegram-apps/sdk` | `^3` | v2 → v3 renamed several mount/signal APIs (see migration note below). |
 | `@telegram-apps/sdk-react` | `^3` | React bindings (`useSignal`, `useLaunchParams`). |
-| `grammy` | `^1.30` | Verify method signatures at [grammy.dev](https://grammy.dev); `sendInvoice` options changed in 1.30+. |
+| `grammy` | `^1.30` | Verify method signatures at [grammy.dev](https://grammy.dev); `sendInvoice` dropped positional `provider_token` in 1.24+ (Bot API 7.4 support). |
 | `next` | `^15` (App Router) | Next.js 16 is current — verify at [nextjs.org](https://nextjs.org); RSC/route-handler APIs unchanged for this skill. |
 | `react` / `react-dom` | `^19` | |
 | `@libsql/client` (Turso) | `^0.15` | Verify at [github.com/tursodatabase/libsql-client-ts](https://github.com/tursodatabase/libsql-client-ts/releases). |
@@ -83,7 +83,7 @@ Telegram Mini Apps (formerly Web Apps) are web applications that run inside Tele
 
 ### Prerequisites
 
-- **Node.js 20 LTS or 22 LTS** (Node 18 is EOL — do not target it for new deployments)
+- **Node.js 22 LTS or 24 LTS** (Node 18 and 20 are both EOL, do not target them for new deployments)
 - A Telegram bot token (from @BotFather)
 - A public HTTPS URL (Vercel, Cloudflare, or ngrok for dev)
 - Mini App URL configured via @BotFather → `/newapp` or `/setmenubutton`
@@ -275,10 +275,23 @@ This file is `localhost`-only and uses a **separate dev bot token** (`DEV_BOT_TO
 
 ```ts
 // src/lib/mock-init-data.ts  (dev only — never bundled in production)
-import { createHmac } from "node:crypto";
+// Uses the Web Crypto API (crypto.subtle) because this runs in the BROWSER:
+// Next.js does not polyfill node:crypto in client bundles, so createHmac
+// from "node:crypto" would fail at build or runtime here.
+
+/** Import raw bytes as an HMAC-SHA256 signing key. */
+function importHmacKey(keyData: BufferSource): Promise<CryptoKey> {
+  return crypto.subtle.importKey(
+    "raw",
+    keyData,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+}
 
 /** Build a correctly HMAC-signed initData string that passes validateInitData(). */
-export function signMockInitData(devBotToken: string): string {
+export async function signMockInitData(devBotToken: string): Promise<string> {
   const params = new URLSearchParams([
     ["user", JSON.stringify({
       id: 123456789,
@@ -297,8 +310,15 @@ export function signMockInitData(devBotToken: string): string {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([k, v]) => `${k}=${v}`)
     .join("\n");
-  const secret = createHmac("sha256", "WebAppData").update(devBotToken).digest();
-  const hash = createHmac("sha256", secret).update(dcs).digest("hex");
+
+  const enc = new TextEncoder();
+  const webAppDataKey = await importHmacKey(enc.encode("WebAppData"));
+  const secret = await crypto.subtle.sign("HMAC", webAppDataKey, enc.encode(devBotToken));
+  const secretKey = await importHmacKey(secret);
+  const sig = await crypto.subtle.sign("HMAC", secretKey, enc.encode(dcs));
+  const hash = [...new Uint8Array(sig)]
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 
   params.append("hash", hash);
   return params.toString();
@@ -306,16 +326,19 @@ export function signMockInitData(devBotToken: string): string {
 ```
 
 ```tsx
-// src/app/providers.tsx — add mock support (call mockDevEnvironment() before init())
+// src/app/providers.tsx: add mock support (await mockDevEnvironment() before init())
 import { mockTelegramEnv } from "@telegram-apps/sdk-react";
 import { signMockInitData } from "@/lib/mock-init-data";
 
-export function mockDevEnvironment() {
+export async function mockDevEnvironment() {
   if (typeof window === "undefined") return;
   if (window.location.hostname !== "localhost") return;
 
-  // Throwaway dev bot token. NEVER use the production BOT_TOKEN here, and never
-  // ship this code path to production (tree-shaken by the hostname guard above).
+  // Throwaway dev bot token. NEVER use the production BOT_TOKEN here.
+  // Note: NEXT_PUBLIC_* vars are inlined at build time, so the hostname guard
+  // above does NOT keep the value out of the bundle. Define NEXT_PUBLIC_DEV_BOT_TOKEN
+  // only in .env.development (or a git-ignored .env.local on dev machines) and never
+  // in the production build environment, or the dev bot token ships in your public JS.
   const devToken = process.env.NEXT_PUBLIC_DEV_BOT_TOKEN;
   if (!devToken) {
     console.warn("Set NEXT_PUBLIC_DEV_BOT_TOKEN to sign mock initData; UI will load but API calls will 401.");
@@ -323,7 +346,7 @@ export function mockDevEnvironment() {
 
   // A real, signed initData string — your backend validateInitData() will ACCEPT it
   // as long as DEV_BOT_TOKEN (server) matches NEXT_PUBLIC_DEV_BOT_TOKEN (client).
-  const initDataRaw = devToken ? signMockInitData(devToken) : "";
+  const initDataRaw = devToken ? await signMockInitData(devToken) : "";
 
   mockTelegramEnv({
     launchParams: {
@@ -887,6 +910,8 @@ setWebhook().catch(console.error);
 BOT_TOKEN=<your-bot-token-from-botfather>
 DEV_BOT_TOKEN=<throwaway-bot-token-for-local-mock-signing>   # dev only
 NEXT_PUBLIC_DEV_BOT_TOKEN=<same-as-DEV_BOT_TOKEN>            # dev only, client-side
+# WARNING: NEXT_PUBLIC_* vars are inlined into the JS bundle at build time.
+# Keep NEXT_PUBLIC_DEV_BOT_TOKEN out of the production build environment.
 MINI_APP_URL=https://yourapp.vercel.app
 WEBHOOK_URL=https://yourapp.vercel.app/api/bot
 WEBHOOK_SECRET=<random-secret-at-least-32-chars>
@@ -905,7 +930,7 @@ UPSTASH_REDIS_REST_TOKEN=<your-upstash-rest-token>
 
 ## 7. Stars Payments (XTR) <a name="stars-payments"></a>
 
-Telegram Stars is the in-app currency. Users buy Stars with real money, then spend them in Mini Apps. You receive Stars and can convert them to TON or fiat via @BotFather.
+Telegram Stars is the in-app currency. Users buy Stars with real money, then spend them in Mini Apps. You receive Stars and can withdraw them as Toncoin rewards via Fragment, or put them toward Telegram Ads.
 
 ### Key Facts
 
@@ -981,7 +1006,7 @@ export async function sendStarsInvoice(
     throw new BotInvoiceError("Product not found", false);
   }
 
-  // grammY v1.30+ removed provider_token from the positional signature.
+  // grammY v1.24+ (Bot API 7.4 support) removed provider_token from the positional signature.
   // Pass title, description, payload, currency, and prices as positional args,
   // then provider_token and other options in the `other` object parameter.
   try {
@@ -998,7 +1023,7 @@ export async function sendStarsInvoice(
         },
       ],
       {
-        provider_token: "",    // empty string for Stars — moved to `other` in grammY v1.30+
+        provider_token: "",    // empty string for Stars (moved to `other` in grammY v1.24+)
         photo_url: product.photoUrl,
         // For digital goods, no shipping needed:
         need_shipping_address: false,
@@ -1622,6 +1647,7 @@ npm install @libsql/client
 
 ```bash
 # Install Turso CLI
+# Official Turso installer; review it first if you prefer: curl -sSfL https://get.tur.so/install.sh | less
 curl -sSfL https://get.tur.so/install.sh | bash
 
 # Create a database
@@ -2016,7 +2042,7 @@ const BOT_TOKEN = process.env.BOT_TOKEN!;
   "name": "telegram-miniapp",
   "private": true,
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "dev": "next dev",
@@ -2177,7 +2203,7 @@ Or test on production with 1-Star items and refund immediately after.
 ```
 BOT_TOKEN                  # From @BotFather (production/test bot)
 DEV_BOT_TOKEN              # Throwaway bot token for signing mock initData (dev only)
-NEXT_PUBLIC_DEV_BOT_TOKEN  # Same value, exposed client-side (dev only)
+NEXT_PUBLIC_DEV_BOT_TOKEN  # Same value, exposed client-side (dev only; inlined at build time, never define in production builds)
 MINI_APP_URL               # Your deployed frontend URL
 WEBHOOK_URL                # Your /api/bot endpoint
 WEBHOOK_SECRET             # Random 32+ char string for webhook auth

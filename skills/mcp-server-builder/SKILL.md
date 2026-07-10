@@ -129,9 +129,9 @@ const server = new McpServer(
 // --- TOOLS ---
 // Current SDK (v1.x) API: server.registerTool(name, config, handler).
 // config carries { title, description, inputSchema, outputSchema?, annotations? }.
-// (The older server.tool(name, desc, shape, handler) still works as a compat alias,
-//  but registerTool is the documented best practice — it adds a UI `title`, optional
-//  `outputSchema`, and lets handlers return `structuredContent`.)
+// (The older server.tool(name, desc, shape, handler) still works but is marked
+//  @deprecated in the SDK; registerTool is the documented API: it adds a UI `title`,
+//  optional `outputSchema`, and lets handlers return `structuredContent`.)
 
 server.registerTool(
   "screenshot",
@@ -191,7 +191,7 @@ server.registerTool(
 
 // --- RESOURCES ---
 
-server.resource(
+server.registerResource(
   "server-info",
   "info://server",
   { description: "Server metadata and capabilities" },
@@ -206,10 +206,12 @@ server.resource(
 
 // --- PROMPTS ---
 
-server.prompt(
+server.registerPrompt(
   "analyze-domain",
-  "Analyze a domain's DNS, SSL, and WHOIS info",
-  { domain: z.string().describe("Domain to analyze") },
+  {
+    description: "Analyze a domain's DNS, SSL, and WHOIS info",
+    argsSchema: { domain: z.string().describe("Domain to analyze") },
+  },
   ({ domain }) => ({
     messages: [{
       role: "user",
@@ -578,13 +580,15 @@ The universal pattern for wrapping any REST API as an MCP tool:
 
 ```typescript
 // Pattern: REST API → MCP Tool
-server.tool(
+server.registerTool(
   "tool_name",                          // snake_case, descriptive
-  "One-line description for the LLM",   // The LLM reads this to decide when to use it
   {
-    // Zod schema → JSON Schema
-    param1: z.string().describe("What this param does"),
-    param2: z.number().optional().describe("Optional param with context"),
+    description: "One-line description for the LLM",  // The LLM reads this to decide when to use it
+    inputSchema: {
+      // Zod schema → JSON Schema
+      param1: z.string().describe("What this param does"),
+      param2: z.number().optional().describe("Optional param with context"),
+    },
   },
   async (args) => {
     // 1. Validate / transform input
@@ -619,12 +623,14 @@ server.tool(
 
 ```typescript
 // --- OCR Tool (wrapping OCR.space API) ---
-server.tool(
+server.registerTool(
   "ocr_extract",
-  "Extract text from an image using OCR",
   {
-    imageUrl: z.string().url().describe("URL of the image to process"),
-    language: z.enum(["eng", "fra", "deu", "spa", "por", "jpn", "kor", "chi_sim"]).default("eng"),
+    description: "Extract text from an image using OCR",
+    inputSchema: {
+      imageUrl: z.string().url().describe("URL of the image to process"),
+      language: z.enum(["eng", "fra", "deu", "spa", "por", "jpn", "kor", "chi_sim"]).default("eng"),
+    },
   },
   async ({ imageUrl, language }) => {
     const form = new URLSearchParams({
@@ -648,12 +654,14 @@ server.tool(
 );
 
 // --- Blockchain: EVM Balance Check ---
-server.tool(
+server.registerTool(
   "evm_balance",
-  "Get native token balance for an address on any EVM chain",
   {
-    address: z.string().regex(/^0x[a-fA-F0-9]{40}$/).describe("EVM wallet address"),
-    chain: z.enum(["ethereum", "celo", "base", "polygon", "arbitrum", "optimism"]).default("celo"),
+    description: "Get native token balance for an address on any EVM chain",
+    inputSchema: {
+      address: z.string().regex(/^0x[a-fA-F0-9]{40}$/).describe("EVM wallet address"),
+      chain: z.enum(["ethereum", "celo", "base", "polygon", "arbitrum", "optimism"]).default("celo"),
+    },
   },
   async ({ address, chain }) => {
     const rpcUrls: Record<string, string> = {
@@ -677,27 +685,31 @@ server.tool(
   }
 );
 
-// --- WHOIS Lookup ---
-server.tool(
+// --- WHOIS Lookup (via RDAP, the IANA-backed WHOIS successor) ---
+server.registerTool(
   "whois_lookup",
-  "Get WHOIS registration information for a domain",
   {
-    domain: z.string().min(1).describe("Domain name (e.g., example.com)"),
+    description: "Get RDAP (WHOIS successor) registration information for a domain",
+    inputSchema: {
+      domain: z.string().min(1).describe("Domain name (e.g., example.com)"),
+    },
   },
   async ({ domain }) => {
-    const res = await fetch(`https://whois.freeaitools.casa/api/${encodeURIComponent(domain)}`);
-    if (!res.ok) return { content: [{ type: "text", text: `WHOIS lookup failed: ${res.status}` }], isError: true };
+    const res = await fetch(`https://rdap.org/domain/${encodeURIComponent(domain)}`);
+    if (!res.ok) return { content: [{ type: "text", text: `RDAP lookup failed: ${res.status}` }], isError: true };
     const data = await res.json();
     return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
   }
 );
 
 // --- SSL Certificate Check ---
-server.tool(
+server.registerTool(
   "ssl_check",
-  "Check SSL/TLS certificate details for a domain",
   {
-    domain: z.string().min(1).describe("Domain to check (without https://)"),
+    description: "Check SSL/TLS certificate details for a domain",
+    inputSchema: {
+      domain: z.string().min(1).describe("Domain to check (without https://)"),
+    },
   },
   async ({ domain }) => {
     const tls = await import("tls");
@@ -764,7 +776,7 @@ function checkRateLimit(
   let entry = store.get(key);
 
   if (!entry || now > entry.resetAt) {
-    entry = { count: 0, resetAt: now + 60_000, daily: 0, dailyResetAt: entry?.dailyResetAt ?? now + 86_400_000 };
+    entry = { count: 0, resetAt: now + 60_000, daily: entry?.daily ?? 0, dailyResetAt: entry?.dailyResetAt ?? now + 86_400_000 };
   }
   if (now > entry.dailyResetAt) {
     entry.daily = 0;
@@ -1195,10 +1207,10 @@ import Stripe from "stripe";
 
 // Omit `apiVersion` to use the version pinned by your installed stripe-node release
 // (recommended — it matches the SDK's TypeScript types). Pin a date only when you must
-// freeze behavior, and keep it current. As of Jun 2026 the latest is "2026-05-27.dahlia";
+// freeze behavior, and keep it current. As of Jul 2026 the latest is "2026-06-24.dahlia";
 // check https://docs.stripe.com/api/versioning and the stripe-node CHANGELOG for today's value.
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-// To pin explicitly:  new Stripe(key, { apiVersion: "2026-05-27.dahlia" });
+// To pin explicitly:  new Stripe(key, { apiVersion: "2026-06-24.dahlia" });
 // Stripe billing details (Checkout vs Payment Links, subscriptions, migrations): see `stripe-billing`.
 
 async function createProduct() {
@@ -1651,12 +1663,15 @@ services:
 
 ### Vercel Edge Proxy Pattern
 
-For SSE servers, Vercel can act as an edge auth proxy:
+For remote (Streamable HTTP) servers, Vercel can act as an edge auth proxy:
 
 ```typescript
-// vercel-proxy/api/sse.ts
-// NOTE: Vercel doesn't support long-lived SSE natively.
-// Use Vercel as an auth proxy that redirects to your actual SSE server.
+// vercel-proxy/api/mcp.ts
+// NOTE: Vercel doesn't support long-lived SSE streams natively.
+// Use Vercel as an auth proxy that FORWARDS to your actual MCP server.
+// Do NOT redirect with the token in a query string: the MCP authorization spec
+// forbids access tokens in the URI, and query strings leak into CDN/proxy logs.
+// Pass the token in the Authorization header instead.
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
@@ -1670,9 +1685,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const valid = await verifyKeyAtEdge(apiKey);
   if (!valid) return res.status(401).json({ error: "Invalid API key" });
 
-  // Redirect to actual SSE server with a short-lived token
+  // Proxy to the actual MCP server with a short-lived token in the Authorization header
   const token = generateShortLivedToken(apiKey);
-  res.redirect(307, `https://mcp.yourdomain.com/sse?token=${token}`);
+  const upstream = await fetch("https://mcp.yourdomain.com/mcp", {
+    method: req.method,
+    headers: {
+      "Content-Type": (req.headers["content-type"] as string) || "application/json",
+      Accept: "application/json, text/event-stream",
+      Authorization: `Bearer ${token}`,
+      ...(req.headers["mcp-session-id"] ? { "Mcp-Session-Id": req.headers["mcp-session-id"] as string } : {}),
+    },
+    body: req.method === "POST" ? JSON.stringify(req.body) : undefined,
+  });
+  const sid = upstream.headers.get("mcp-session-id");
+  if (sid) res.setHeader("Mcp-Session-Id", sid);
+  res.status(upstream.status).send(Buffer.from(await upstream.arrayBuffer()));
 }
 ```
 
@@ -1740,15 +1767,18 @@ curl -sD - http://localhost:3100/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}'
 
 # 2b. tools/list on that session (reuse the header value from 2a)
+#     Clients MUST send MCP-Protocol-Version on every request after initialize;
+#     servers assume 2025-03-26 when the header is absent.
 SID="<paste Mcp-Session-Id>"
 curl -s http://localhost:3100/mcp \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
+  -H "MCP-Protocol-Version: 2025-11-25" \
   -H "Mcp-Session-Id: $SID" \
   -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
 
 # 2c. DELETE to terminate the session
-curl -s -X DELETE http://localhost:3100/mcp -H "Mcp-Session-Id: $SID"
+curl -s -X DELETE http://localhost:3100/mcp -H "MCP-Protocol-Version: 2025-11-25" -H "Mcp-Session-Id: $SID"
 
 # 3. Test rate limiting (free tier) — repeated initialize calls should trip 429
 for i in $(seq 1 15); do
@@ -1792,7 +1822,7 @@ npx @modelcontextprotocol/inspector                            # then point the 
 1. **Working server** — must be installable and functional
 2. **README.md** with clear setup instructions
 3. **Tool documentation** — describe every tool, its inputs, and expected outputs
-4. **npm package** (for stdio servers) or **public endpoint** (for SSE servers)
+4. **npm package** (for stdio servers) or **public endpoint** (for remote Streamable HTTP servers)
 
 ### README Template
 
@@ -1898,8 +1928,9 @@ OCR_API_KEY=...
 ### Pattern: Tool That Returns Multiple Content Types
 
 ```typescript
-server.tool("analyze_page", "Analyze a webpage — screenshot + extracted text", {
-  url: z.string().url(),
+server.registerTool("analyze_page", {
+  description: "Analyze a webpage: screenshot + extracted text",
+  inputSchema: { url: z.string().url() },
 }, async ({ url }) => {
   const [screenshot, text] = await Promise.all([
     captureScreenshot(url),
@@ -1917,8 +1948,9 @@ server.tool("analyze_page", "Analyze a webpage — screenshot + extracted text",
 ### Pattern: Long-Running Tool with Progress
 
 ```typescript
-server.tool("bulk_dns", "Look up DNS for multiple domains", {
-  domains: z.array(z.string()).max(50),
+server.registerTool("bulk_dns", {
+  description: "Look up DNS for multiple domains",
+  inputSchema: { domains: z.array(z.string()).max(50) },
 }, async ({ domains }) => {
   const results: string[] = [];
   for (let i = 0; i < domains.length; i++) {
@@ -2011,9 +2043,9 @@ Before shipping your MCP server:
 function gracefulShutdown(signal: string) {
   console.log(`\n${signal} received. Shutting down gracefully...`);
 
-  for (const [id, transport] of transports) {
+  for (const [id, transport] of Object.entries(transports)) {
     try { (transport as any).close?.(); } catch {}
-    transports.delete(id);
+    delete transports[id];
   }
 
   setTimeout(() => {
@@ -2053,11 +2085,13 @@ async function checkRateLimitRedis(
   if (minuteTtl < 0) await redis.expire(minuteKey, 60);
   if (dayTtl < 0) await redis.expire(dayKey, 86400);
 
-  if (minuteCount >= perMinute) {
+  // Strict > against the post-increment count: allows exactly perMinute/perDay
+  // requests, matching the check-then-increment semantics of the §6 limiter.
+  if (minuteCount > perMinute) {
     const ttl = await redis.ttl(minuteKey);
     return { allowed: false, retryAfter: ttl };
   }
-  if (dayCount >= perDay) {
+  if (dayCount > perDay) {
     const ttl = await redis.ttl(dayKey);
     return { allowed: false, retryAfter: ttl };
   }
@@ -2085,7 +2119,7 @@ export function registerTool<T extends ZodRawShape>(
   handler: ToolHandler<z.objectOutputType<z.ZodObject<T>, z.ZodTypeAny>>,
   auth?: AuthResult
 ) {
-  server.tool(name, description, schema, async (args) => {
+  server.registerTool(name, { description, inputSchema: schema }, async (args) => {
     const start = Date.now();
     try {
       const result = await handler(args as any);

@@ -151,7 +151,7 @@ The biggest reply-rate lever is **who** you contact and **where the list came fr
 - **Role fit:** the contact can *buy or champion* — title maps to budget/authority over the problem, not just a keyword match.
 - **Trigger/timing signal:** a reason to reach out *now* (new funding, new hire in the role, job postings for the pain you solve, tech-stack change, expansion, leadership change).
 - **Reachability:** a verified email (and ideally a LinkedIn profile) — see verification in §7.
-- **Exclusions:** existing customer, open opportunity, competitor, or on the suppression list (§6) → drop.
+- **Exclusions:** existing customer, open opportunity, competitor, or on the suppression list (§9) → drop.
 
 **Source-quality scoring** — not all "leads" are equal; score the *source* and set expectations accordingly:
 
@@ -219,12 +219,13 @@ The biggest reply-rate lever is **who** you contact and **where the list came fr
 - **Bounce rate high:** list-quality problem. Re-verify (§7) and pause the domain — high bounces trigger filtering for the whole sending domain.
 - **Complaint rate climbing toward 0.3%:** stop. Re-segment, tighten ICP, and check you're honoring opt-outs (§8).
 
-### 5b. Google + Yahoo sender requirements (in force since 2024)
+### 5b. Google, Yahoo + Microsoft sender requirements (in force 2024-2025)
 
 Effective Feb 1, 2024 (with **one-click unsubscribe enforced from June 1, 2024**), Gmail and Yahoo split their rules into two tiers. Know which tier you're in:
 
 - **All senders** (any volume): valid SPF **or** DKIM, valid forward+reverse DNS (PTR) on sending IPs, a real `From`, and spam rates kept low. Don't send from a domain with no auth at all.
 - **Bulk senders** (~**5,000+ messages/day** to Gmail/Yahoo, counted per From-domain): the full table below — SPF **and** DKIM, DMARC, DMARC-aligned From, one-click unsubscribe, and complaint rate held under 0.3%.
+- **Microsoft Outlook (outlook.com/hotmail/live):** since May 5, 2025, domains sending 5,000+ emails/day to Outlook consumer addresses must also pass SPF, DKIM, and DMARC (min p=none, aligned); non-compliant mail is junked, then rejected outright. The table below covers it: same auth, same unsubscribe hygiene.
 
 Cold outreach almost always *should* meet the bulk-sender bar even under 5,000/day — filters apply the same signals to everyone and tighten over time.
 
@@ -238,7 +239,7 @@ Cold outreach almost always *should* meet the bulk-sender bar even under 5,000/d
 | Spam complaint rate < 0.3% (keep < 0.1%) | All (measured for bulk) | Postmaster Tools "User reported spam rate" panel | Google Postmaster Tools |
 | Valid PTR / reverse DNS on sending IP | All | ESP handles this on shared IPs; set it yourself on dedicated IPs | `dig -x <sending-ip>` |
 
-Sequence-tool vendors (Instantly, Smartlead, Lemlist) usually inject the unsubscribe headers automatically when you publish a custom sending domain — but **always test once** with a real Gmail/Yahoo inbox before scaling. Requirements evolve; confirm current thresholds at the official pages (Google: `support.google.com/a/answer/81126`, Yahoo Sender Hub) — as of Jun 2026 the above reflects the 2024 rollout.
+Sequence-tool vendors (Instantly, Smartlead, Lemlist) usually inject the unsubscribe headers automatically when you publish a custom sending domain, but **always test once** with a real Gmail/Yahoo inbox before scaling. Requirements evolve; confirm current thresholds at the official pages (Google: `support.google.com/a/answer/81126`, Yahoo Sender Hub, Outlook postmaster/SNDS portal); as of Jun 2026 the above reflects the 2024-2025 rollout.
 
 ### 6. A/B Testing
 
@@ -253,7 +254,7 @@ Sequence-tool vendors (Instantly, Smartlead, Lemlist) usually inject the unsubsc
 | Sequence length | 5-touch vs 7-touch |
 | Personalization tier | Light vs medium on same segment |
 
-**Sample size — be honest about power.** For reply/positive-reply rates in the 1-5% range, **100 emails per variant is directional only, not statistically significant** (you'd see ~1-5 replies per arm — noise swamps the signal). Rough guide to *detect* a change at ~5% base reply rate:
+**Sample size: be realistic about power.** For reply/positive-reply rates in the 1-5% range, **100 emails per variant is directional only, not statistically significant** (you'd see ~1-5 replies per arm, so noise swamps the signal). Rough guide to *detect* a change at ~5% base reply rate:
 
 | What you're measuring | To spot a big lift (e.g. 3%→6%) | To spot a small lift (e.g. 5%→6.5%) |
 |---|---|---|
@@ -274,7 +275,7 @@ Rules of thumb: the lower the base rate and the smaller the lift, the more volum
 | Sequencing | Instantly, Smartlead, Lemlist, Apollo, Salesloft, Outreach |
 | Warmup | Instantly (built-in), Warmbox, Mailwarm |
 | LinkedIn | **See §3b for the ToS risk policy before using any automation tool.** Safe layer: LinkedIn Sales Navigator (native search/lists/alerts). Tools that auto-send connections/messages or scrape (HeyReach, Aimfox, Expandi, PhantomBuster, Dripify) violate LinkedIn's User Agreement and risk restriction/ban — do not treat as routine. |
-| Deliverability monitoring | Google Postmaster Tools, Yahoo Sender Hub, GlockApps |
+| Deliverability monitoring | Google Postmaster Tools, Yahoo Sender Hub, Outlook SNDS/postmaster, GlockApps |
 | CRM | HubSpot, Pipedrive, Close |
 
 ## 8. Legal & compliance (this is not optional)

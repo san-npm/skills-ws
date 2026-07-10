@@ -58,24 +58,24 @@ Happy to send more details or jump on a quick call.
 | Twitter/X Lists | Track reporters covering your space |
 | Similar stories | Who covered competitors? Pitch them. |
 | Podcast directories | Filter by category, check guest history |
-| Qwoted / Featured.com / Help a B2B Writer / SourceBottle | Inbound journalist requests (HARO shut down mid-2024 — Cision discontinued the Connectively rebrand) |
+| Qwoted / Featured.com / MentionMatch / SourceBottle | Inbound journalist requests (classic HARO is back: Featured.com bought the brand from Cision in April 2025 and relaunched free email digests at helpareporter.com) |
 
 Build a spreadsheet: Name, Outlet, Beat, Email, Twitter, Last Pitched, Notes. Keep under 50 targets per campaign — quality over quantity.
 
-## Source-Request Strategy (post-HARO)
+## Source-Request Strategy (HARO and successors)
 
-HARO (Help a Reporter Out) was shut down by Cision in mid-2024; its short-lived **Connectively** rebrand was also discontinued. Modern replacements (this market churns — verify the tier/price before signing up, as of Jun 2026):
+Cision shut down HARO (Help a Reporter Out) and its short-lived Connectively rebrand in late 2024; Featured.com then acquired the HARO brand in April 2025 and relaunched it at helpareporter.com as free daily email digests. Current lineup (this market churns, verify the tier/price before signing up, as of Jul 2026):
 
+- **HARO** (helpareporter.com): relaunched under Featured.com ownership, free for journalists and sources, classic daily email digests
 - **Qwoted** (qwoted.com) — closest HARO successor, freemium, strong B2B/finance/tech coverage
-- **Featured.com** — pay-per-pitch / subscription; expert answers published with byline + backlink (note: contributed, not earned — see Earned vs. Paid vs. Contributed below)
-- **Help a B2B Writer** (helpab2bwriter.com) — free, focused on SaaS/B2B journalists, email digests
+- **Featured.com** (formerly Terkel; also operates the relaunched HARO): pay-per-pitch / subscription; expert answers published with byline + backlink (note: contributed, not earned; see Earned vs. Paid vs. Contributed below)
+- **MentionMatch** (mentionmatch.com, formerly Help a B2B Writer, now run by Superpath): free, focused on SaaS/B2B writers, requests routed to matching experts by email
 - **SourceBottle** — international (US/UK/AU/NZ), free tier
-- **Terkel / Featured Q&A** — expert Q&A, syndicated to partner sites
 - **JournoRequest / #journorequest on X and Bluesky** — free, journalist-posted requests; many UK/EU reporters migrated here
 - **Press Hunt, Prowly's PR network, ResponseSource (UK)** — paid alternatives worth a trial
 
 Workflow:
-1. Sign up to 2-3 platforms — Qwoted + Help a B2B Writer is a strong free default; add Featured if you want guaranteed contributed placements.
+1. Sign up to 2-3 platforms: Qwoted + MentionMatch is a strong free default; add Featured if you want guaranteed contributed placements.
 2. Filter by your categories — respond within 1-2 hours. Speed wins; most queries close fast and early responses get read first.
 3. Format: **[Subject line that exactly mirrors the query]** → 2-3 short paragraphs of genuinely useful, specific expert insight. Lead with the answer, not your bio.
 4. Include a one-line credential, headshot link, and outlet-ready bio. Don't hard-sell or attach files.

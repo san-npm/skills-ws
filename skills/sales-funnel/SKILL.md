@@ -279,7 +279,7 @@ Funnels move money and exploit psychology; that puts them squarely in scope of c
 
 **Prohibited (dark patterns — do not implement)**:
 - **Fake scarcity/urgency**: countdown timers that reset, "only 2 left" when untrue, fabricated "12 people viewing".
-- **Forced continuity / subscription traps**: hard-to-cancel subs, hidden auto-renewal, pre-checked upsells. (US "click-to-cancel"-style rules and EU law require cancellation be as easy as signup and auto-renewal be clearly disclosed with consent.)
+- **Forced continuity / subscription traps**: hard-to-cancel subs, hidden auto-renewal, pre-checked upsells. (The FTC's federal Click-to-Cancel rule was vacated in July 2025 and replacement rulemaking is underway, but ROSCA, FTC Act Section 5 enforcement, and state auto-renewal laws (California and others) still require clear auto-renewal disclosure, express consent, and a simple cancellation path; EU law requires cancellation be as easy as signup.)
 - **Confirmshaming** ("No, I don't want to save money"), **disguised ads**, **bait-and-switch** pricing, **drip pricing** (hiding mandatory fees until checkout — increasingly explicitly illegal).
 - **Sneaking** items into carts; **roach-motel** flows; **trick questions** in opt-ins.
 

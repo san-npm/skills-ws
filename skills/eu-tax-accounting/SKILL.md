@@ -11,7 +11,7 @@ Orientation reference for corporate tax, VAT, payroll taxes, filing deadlines, c
 
 **Verified baseline: figures reflect rules as of June 2026** unless a cell carries its own note. The fastest cross-country starting points: [Tax Foundation EU tables](https://taxfoundation.org/data/all/eu/) (CIT/VAT/payroll, updated annually), [PwC Worldwide Tax Summaries](https://taxsummaries.pwc.com/) (per-country, authoritative detail), and the [EU VAT rates database](https://ec.europa.eu/taxation_customs/tedb/).
 
-**2026 e-invoicing snapshot** (full table in §6): Germany B2B receive mandatory since Jan 2025, issue phased 2027–2028; Belgium B2B mandatory since Jan 2026; Poland KSeF live from Feb 2026 (large) / Apr 2026 (all VAT-registered), penalties from Jan 2027; France B2B receive Sep 2026, issue Sep 2026–2027 by size; Spain (Crea y Crece) royal decree adopted Mar 2026, phase-in ~2027–2028. VAT in the Digital Age (ViDA) rolls out platform-economy and digital-reporting rules through 2030–2035.
+**2026 e-invoicing snapshot** (full table in §6): Germany B2B receive mandatory since Jan 2025, issue phased 2027-2028; Belgium B2B mandatory since Jan 2026; Poland KSeF live from Feb 2026 (large) / Apr 2026 (all VAT-registered), penalties from Jan 2027; France B2B receive Sep 2026, issue Sep 2026-2027 by size; Spain (Crea y Crece) royal decree adopted Mar 2026, phase-in ~2027-2028. VAT in the Digital Age (ViDA) rolls out platform-economy and digital-reporting rules from Jul 2028 (platforms, single registration) to Jul 2030 (intra-EU digital reporting), full alignment by 2035.
 
 ---
 
@@ -128,7 +128,7 @@ Cross-border B2B services within the EU:
 - Buyer self-assesses VAT on purchase (input and output = net zero if fully deductible)
 - Both parties must have valid EU VAT numbers — verify via VIES (https://ec.europa.eu/taxation_customs/vies/)
 
-### Digital Services VAT (since July 2021)
+### Digital Services VAT (destination-based since 2015, via OSS since July 2021)
 
 All B2C digital services (SaaS, streaming, e-books, online courses, cloud services) are taxed at the **customer's country** rate:
 - Determine customer location via 2 non-contradictory pieces of evidence: IP address, billing address, bank country, SIM card country
@@ -399,7 +399,7 @@ EU implementation via Directive 2022/2523, effective from December 31, 2023:
 | Belgium | Peppol (B2G + B2B) | B2G mandatory. **B2B mandatory since Jan 1, 2026** (structured e-invoices via Peppol). | Peppol BIS (EN 16931) |
 | Romania | RO e-Factura, RO e-Transport | B2B mandatory since 2024 (broadened to all domestic B2B + e-reporting); B2C e-invoicing also phased in. | CIUS-RO (UBL-based) |
 
-**ViDA (VAT in the Digital Age, Directive (EU) 2025/516).** Adopted 2025; phases roll out through ~2030–2035. Key pillars: (1) **digital reporting + mandatory structured e-invoicing for intra-EU B2B** (target ~2030, EN 16931), removing the need for prior derogations; (2) **platform economy** — deemed-supplier VAT rules for short-term accommodation and passenger transport platforms; (3) **single VAT registration** — wider OSS to avoid multiple registrations. Member states may mandate domestic e-invoicing without EU derogation already. Track at [EU ViDA](https://taxation-customs.ec.europa.eu/taxation/vat/vat-digital-age_en).
+**ViDA (VAT in the Digital Age, Directive (EU) 2025/516).** Adopted 2025; phases roll out from Jul 2028 to 2035. Key pillars: (1) **digital reporting + mandatory structured e-invoicing for intra-EU B2B** from 1 Jul 2030 (EN 16931; existing domestic reporting systems must align by 1 Jan 2035), removing the need for prior derogations; (2) **platform economy**: deemed-supplier VAT rules for short-term accommodation and passenger transport platforms from 1 Jul 2028 (member states may defer to 1 Jan 2030); (3) **single VAT registration**: wider OSS plus mandatory reverse charge from 1 Jul 2028, avoiding multiple registrations. Member states may mandate domestic e-invoicing without EU derogation already. Track at [EU ViDA](https://taxation-customs.ec.europa.eu/taxation/vat/vat-digital-age-vida_en).
 
 ### Required Invoice Fields — EU VAT Directive Art. 226
 

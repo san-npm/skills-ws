@@ -19,10 +19,10 @@ description: "Experimentation guidance: A/B test design, sample-size/MDE calcula
 
 | Factor | Score 1-10 | Definition |
 |--------|-----------|------------|
-| Impact | How much will it move the metric? |
-| Confidence | How sure are we it'll work? |
-| Ease | How fast/cheap to implement? |
-| **ICE Score** | (I + C + E) / 3 |
+| Impact | 1-10 | How much will it move the metric? |
+| Confidence | 1-10 | How sure are we it'll work? |
+| Ease | 1-10 | How fast/cheap to implement? |
+| **ICE Score** | | (I + C + E) / 3 |
 
 **RICE framework (more rigorous):**
 

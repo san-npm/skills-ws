@@ -120,7 +120,7 @@ ORDER BY MIN(rnk);
 Do **not** query per-pool/per-version event tables like `uniswap_v3_ethereum.Pair_evt_Swap` for volume — Uniswap V3 swaps are pool-based (not "Pair") and table names differ by protocol version, so they break constantly. Spellbook's `dex.trades` already aggregates every DEX/version across chains, normalizes decimals, and precomputes `amount_usd`. It also avoids the original query's price-join bug (joining on `symbol='ETH'` ignored chain and token address and could fan out rows).
 
 ```sql
--- Daily Uniswap volume on Ethereum (all versions), de-double-counted by dex.trades
+-- Daily Uniswap volume on Ethereum (all versions), pool-level via dex.trades
 SELECT
     DATE_TRUNC('day', block_time) AS day,
     COUNT(*)                      AS num_trades,
@@ -134,7 +134,7 @@ GROUP BY 1
 ORDER BY 1;
 ```
 
-> `dex.trades` already deduplicates aggregator/router hops so you don't double-count a single user swap routed through 1inch/CoWSwap. If you need a token whose USD price is missing from `dex.trades`, join `prices.minute` on the full key — `ON p.blockchain = t.blockchain AND p.contract_address = t.token_bought_address AND p.timestamp = DATE_TRUNC('minute', t.block_time)` — never on `symbol` alone.
+> `dex.trades` is pool-level: a swap routed through 1inch/CoWSwap appears once per pool hop, so per-pool DEX volume is correct but user-intent volume is overstated. Use `dex_aggregator.trades` for aggregator trade intents (one row per intent), and never sum the two tables together (that double counts). If you need a token whose USD price is missing from `dex.trades`, join `prices.minute` on the full key (`ON p.blockchain = t.blockchain AND p.contract_address = t.token_bought_address AND p.timestamp = DATE_TRUNC('minute', t.block_time)`), never on `symbol` alone.
 
 ### Protocol TVL (simplified, flow-based)
 ```sql
@@ -321,7 +321,7 @@ A single key spans all V2 chains, but the per-second/daily limits are **shared a
 | Standard | 10 calls/sec | 200,000/day |
 | Advanced | 20 calls/sec | 500,000/day |
 | Professional | 30 calls/sec | 1,000,000/day |
-| Enterprise | unmetered | dedicated infra |
+| Pro Plus | 30 calls/sec | 1,500,000/day |
 
 There is no "unlimited" consumer tier — paid plans raise the per-second and daily caps. Always implement the backoff shown in the Setup block; bursting past the per-second limit returns `NOTOK` with a rate-limit message, not an HTTP 429.
 
@@ -529,8 +529,8 @@ ORDER BY total_txs DESC;
 -- Which contracts/protocols does a wallet interact with?
 SELECT
     t."to"                                       AS contract,
-    -- label if known, else a short hex prefix; to_hex on varbinary, not CAST-to-varchar
-    COALESCE(l.name, '0x' || bytearray_substring(to_hex(t."to"), 1, 8) || '…') AS protocol,
+    -- label if known, else a short hex prefix (to_hex returns varchar, so slice with substr)
+    COALESCE(l.name, '0x' || substr(to_hex(t."to"), 1, 8) || '…') AS protocol,
     l.category                                   AS label_category,   -- e.g. dex, lending, cex
     COUNT(*)                                     AS interactions,
     MIN(t.block_time)                            AS first_seen,
@@ -581,12 +581,11 @@ ORDER BY day;
 
 ### Protocol Revenue
 ```sql
--- Fee revenue for a DEX (curated dex.trades, not a raw dex_trades table)
+-- Fee estimate for a DEX: dex.trades has no fee columns, so estimate from volume x fee rate
 SELECT
     DATE_TRUNC('day', block_time) AS day,
-    SUM(fee_amount_usd)           AS daily_fees,        -- total swap fees paid by traders
-    SUM(protocol_fee_usd)         AS protocol_revenue,  -- share routed to treasury
-    SUM(lp_fee_usd)               AS lp_revenue         -- share paid to LPs
+    SUM(amount_usd)               AS volume_usd,
+    SUM(amount_usd) * 0.003       AS est_fees_usd  -- replace 0.003 with the real pool fee tier(s)
 FROM dex.trades
 WHERE project = 'uniswap'
   AND blockchain = 'ethereum'
@@ -595,7 +594,7 @@ GROUP BY 1
 ORDER BY 1;
 ```
 
-> Fee columns vary by protocol and may be NULL where the fee split isn't decoded — verify the column exists for your project in the schema panel, or use Token Terminal/Artemis for standardized, cross-protocol fee & revenue series.
+> `dex.trades` carries no per-trade fee split. For a real protocol vs LP revenue split, decode the protocol's own fee events (fee-switch config) or per-pool fee tiers, or use Token Terminal/Artemis for standardized cross-protocol fee and revenue series.
 
 ### Key DeFi Metrics Reference
 | Metric | Definition | Source / caveat |

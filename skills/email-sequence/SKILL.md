@@ -487,10 +487,11 @@ Pick the ONE include that matches your actual sending provider. Do not paste all
 ; --- Pick the include(s) for the ESP(s) you actually send through: ---
 ; Google Workspace:   v=spf1 include:_spf.google.com ~all
 ; SendGrid:           v=spf1 include:sendgrid.net ~all
-; Mailchimp/Mandrill: v=spf1 include:servers.mcsv.net ~all
+; Mailchimp: no SPF include needed; authenticate via the 2 CNAME (DKIM) + 1 DMARC TXT records from the Mailchimp dashboard
 ; Amazon SES:         v=spf1 include:amazonses.com ~all
 ; Postmark:           v=spf1 include:spf.mtasv.net ~all
-; Resend:             v=spf1 include:_spf.resend.com ~all
+; Resend (on the send. subdomain Resend assigns): v=spf1 include:amazonses.com ~all
+;   (copy the exact records from the Resend dashboard Records tab)
 
 ; CRITICAL RULES:
 ; - Exactly ONE SPF (v=spf1) TXT record per domain. Two SPF records = PermError = auth fails.
@@ -555,7 +556,7 @@ Google and Yahoo's bulk-sender rules took effect Feb 2024 and enforcement has on
 | **From-domain alignment** | The From: domain must align (relaxed is fine) with the SPF or DKIM domain. No more sending "From: you@yourbrand.com" via an unaligned ESP envelope. |
 | **One-click unsubscribe (RFC 8058)** | Commercial/bulk mail MUST include both `List-Unsubscribe` AND `List-Unsubscribe-Post: List-Unsubscribe=One-Click` headers, and honor the resulting POST without making the user log in or click through extra pages. This is a hard requirement, not optional. (See header example below.) |
 | **Visible unsubscribe in the body** | A clearly visible, working unsubscribe link in the message body, in addition to the header. |
-| **Process unsubscribes within 2 days** | Google/Yahoo require honoring opt-outs **within 48 hours** — far stricter than CAN-SPAM's 10 days. Build for near-real-time suppression. |
+| **Process unsubscribes within 2 days** | Google/Yahoo require honoring opt-outs **within 48 hours**, far stricter than CAN-SPAM's 10 business days. Build for near-real-time suppression. |
 | **Spam complaint rate under threshold** | Keep complaints **below 0.3%** (measured in Google Postmaster Tools); **aim to stay under 0.1%**. Spikes above 0.3% get you throttled or blocked. |
 | **No spoofing / valid PTR** | Sending IPs need valid forward and reverse DNS (PTR), and you must not impersonate Gmail/Yahoo From addresses. |
 | **TLS for transport** | Use TLS for outbound connections (every reputable ESP does this by default). |
@@ -581,7 +582,7 @@ Authentication gets you to the inbox; **consent law governs whether you're allow
 
 | Law / Region | Consent model | Key obligations |
 |---|---|---|
-| **CAN-SPAM (US)** | Opt-out | Truthful headers & subject; valid physical postal address in every email; clear unsubscribe honored within 10 days (but honor in ≤2 days for bulk per provider rules above). No prior consent legally required, but it's best practice. |
+| **CAN-SPAM (US)** | Opt-out | Truthful headers & subject; valid physical postal address in every email; clear unsubscribe honored within 10 business days (but honor in ≤2 days for bulk per provider rules above). No prior consent legally required, but it's best practice. |
 | **GDPR + ePrivacy (EU/EEA)** | Opt-in | Freely-given, specific, informed consent before marketing email (narrow "soft opt-in" exists for existing customers re: similar products). Log proof of consent; honor withdrawal as easily as it was given; respect data-subject/erasure requests. |
 | **PECR (UK)** | Opt-in | UK equivalent of ePrivacy; same soft opt-in carve-out for existing customers. Pairs with UK GDPR. |
 | **CASL (Canada)** | Opt-in (express or implied) | Among the strictest: express or qualifying implied consent required; sender identification; functioning unsubscribe honored within 10 business days; keep consent records. Penalties are steep. |
@@ -612,7 +613,7 @@ Authentication gets you to the inbox; **consent law governs whether you're allow
 - [ ] Bounce management: remove hard bounces immediately
 - [ ] Soft bounces: retry 3x, then remove
 - [ ] Remove unengaged subscribers after 90 days of no opens/clicks
-- [ ] Process unsubscribes within **48 hours** (Google/Yahoo bulk-sender rule; CAN-SPAM allows 10 days but providers require 2 — build for near-real-time suppression)
+- [ ] Process unsubscribes within **48 hours** (Google/Yahoo bulk-sender rule; CAN-SPAM allows 10 business days but providers require 2; build for near-real-time suppression)
 - [ ] Never purchase email lists — ever
 - [ ] Run list through verification service before importing (NeverBounce, ZeroBounce)
 

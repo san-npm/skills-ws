@@ -85,7 +85,7 @@ node scripts/scan.mjs --all-sports --min-prob=0.75
 ```
 
 `scan.mjs` does the following (read-only — no keys needed beyond `$ODDS_API_KEY`):
-1. Fetches odds from The Odds API (`h2h` market, EU region, decimal format, next ~48h).
+1. Fetches odds from The Odds API (`h2h` market, EU region, decimal format, next ~2-3 days).
 2. Computes a **raw** implied-probability signal per outcome by averaging `1/decimal_odds` across all listed bookmakers. This is **not** de-vigged — it overstates probability and is only a shortlist signal; de-vig happens in Step 2.
 3. Filters to the top outcome per game above the threshold and matches it on Polymarket (Gamma `public-search`), resolving the outcome `token_id`.
 4. Pulls the **live CLOB midpoint** for that token and reports `Edge = bookProb − pmPrice`.
@@ -114,6 +114,8 @@ Let `p` = de-vigged consensus probability, `P` = the **executable** Polymarket a
 edge = p − P
 EV per $1 staked ≈ (p / P) − 1 − f      # buy YES at P, pays $1 if it resolves true
 ```
+
+Note: Polymarket charges a taker fee on sports markets (feeRate 0.05, charged by the protocol at match time as fee = shares x feeRate x p x (1 - p)); fold this into f, and verify the current schedule at <https://docs.polymarket.com/trading/fees> before trading.
 
 - **`edge > 0` and `EV > 0` → tradeable.** PM is pricing the favorite cheaper than its fair probability.
 - **`edge ≤ 0` (PM price ≥ true probability) → NEGATIVE expected value → DO NOT STAKE.** A negative or zero edge means you are paying *at or above* fair value; over many such bets you lose money on average. "Better payouts than a bookmaker" does **not** rescue a negative-EV price — skip it. (This corrects the old, incorrect guidance that near-zero/negative edge was "still fine".)

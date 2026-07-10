@@ -211,14 +211,14 @@ const supportsUnicode =
 const charset = supportsUnicode ? UNICODE_SET : ASCII_SET;
 ```
 
-**figlet for text banners.** `npm install figlet` installs the **library** locally — it does *not* put a `figlet` binary on your PATH. Use `npx` (downloads/runs the CLI without a global install), or install a CLI globally, or call the library from code.
+**figlet for text banners.** The figlet npm package ships its own `figlet` CLI (since v1.6.0), so no separate wrapper package is needed. Use `npx` (downloads/runs the CLI without a global install), or install it globally, or call the library from code.
 
 ```bash
 # No-install, one-off (recommended): npx fetches the CLI on demand
-npx figlet-cli -f Slant "SKILLS"
+npx figlet -f Slant "SKILLS"
 
-# OR install a CLI globally so `figlet` is on PATH
-npm i -g figlet-cli        # provides the `figlet` command
+# OR install globally so `figlet` is on PATH
+npm i -g figlet
 figlet -f Slant "SKILLS"
 
 # Python equivalent (pyfiglet ships a console script):
@@ -247,8 +247,10 @@ function renderAscii(ctx, canvas, source, cellW, cellH) {
   // Draw source to small offscreen canvas
   const cols = Math.floor(canvas.width / cellW);
   const rows = Math.floor(canvas.height / cellH);
+  // Create the offscreen canvas once outside the render loop and reuse it
+  // (resize only when cols/rows change) instead of allocating per frame.
   const offscreen = new OffscreenCanvas(cols, rows);
-  const offCtx = offscreen.getContext("2d");
+  const offCtx = offscreen.getContext("2d", { willReadFrequently: true });
   offCtx.drawImage(source, 0, 0, cols, rows);
   const pixels = offCtx.getImageData(0, 0, cols, rows).data;
 
@@ -364,13 +366,13 @@ def image_to_ascii(path, width=80):
     return ascii_art
 ```
 
-**From text to ASCII banner** (uses `npx figlet-cli`; swap for a global `figlet` if installed — see §6):
+**From text to ASCII banner** (uses `npx figlet`; see §6):
 ```bash
 # Quick branded banner, indented two spaces
-npx figlet-cli -f Slant "skills.ws" | sed 's/^/  /'
+npx figlet -f Slant "skills.ws" | sed 's/^/  /'
 
 # With green color (bash) — wrap in ANSI SGR codes
-echo -e "\033[32m$(npx figlet-cli -f Slant 'skills.ws')\033[0m"
+echo -e "\033[32m$(npx figlet -f Slant 'skills.ws')\033[0m"
 ```
 
 ## Checklist

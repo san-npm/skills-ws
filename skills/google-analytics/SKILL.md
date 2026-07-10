@@ -193,7 +193,7 @@ Also add the other domains to **Admin → Data settings → Data filters / unwan
 
 GA4 Admin → Attribution settings:
 
-- **Reporting attribution model:** Data-driven (default, and the only cross-channel model GA4 still offers — the last-click/position-based/linear "rules-based" models were removed in 2023–2024).
+- **Reporting attribution model:** Data-driven (default). GA4 also still offers two rules-based last-click models: *Paid and organic last click* and *Google paid channels last click*. First click, linear, time decay, and position-based were removed in November 2023.
 - **Key-event lookback window:** acquisition key events default 30 days (configurable 7/30); all other key events default 90 days (configurable up to 90).
 - **Channel reporting:** uses the **default channel groups** (Cross-network, Paid Search, Organic Social, etc.); create a **custom channel group** if your UTMs don't map cleanly.
 
@@ -283,8 +283,8 @@ from google.analytics.data_v1beta.types import (
 PROPERTY_ID = "123456789"          # numeric property ID, not "G-XXXX"
 client = BetaAnalyticsDataClient()  # picks up ADC from the env var above
 
-def fetch_all_rows(page_size: int = 100_000):
-    """Paginate the report; GA4 returns max 100k rows per request."""
+def fetch_all_rows(page_size: int = 250_000):
+    """Paginate the report; the API defaults to 10,000 rows and caps at 250,000 rows per request."""
     offset = 0
     while True:
         req = RunReportRequest(

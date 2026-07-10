@@ -235,7 +235,7 @@ h1 { font-size: clamp(1.75rem, 1.2rem + 2.5vw, 3rem); }
 - **Easing:** ease-out (`cubic-bezier(.2,0,0,1)`) for elements entering; ease-in for exits. Avoid pure linear except marquees/spinners.
 - **Animate cheap properties:** `transform` and `opacity` (GPU-composited). Avoid animating `width`/`height`/`top`/`left`/`box-shadow` — they trigger layout/paint and jank.
 - **Purpose:** motion should show relationships (where a panel came from), provide feedback (button press), or guide attention (toast) — never just decorate.
-- **Respect reduced motion** (WCAG 2.2 SC 2.3.3 / required by many a11y laws):
+- **Respect reduced motion** (SC 2.3.3 Animation from Interactions, Level AAA: strongly recommended best practice, though AA laws such as the EAA and DOJ Title II stop at AA):
 ```css
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -326,7 +326,7 @@ h1 { font-size: clamp(1.75rem, 1.2rem + 2.5vw, 3rem); }
 - [ ] **Headings are meaningful and properly nested** (one `<h1>` per page/view; don't skip levels *when the structure implies them*). Note: WCAG requires programmatic structure and labels (SC 1.3.1, 2.4.6), not a rigid "never skip a level" rule for every visual edge case — but skipping levels usually signals a real hierarchy problem, so fix the structure, not just the tag.
 - [ ] Page has a descriptive `<title>`, correct `lang` attribute, and landmarks (`<main>`, `<nav>`, `<header>`, `<footer>`)
 - [ ] Content reflows at 320px width / 400% zoom with no horizontal scroll or loss — SC 1.4.10
-- [ ] Respects `prefers-reduced-motion`; no content flashes >3×/sec — SC 2.3.1, 2.3.3
+- [ ] Respects `prefers-reduced-motion` (SC 2.3.3, AAA, best practice); no content flashes >3×/sec (SC 2.3.1, A)
 - [ ] Supports `prefers-contrast` / Windows **forced-colors / High Contrast Mode** (see §9)
 
 ### WCAG 2.2 — the 9 new criteria (don't miss these; they're what audits flag in 2026)

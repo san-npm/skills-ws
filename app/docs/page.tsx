@@ -44,14 +44,14 @@ const howToSchema = {
   "@type": "HowTo",
   name: "How to install agent skills with skills-ws",
   description:
-    "Install SKILL.md agent skills for AI coding assistants — Claude Code, OpenClaw, Cursor, Codex, and Gemini CLI — using the skills-ws CLI.",
+    "Install SKILL.md agent skills for AI coding assistants — Claude Code, OpenClaw, Cursor, Codex, and GitHub Copilot — using the skills-ws CLI.",
   totalTime: "PT1M",
   supply: [{ "@type": "HowToSupply", name: "Node.js 18 or later" }],
   tool: [
     { "@type": "HowToTool", name: "npm or npx" },
     {
       "@type": "HowToTool",
-      name: "An AI coding assistant supporting SKILL.md (Claude Code, OpenClaw, Cursor, Codex, or Gemini CLI)",
+      name: "An AI coding assistant supporting SKILL.md (Claude Code, OpenClaw, Cursor, Codex, or GitHub Copilot)",
     },
   ],
   step: [
@@ -65,14 +65,14 @@ const howToSchema = {
       "@type": "HowToStep",
       position: 2,
       name: "Run the installer",
-      text: "Execute npx skills-ws to install all 86 skills, or add --skill name to install just one.",
+      text: "Execute npx skills-ws install all to install all 86 skills, or npx skills-ws install name to install just one.",
       url: "https://www.skills.ws/cli",
     },
     {
       "@type": "HowToStep",
       position: 3,
       name: "Verify the skill directory",
-      text: "Claude Code uses .claude/skills/, OpenClaw uses ~/openclaw/skills/, Cursor uses .cursor/skills/, Codex uses .codex/skills/. Confirm the SKILL.md files are present.",
+      text: "Claude Code uses .claude/skills/, OpenClaw uses the workspace skills/ directory (or ~/.openclaw/skills/), Cursor uses .cursor/skills/, Codex uses .agents/skills/. Confirm the SKILL.md files are present.",
     },
     {
       "@type": "HowToStep",
@@ -154,7 +154,7 @@ export default function DocsPage() {
           </div>
           <div className="bg-bg border border-border rounded-lg px-5 py-3 font-mono text-[13px]">
             <span className="text-accent select-none">$ </span>
-            <span className="text-text-main">npx skills-ws --skill seo-geo</span>
+            <span className="text-text-main">npx skills-ws install seo-geo</span>
           </div>
         </div>
       </section>
@@ -168,7 +168,7 @@ export default function DocsPage() {
           </li>
           <li className="flex items-start gap-2">
             <span className="w-1 h-1 rounded-full bg-green-500 mt-2.5 shrink-0" />
-            <span>All skills scanned with VirusTotal — each skill page links to its scan report</span>
+            <span>Skill files are security-scanned before each release: hidden-Unicode injection, secrets, and dangerous-pattern checks</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="w-1 h-1 rounded-full bg-green-500 mt-2.5 shrink-0" />

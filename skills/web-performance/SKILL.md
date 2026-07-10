@@ -23,7 +23,7 @@ description: "Core Web Vitals (LCP/INP/CLS) optimization, bundle analysis, cachi
 
 ### INP Fixes
 
-1. **Break long tasks** (>50ms) by yielding to the main thread. There is no standalone `yield()` in browsers — use `scheduler.yield()` where available (Chromium 129+, not yet in Safari/Firefox as of Jun 2026) with a `setTimeout(0)` fallback.
+1. **Break long tasks** (>50ms) by yielding to the main thread. There is no standalone `yield()` in browsers; use `scheduler.yield()` where available (Chromium 129+ and Firefox 142+; not in Safari as of Jul 2026) with a `setTimeout(0)` fallback.
 2. **Defer non-critical JS:** `<script defer>` or dynamic `import()`
 3. **Use `requestIdleCallback`** for analytics/telemetry — but it is unsupported in Safari (use a `setTimeout` shim) and **always pass a `timeout`** so the work runs even if the page never goes idle.
 4. **Debounce input handlers:** 100-150ms for search, immediate for buttons
@@ -71,20 +71,9 @@ ric(() => sendTelemetry(), { timeout: 2000 }); // runs within 2s even if never i
 ```bash
 # CLI
 npx lighthouse https://example.com --output=json --output-path=./report.json
-
-# CI with budget
-npx lighthouse https://example.com --budget-path=budget.json
 ```
 
-```json
-// budget.json
-[{ "resourceSizes": [
-  { "resourceType": "script", "budget": 300 },
-  { "resourceType": "total", "budget": 800 }
-], "resourceCounts": [
-  { "resourceType": "third-party", "budget": 5 }
-]}]
-```
+Performance budgets (budget.json, --budget-path) were removed in Lighthouse 12 (2024). Enforce budgets in CI with Lighthouse CI assertions instead (see the Lighthouse CI section below).
 
 ## Bundle Analysis
 
@@ -96,7 +85,7 @@ npx webpack-bundle-analyzer stats.json
 npx vite-bundle-visualizer
 
 # Quick size check
-npx bundlephobia <package-name>
+npx bundle-phobia-cli <package-name>
 ```
 
 **Targets:** ~150–200KB gzipped JS for the initial load is a reasonable starting budget for a content/marketing route; rich SPAs and dashboards run higher. Treat it as a per-route, per-device-class budget and tune against real-user p75 (especially mid-tier mobile), not a universal hard cap. Split per route and lazy-load below-fold/interaction-only code.
@@ -264,7 +253,7 @@ const BUDGET = { js: 200_000, css: 50_000, images: 500_000 }; // bytes, gzipped
 ```bash
 # Total transfer size
 curl -so /dev/null -w '%{size_download}' https://example.com
-# Waterfall analysis
+# API load test (latency under concurrency)
 npx autocannon -c 100 -d 30 https://example.com/api/data
 ```
 
@@ -311,7 +300,7 @@ Gate PRs on performance with Lighthouse CI (`@lhci/cli`):
       "assertions": {
         "categories:performance": ["error", { "minScore": 0.9 }],
         "largest-contentful-paint": ["error", { "maxNumericValue": 2500 }],
-        "interaction-to-next-paint": ["error", { "maxNumericValue": 200 }],
+        "total-blocking-time": ["error", { "maxNumericValue": 300 }],
         "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1 }]
       }
     },
@@ -319,6 +308,8 @@ Gate PRs on performance with Lighthouse CI (`@lhci/cli`):
   }
 }
 ```
+
+Lighthouse navigation runs cannot measure INP (timespan mode only); gate on TBT as the lab proxy and track INP p75 in the field via RUM/CrUX (see Field Measurement).
 
 ```bash
 npx @lhci/cli autorun   # collect -> assert -> upload; non-zero exit fails CI

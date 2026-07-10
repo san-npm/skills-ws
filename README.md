@@ -19,31 +19,31 @@ Skills are `SKILL.md` files that give AI coding assistants specialized knowledge
 
 ---
 
-## Skills (81 across 8 categories)
+## Skills (86 across 8 categories)
 
 ### Marketing (15)
 SEO/GEO, content strategy, copywriting, paid ads, email sequences, PR/media, influencer marketing, brand strategy, webinars, blog engine, and more.
 
-### Dev (16)
-Git workflow, CI/CD, API design, database design, testing, web performance, security hardening, prompt engineering, AI agent design, MVP launcher, Next.js stack.
+### Dev (22)
+Git workflow, CI/CD, API design, database design, testing, web performance, security hardening, prompt engineering, AI agent building, MCP client/server, Stripe billing, Telegram Mini Apps, MVP launcher, Next.js stack.
 
-### Growth (10)
-Social media, community building, customer feedback, business development, cold outreach, competitor intelligence, affiliate marketing.
+### Growth (11)
+Social media, community building, customer feedback, business development, cold outreach, competitor intelligence, affiliate marketing, product-led growth.
 
 ### Operations (11)
-EU legal compliance (GDPR, AI Act, DSA), hiring/team building, project management, CRM, accounting, revenue ops.
+EU legal compliance (GDPR, AI Act, DSA), hiring/team building, project management, CRM, accounting, revenue ops, Docker, AWS, monitoring.
 
 ### Conversion (8)
-Landing pages, signup flows, popups, A/B testing, pricing optimization, lead scoring, CRO, sales funnels.
+Signup flows, popups, A/B testing, pricing optimization, lead scoring, page CRO, sales funnels, CRM builder.
 
 ### Analytics (7)
-Google Analytics, Search Console, Bing/Yandex Webmaster, data analytics, retention analytics.
+Google Analytics, Search Console, Bing/Yandex Webmaster, data analytics, data management, retention analytics.
 
-### Web3 (6)
-Blockchain deployment, Aleph Cloud, decentralized infrastructure.
+### Web3 (8)
+Solidity, smart contract auditing, DeFi integration, wallet integration, onchain analytics, Polymarket, Ophis swaps, Aleph Cloud deployment.
 
 ### Design (4)
-UI/UX Pro Max, landing page builder, ASCII banner.
+UI/UX Pro Max, design systems, landing page builder, ASCII banner.
 
 ---
 
@@ -69,7 +69,7 @@ UI/UX Pro Max, landing page builder, ASCII banner.
 3. Your AI assistant reads it on startup and gains that expertise
 4. Ask your assistant to do anything related to that domain — it now knows the best practices, patterns, and workflows
 
-Skills are **markdown only** — no executable code, no runtime dependencies, no supply chain risk.
+Skills are markdown instructions with zero runtime dependencies. One skill (`polymarket-trading`) bundles an optional helper script under `scripts/`; agents only run it with your approval, and it reads credentials from your environment or keychain, never from hardcoded values.
 
 ---
 
@@ -95,7 +95,7 @@ npx skills-ws list
 npx skills-ws install seo-geo --dir ./my-agent/skills
 ```
 
-The CLI auto-detects your agent type (OpenClaw, Claude Code, Cursor, Codex) and installs to the correct directory.
+The CLI auto-detects your agent by probing the skills directories each tool actually reads (`.claude/skills`, `.cursor/skills`, `.agents/skills`, the OpenClaw workspace `skills/`, and their user-level equivalents) and installs to the first one found. If none exists it defaults to `~/.agents/skills`, the cross-tool path read by Cursor, Codex, Copilot, and OpenClaw.
 
 ---
 
@@ -107,7 +107,7 @@ The [skills.ws](https://skills.ws) website provides:
 - **Individual skill pages** — full SKILL.md content rendered as Markdown
 - **One-click install commands** — copy `npx` command to clipboard
 - **Live npm download counter** — monthly download stats
-- **VirusTotal scan status** — every skill file is scanned
+- **Security scan status** — skill files are scanned before each release
 
 ### Keyboard Shortcuts
 
@@ -131,8 +131,8 @@ npm run lint      # ESLint + Next.js linter
 
 ### Stack
 
-- **Next.js 14** — static export (SSG), App Router
-- **React 18** + TypeScript 5
+- **Next.js 16** — static export (SSG), App Router
+- **React 19** + TypeScript 5
 - **Tailwind CSS 3.4** — dark theme
 - **Three.js** — WebGL ASCII art background (homepage)
 - **react-markdown** + remark-gfm — SKILL.md rendering
@@ -168,9 +168,9 @@ skills-ws/
 
 ### Build Output
 
-Static export generates ~85 pages:
+Static export generates ~90 pages:
 - Homepage + docs + CLI + FAQ + 404
-- 81 individual skill detail pages
+- 86 individual skill detail pages
 - XML sitemap
 
 No server needed — deploy to any static host (Vercel, Netlify, GitHub Pages, S3).
@@ -212,14 +212,14 @@ npm run indexnow -- /faq /skills/seo  # submit specific paths only
 
 ## Security
 
-Skills are **markdown files only** — no executable code.
+Skills are markdown instruction files; the CLI only copies them, it never executes skill content.
 
-- Zero runtime dependencies (no supply chain risk)
-- No `eval()`, `exec()`, or `child_process` patterns
+- Zero runtime dependencies in the npm package (no supply chain risk)
 - All skills built in-house, no third-party content
-- VirusTotal scanning on all skill files
+- Pre-release security scans: hidden-Unicode injection, secrets, dangerous patterns
 - Environment-only credentials (nothing hardcoded)
-- npm package published with Sigstore provenance attestation
+- One documented exception to markdown-only: `polymarket-trading` ships an optional `scripts/scan.mjs` helper, run only with your approval
+- Releases are published by the maintainer with 2FA; npm trusted publishing (OIDC) with provenance attestation is planned
 
 See [SECURITY.md](SECURITY.md) for vulnerability reporting.
 

@@ -1,6 +1,6 @@
 ---
 name: stripe-billing
-description: "Production Stripe billing on Next.js App Router — subscriptions, Billing Meters usage, idempotent webhooks, portal, Stripe Tax + Adaptive Pricing, migrations, Test Clocks. Pins apiVersion 2025-09-30.clover (Basil-line). Use when building or reviewing Stripe subscription/usage billing in Next.js; for Express/Node see `saas-billing`."
+description: "Production Stripe billing on Next.js App Router: subscriptions, Billing Meters usage, idempotent webhooks, portal, Stripe Tax + Adaptive Pricing, migrations, Test Clocks. Pins apiVersion 2025-09-30.clover (Clover line). Use when building or reviewing Stripe subscription/usage billing in Next.js; for Express/Node see `saas-billing`."
 ---
 
 # Stripe Billing
@@ -11,9 +11,9 @@ Production patterns for Stripe billing that handle the edge cases tutorials skip
 
 **Critical principle:** Webhooks are your source of truth, not API responses. Always design for eventual consistency.
 
-### Basil-line API invariants (this skill targets `2025-09-30.clover`)
+### Clover API invariants (this skill pins `2025-09-30.clover`)
 
-`2025-09-30.clover` is on the Basil line (the `2025-03-31.basil` release introduced these breaking changes; later monthly versions inherit them). The code below depends on these — if you bump the version, re-verify at <https://docs.stripe.com/changelog>:
+`2025-09-30.clover` is the first release of the Clover major line (majors run Acacia, Basil, Clover, Dahlia; breaking changes are cumulative, so Clover inherits Basil's). The first three invariants below were introduced in `2025-03-31.basil`; the flexible `billing_mode` default is Clover's own change. The code below depends on these, so if you bump the version, re-verify at <https://docs.stripe.com/changelog>:
 
 - **Initial subscription payment secret** lives at `latest_invoice.confirmation_secret.client_secret`, NOT `latest_invoice.payment_intent`. Expand `latest_invoice.confirmation_secret`. (`expand: ['latest_invoice.payment_intent']` returns nothing on this version.)
 - **Billing period fields moved to the subscription item:** use `sub.items.data[0].current_period_end` / `current_period_start`. `sub.current_period_end` no longer exists. `billing_cycle_anchor` stays on the subscription.
@@ -25,7 +25,7 @@ Production patterns for Stripe billing that handle the edge cases tutorials skip
 ## 1. Setup
 
 ```bash
-npm install stripe @stripe/stripe-js @stripe/react-stripe-js
+npm install stripe@19.1 @stripe/stripe-js @stripe/react-stripe-js
 ```
 
 ```typescript
@@ -33,7 +33,11 @@ npm install stripe @stripe/stripe-js @stripe/react-stripe-js
 import Stripe from 'stripe';
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-09-30.clover',  // Pin a specific Stripe API version. Bump deliberately.
+  // Pin a specific Stripe API version and the matching SDK release (stripe-node 19.0-19.1
+  // pins 2025-09-30.clover; 19.2 moved to 2025-10-29.clover). Bump both together,
+  // deliberately: newer majors (stripe 21+) pin the Dahlia line (2026-06-24.dahlia is
+  // current GA) and their TypeScript types reject older apiVersion literals.
+  apiVersion: '2025-09-30.clover',
   typescript: true,
   maxNetworkRetries: 3,
   timeout: 20000,

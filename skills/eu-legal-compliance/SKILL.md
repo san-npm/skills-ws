@@ -167,6 +167,10 @@ Required for controllers/processors with ≥250 employees, **or** where processi
 
 **Penalties:** Up to **10% global turnover** (20% for repeat)
 
+## Data Act (Regulation 2023/2854)
+
+**Applicable since 12 Sep 2025.** Connected products and related services must give users access to the data they generate and allow sharing with third parties; data-processing (cloud) providers must enable switching and remove switching charges over time; unfair data-sharing terms imposed on SMEs are unenforceable; public bodies can request data in emergencies. Relevant if you ship IoT/connected devices or cloud services to the EU.
+
 ## EU AI Act (Regulation 2024/1689)
 
 **Phased application** (in force 1 Aug 2024). Note: this is a *staggered* rollout — several obligations are already live in 2026.
@@ -175,10 +179,12 @@ Required for controllers/processors with ≥250 employees, **or** where processi
 |------|--------------------|
 | **2 Feb 2025** | **Prohibited practices (Art. 5)** + **AI-literacy** duty for providers/deployers (Art. 4) — *already in effect* |
 | **2 Aug 2025** | **GPAI model** obligations (Arts. 53–55), **governance** (AI Office / national authorities), most **penalty** provisions — *already in effect*. GPAI models placed on the market **before** this date have until **2 Aug 2027** to comply. |
-| **2 Aug 2026** | **Most remaining obligations**, including **Annex III high-risk** systems and the **Art. 50** transparency duties |
-| **2 Aug 2027** | **Annex I high-risk** systems (AI that is a safety component of, or itself, a product already covered by EU product-safety law — e.g. machinery, medical devices, toys); end of the GPAI legacy-model grace period |
+| **2 Aug 2026** | **Most remaining obligations** apply, including the **Art. 50** transparency duties for new systems. But the **Digital Omnibus on AI** (adopted Jun 2026: Parliament 16 Jun, Council 29 Jun) **defers Annex III high-risk obligations to 2 Dec 2027**; Art. 50 content-marking for systems placed on the market *before* 2 Aug 2026 applies from **2 Dec 2026** |
+| **2 Aug 2027** | End of the GPAI legacy-model grace period |
+| **2 Dec 2027** | **Annex III high-risk** systems (deferred from 2 Aug 2026 by the Digital Omnibus) |
+| **2 Aug 2028** | **Annex I high-risk** systems (AI that is a safety component of, or itself, a product already covered by EU product-safety law, e.g. machinery, medical devices, toys); deferred from 2 Aug 2027 by the Digital Omnibus |
 
-> Treat dates as the *current* schedule (as of Jun 2026). The Commission has floated targeted simplification/timing adjustments; verify against the official timeline at artificialintelligenceact.eu and the EUR-Lex text before relying on a date for go-live planning.
+> Treat dates as the *current* schedule (as of Jun 2026). The **Digital Omnibus on AI** was adopted in June 2026 and enters into force on the third day after Official Journal publication (expected Jul 2026); it also adds prohibitions on AI that generates non-consensual intimate content or CSAM. Verify against the EUR-Lex text before relying on a date for go-live planning.
 
 | Risk Level | Examples | Requirements |
 |------------|----------|-------------|
@@ -195,7 +201,7 @@ Required for controllers/processors with ≥250 employees, **or** where processi
 
 1. **Is it an "AI system" (Art. 3(1)) or a GPAI model?** If a general-purpose model → apply GPAI duties (and systemic-risk duties if >10^25 FLOP or Commission-designated).
 2. **Does it match any Art. 5 prohibited practice?** → **Stop / redesign.** (Re-check the carve-outs, e.g. emotion recognition for medical/safety.)
-3. **Is it Annex I (safety component of a regulated product) or Annex III (listed high-risk domain)?** → likely **High-risk** (live 2 Aug 2026 for Annex III, 2 Aug 2027 for Annex I), unless **Art. 6(3)** exemption applies (document it). Determine if you are **provider** (build/badge it) or **deployer** (use it) — duties differ.
+3. **Is it Annex I (safety component of a regulated product) or Annex III (listed high-risk domain)?** → likely **High-risk** (live 2 Dec 2027 for Annex III, 2 Aug 2028 for Annex I, per the Jun 2026 Digital Omnibus), unless **Art. 6(3)** exemption applies (document it). Determine if you are **provider** (build/badge it) or **deployer** (use it); duties differ.
 4. **Does it interact with humans, generate/manipulate content, or do emotion recognition/biometric categorisation (where permitted)?** → **Limited risk (Art. 50)** transparency + content-marking.
 5. **Otherwise** → Minimal risk; consider a voluntary code and still honour GDPR/IP/consumer law.
 
@@ -203,7 +209,7 @@ Required for controllers/processors with ≥250 employees, **or** where processi
 
 ## ePrivacy Directive (2002/58/EC, as transposed nationally)
 
-> The long-proposed **ePrivacy Regulation** has **not** replaced this directive as of Jun 2026; the directive (and your member state's implementing law, e.g. PECR in the UK, TTDSG/TDDDG in Germany, the French *Code des postes*) still governs. Consent for cookies must meet the **GDPR consent standard** (freely given, specific, informed, unambiguous, easily withdrawable).
+> The proposed **ePrivacy Regulation** was formally withdrawn by the Commission (withdrawal published in the Official Journal on 6 Oct 2025), so the directive (and your member state's implementing law, e.g. PECR in the UK, TTDSG/TDDDG in Germany, the French *Code des postes*) governs for the foreseeable future. Consent for cookies must meet the **GDPR consent standard** (freely given, specific, informed, unambiguous, easily withdrawable).
 
 - **Cookie/tracker consent:** Prior opt-in required for **any storage of, or access to, information on the user's device** that is not strictly necessary (Art. 5(3)) — covers cookies, localStorage, SDKs, pixels, fingerprinting.
 - **Strictly-necessary exception:** only session/auth, load-balancing, cart, and security cookies the *user explicitly requested*; analytics and ads are **not** strictly necessary.
@@ -280,7 +286,8 @@ Trigger: report **significant incidents** (serious operational disruption / fina
 - [ ] Review cross-border transfers; implement **SCCs + a documented TIA** (don't rely on DPF alone)
 - [ ] Put an **Art. 28 DPA** in place with every processor; vet sub-processors
 - [ ] **DSA:** apply your service-layer obligations; implement notice-and-action + statements of reasons; transparency reports (unless micro/small)
-- [ ] **AI Act:** run the classifier; check Art. 5 prohibitions (live since Feb 2025); ship Art. 50 transparency; start conformity for Annex III high-risk (live **2 Aug 2026**)
+- [ ] **AI Act:** run the classifier; check Art. 5 prohibitions (live since Feb 2025); ship Art. 50 transparency; start conformity for Annex III high-risk (deferred to **2 Dec 2027** by the Digital Omnibus)
+- [ ] **Data Act:** if you ship connected products or cloud services, implement user data access/sharing and cloud-switching duties (applicable since 12 Sep 2025)
 - [ ] **NIS2:** confirm in-scope + register; incident-response plan with **24 h / 72 h / 1-month-final** reporting; check the national act
 - [ ] **EAA:** maintain accessibility against **WCAG 2.2 AA / EN 301 549** (obligation already live since 28 Jun 2025); publish an accessibility statement
 - [ ] Document everything — **accountability** principle (GDPR Art. 5(2))
@@ -296,8 +303,12 @@ Trigger: report **significant incidents** (serious operational disruption / fina
 | ✅ past | 2 Feb 2025 | **AI Act:** prohibited practices (Art. 5) + AI-literacy (Art. 4) apply |
 | ✅ past | 28 Jun 2025 | **EAA** obligation date — products/services must already be accessible |
 | ✅ past | 2 Aug 2025 | **AI Act:** GPAI obligations, governance & most penalties apply |
-| 🔜 upcoming | **2 Aug 2026** | **AI Act:** most remaining obligations incl. **Annex III high-risk** + Art. 50 transparency |
-| 🔜 upcoming | 2 Aug 2027 | **AI Act:** **Annex I** (regulated-product) high-risk systems; GPAI legacy-model grace period ends |
+| ✅ past | 12 Sep 2025 | **Data Act** applies |
+| 🔜 upcoming | **2 Aug 2026** | **AI Act:** most remaining obligations incl. Art. 50 transparency for new systems (Annex III high-risk deferred by the Digital Omnibus, see below) |
+| 🔜 upcoming | 2 Dec 2026 | **AI Act:** marking of AI-generated content applies to systems placed on the market before 2 Aug 2026 |
+| 🔜 upcoming | 2 Aug 2027 | **AI Act:** GPAI legacy-model grace period ends |
+| 🔜 upcoming | 2 Dec 2027 | **AI Act:** **Annex III high-risk** systems (deferred from 2 Aug 2026 by the Digital Omnibus) |
+| 🔜 upcoming | 2 Aug 2028 | **AI Act:** **Annex I** (regulated-product) high-risk systems (deferred from 2 Aug 2027) |
 
 > **Verify before relying on a date.** Confirm against the primary sources: EUR-Lex (regulation texts), the EU AI Act timeline (artificialintelligenceact.eu), the EDPB (edpb.europa.eu) for GDPR/transfer guidance, your national DPA and NIS2/EAA competent authorities, and the Commission's adequacy/DPF pages. Directive deadlines and penalty levels can differ by member state.
 

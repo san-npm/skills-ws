@@ -5,17 +5,17 @@ description: "Production GitHub Actions CI/CD: least-privilege workflows, cachin
 
 # CI/CD Pipelines
 
-Concrete, runnable patterns for production GitHub Actions pipelines. Every snippet below is self-contained — copy it, swap the placeholders, and ship. Action versions are current as of **June 2026**; pin by SHA in regulated/high-trust repos (see [Supply-Chain Baseline](#supply-chain-baseline-2026)). For sibling depth on container internals see `docker-production`; for cloud IAM specifics see `aws-production-deploy`.
+Concrete, runnable patterns for production GitHub Actions pipelines. Every snippet below is self-contained: copy it, swap the placeholders, and ship. Action versions are current as of **July 2026**; pin by SHA in regulated/high-trust repos (see [Supply-Chain Baseline](#supply-chain-baseline-2026)). For sibling depth on container internals see `docker-production`; for cloud IAM specifics see `aws-production-deploy`.
 
-## Action Version Matrix (June 2026)
+## Action Version Matrix (July 2026)
 
-Pin to these majors (or the exact SHA for the major). All listed majors run on the **Node 24** runtime — GitHub forced the Actions runtime default to Node 24 on **2026-06-02**, so any action still on Node 20 will warn/fail; bump them.
+Pin to these majors (or the exact SHA for the major). All listed majors run on the **Node 24** runtime. GitHub switched the Actions runtime default to Node 24 on **2026-06-16**, so any action still on Node 20 warns (the `ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true` opt-out lasts only until Node 20 is removed in fall 2026); bump them.
 
 | Action | Pin | Notes |
 |---|---|---|
-| `actions/checkout` | `@v6` | v6 changed git config injection; bare `git` commands still work via `includeIf`. |
+| `actions/checkout` | `@v7` | v7 blocks checking out fork PR heads under `pull_request_target`/`workflow_run`. |
 | `actions/setup-node` | `@v6` | |
-| `actions/cache` | `@v5` | |
+| `actions/cache` | `@v6` | v6 = ESM migration; v5 still receives releases. |
 | `actions/upload-artifact` | `@v7` | v7 adds non-zip uploads (`compression-level`/`archive`). **Not symmetric** with download. |
 | `actions/download-artifact` | `@v8` | Pairs with upload v7; major numbers differ — don't assume they match. |
 | `actions/attest-build-provenance` | `@v4` | Now a thin wrapper over `actions/attest@v4`. |
@@ -25,7 +25,7 @@ Pin to these majors (or the exact SHA for the major). All listed majors run on t
 | `docker/metadata-action` | `@v6` | |
 | `aws-actions/configure-aws-credentials` | `@v6` | |
 | `actions/dependency-review-action` | `@v5` | |
-| `github/codeql-action` | `@v3` | v4 exists but v3 is the stable default line; check the docs before jumping. |
+| `github/codeql-action` | `@v4` | v4 is the latest supported line; v3 remains only for older GHES (3.16-3.19). |
 | `codecov/codecov-action` | `@v7` | Requires `CODECOV_TOKEN` for public repos since v4. |
 | `sigstore/cosign-installer` | `@v4` | |
 | `anchore/sbom-action` | `@v0.24` | 0.x — pin the exact minor, no stable major yet. |
@@ -124,7 +124,7 @@ ci-passed:
 
 # 2) pnpm (needs the store + action-setup BEFORE setup-node's cache kicks in)
 - uses: pnpm/action-setup@v6
-  with: { version: 9 }
+  with: { version: 11 }   # or omit version to use the packageManager field from package.json
 - uses: actions/setup-node@v6
   with: { node-version: 24, cache: pnpm }
 
@@ -136,7 +136,7 @@ ci-passed:
     cache-to: type=gha,mode=max     # mode=max also caches intermediate layers
 
 # 4) Turborepo local cache (remote cache is better at scale — see monorepo section)
-- uses: actions/cache@v5
+- uses: actions/cache@v6
   with:
     path: .turbo
     # Include the lockfile in the key so a dep change busts the cache.
@@ -220,7 +220,8 @@ FROM node:24-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 RUN addgroup -g 1001 app && adduser -u 1001 -G app -s /bin/sh -D app
-COPY --from=deps  /app/node_modules ./node_modules   # PROD deps only
+# prod deps only (from the deps stage)
+COPY --from=deps  /app/node_modules ./node_modules
 COPY --from=build /app/dist          ./dist
 COPY package.json ./
 USER app
@@ -413,7 +414,8 @@ jobs:
       - run: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # npm automation token (or use OIDC trusted publishing where supported).
+          # npm granular access token (write tokens max 90 days) or, preferably,
+          # OIDC trusted publishing: classic automation tokens were revoked 2025-12-09.
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 ```
 
@@ -454,7 +456,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - uses: pnpm/action-setup@v6
-        with: { version: 9 }
+        with: { version: 11 }   # or omit version to use the packageManager field from package.json
       - uses: actions/setup-node@v6
         with:
           node-version: 24
@@ -472,6 +474,8 @@ jobs:
           title: "chore: release packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # npm granular access token (write tokens max 90 days) or, preferably,
+          # OIDC trusted publishing: classic automation tokens were revoked 2025-12-09.
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 ```
 
@@ -558,7 +562,7 @@ The 2026 expectation for a trustworthy pipeline. Adopt top-to-bottom; the first 
    ```
 6. **Provenance attestations + image signing** — see the [build-image job](#build-scan-sign-and-attest-in-ci) (`actions/attest-build-provenance@v4`, `cosign sign`). This is your SLSA build-provenance layer; verify signatures/attestations at deploy time before promoting an image.
 7. **Harden the runner** for sensitive jobs: `step-security/harden-runner@v2` to block unexpected egress and detect tampering.
-8. **CodeQL** for code scanning on a schedule + PRs (`github/codeql-action@v3`); route SARIF to the Security tab.
+8. **CodeQL** for code scanning on a schedule + PRs (`github/codeql-action@v4`); route SARIF to the Security tab.
 
 ## Status Badges
 
@@ -635,9 +639,9 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
-      - uses: github/codeql-action/init@v3
+      - uses: github/codeql-action/init@v4
         with: { languages: javascript-typescript }
-      - uses: github/codeql-action/analyze@v3
+      - uses: github/codeql-action/analyze@v4
 ```
 
 > Also enable **Dependabot** (`.github/dependabot.yml`) with a `github-actions` ecosystem entry so your pinned action SHAs get bumped automatically:

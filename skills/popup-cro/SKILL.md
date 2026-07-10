@@ -178,17 +178,25 @@ ECOMMERCE PRODUCT PAGE:
 // Show popup when: 30+ seconds on page AND scrolled 50%+
 let timeReached = false;
 let scrollReached = false;
+let combinedShown = false;
+
+function fireOnce() {
+  if (!combinedShown) {
+    combinedShown = true;
+    showPopup();
+  }
+}
 
 setTimeout(() => {
   timeReached = true;
-  if (scrollReached) showPopup();
+  if (scrollReached) fireOnce();
 }, 30000);
 
 window.addEventListener('scroll', () => {
   const scrollPercent = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
   if (scrollPercent >= 50) {
     scrollReached = true;
-    if (timeReached) showPopup();
+    if (timeReached) fireOnce();
   }
 });
 ```
@@ -745,7 +753,7 @@ Reading it: a popup at a **2% baseline** that you hope to lift to **2.4% (+20% r
 | Tool | Best fit | Choose it when |
 |------|----------|----------------|
 | OptinMonster | WordPress / general web | You want deep trigger + display-rules control without building it; WP-first stack |
-| Sumo | Simple / small sites | You need a fast, low-effort setup and a usable free tier |
+| BDOW! (formerly Sumo) | Simple / small sites | You need a fast, low-effort setup and a usable free tier |
 | Privy / Justuno / OptiMonk | Ecommerce (Shopify) | You need cart-value triggers, spin-to-win, and email/SMS list sync to a store |
 | ConvertFlow | SaaS / personalization | You need on-site personalization, multi-step funnels, and CRM-aware targeting |
 | Unbounce / Instapage | Landing pages + popups | Popups live alongside built landing pages and you want one builder |
@@ -779,7 +787,8 @@ function getPopupBySource() {
   }
 
   // Social media — they're browsing, use social proof
-  if (referrer.includes('twitter.com') || referrer.includes('linkedin.com')) {
+  // Note: X traffic usually arrives with a t.co referrer (twitter.com kept as legacy fallback)
+  if (referrer.includes('x.com') || referrer.includes('t.co') || referrer.includes('twitter.com') || referrer.includes('linkedin.com')) {
     return 'popup-social-proof'; // "Join X others" angle
   }
 

@@ -1,6 +1,6 @@
 ---
 name: ophis-swap
-description: Use when the user wants to swap, trade, buy, sell, or convert tokens onchain, get a best-execution swap quote, compare a swap against DEX aggregators, or read wallet balances, token prices, gas, or fee-rebate tiers. Drives Ophis, an intent-based DEX (a CoW Protocol deployment) that is MEV-protected, gasless for the trader, and keyless. Supports Ethereum, Optimism, Base, Arbitrum, Polygon, BNB, Gnosis, Avalanche, Plasma, Ink, and Linea.
+description: "Use when the user wants to swap, trade, buy, sell, or convert tokens onchain, get a best-execution swap quote, compare a swap against DEX aggregators, or read wallet balances, token prices, gas, or fee-rebate tiers. Drives Ophis, an intent-based DEX (a CoW Protocol deployment) that is MEV-protected, gasless for the trader, and keyless. Supports Ethereum, Optimism, Base, Arbitrum, Polygon, BNB, Gnosis, Avalanche, Plasma, Ink, and Linea."
 ---
 
 # Ophis Swap
@@ -28,11 +28,11 @@ The server enforces real guarantees, so the worst outcomes are not reachable thr
 ## Prerequisites
 - An EVM wallet you control: its address, plus the ability to sign EIP-712 typed data. The agent provides the signature; Ophis only ever receives a signed order.
 - A supported, tradeable chain (check `list_chains`).
-- A one-time onchain token approval per sell token, to the CoW Protocol vault relayer, done from the owner wallet. For a native-coin sell, the wallet must first hold the wrapped token (the MCP cannot wrap).
+- A one-time onchain token approval per sell token, to the CoW Protocol vault relayer, done from the owner wallet. Prefer a bounded allowance sized to what you plan to sell over an unlimited approval, and take the vault relayer address only from the official Ophis or CoW Protocol documentation, never from chat or a web search. For a native-coin sell, the wallet must first hold the wrapped token (the MCP cannot wrap).
 
 ## Swap workflow
 
-1. Understand the request. If it is plain English ("swap 100 USDC for ETH on Base"), call `parse_intent` to extract sell token, buy token, amount, and chain. Note that `parse_intent` returns token symbols, not addresses.
+1. Understand the request. If it is a natural language request ("swap 100 USDC for ETH on Base"), call `parse_intent` to extract sell token, buy token, amount, and chain. Note that `parse_intent` returns token symbols, not addresses.
 2. Confirm the chain. Call `list_chains` and use a chainId from `tradeable`. If the chain is in `paused`, tell the user it is not live yet.
 3. Resolve token addresses (hard rule 1). For each token symbol, call `resolve_token(chainId, symbol)`. Use `canonical.address` and `canonical.decimals` when `found` is true and `ambiguous` is false; confirm an `ambiguous` result with the user; for a `found: false` symbol, fall back to the on-chain readback plus user confirmation. Apply hard rule 4 for native coins.
 4. Show the edge (recommended). Call `expected_surplus` for `beatBps`, the difference versus one public aggregator (KyberSwap). It is advisory, not a guarantee; a positive value means Ophis quoted more output than that single reference.

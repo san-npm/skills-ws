@@ -113,7 +113,7 @@ Backlog → Ready → In Progress → Review → Done
           (cap)    (WIP cap)    (WIP cap)
 ```
 
-**The four flow metrics** (per *Kanban Guide*, 2026):
+**The four flow metrics** (per *Kanban Guide*, v2025.5):
 - **WIP:** items started but not finished. The lever you control directly.
 - **Cycle time:** In Progress → Done, per item. Optimise this; report the distribution (e.g. 50th/85th percentile), not just the average.
 - **Work item age:** how long an *in-flight* item has been open — the single most actionable signal. Items aging past your 85th-percentile cycle time get pulled into focus first.

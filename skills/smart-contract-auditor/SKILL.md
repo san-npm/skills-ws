@@ -34,7 +34,8 @@ Slither has 90+ detectors and is the workhorse for triage. Use `// slither-disab
 
 ### Aderyn (Rust static analyzer — fast, great Markdown report)
 ```bash
-cargo install aderyn          # or: curl -L https://raw.githubusercontent.com/Cyfrin/aderyn/dev/cyfrinup/install | bash && cyfrinup
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/cyfrin/aderyn/releases/latest/download/aderyn-installer.sh | bash   # official installer; skim the script before piping
+# or: brew install cyfrin/tap/aderyn    or: npm install @cyfrin/aderyn -g
 aderyn .                       # writes report.md by default
 aderyn . --output aderyn-report.json
 ```
@@ -86,7 +87,7 @@ contract VaultEchidna is Vault {
 ```bash
 go install github.com/crytic/medusa@latest   # or download a release binary
 medusa init                                   # writes medusa.json
-medusa fuzz --target . --test-limit 100000 --workers 8
+medusa fuzz --test-limit 100000 --workers 8   # target read from medusa.json; override with --compilation-target <file.sol> or --target-contracts "ContractName"
 ```
 
 ### Halmos (Symbolic test runner — reuses Foundry tests)
@@ -412,7 +413,7 @@ Get the risk-parameter ordering right — this is a common source of "instantly 
 - Collateral/borrow factor setter bounds (governance can't set manipulative values; ideally timelocked).
 - Interest-rate model edge cases (0% and 100% utilization; kink behavior; no division-by-zero at empty reserves).
 - Bad-debt socialization mechanism exists and is fair.
-- **Oracle quality:** staleness/heartbeat checks, `answeredInRound`/`roundId` validation, min/max price bounds (Chainlink can return clamped extremes during flash crashes), and a fallback/pause path on feed failure.
+- **Oracle quality:** staleness/heartbeat checks, `updatedAt` staleness against the feed's documented heartbeat (`answeredInRound` is deprecated in the Chainlink API; flag code that still relies on it), min/max price bounds (Chainlink can return clamped extremes during flash crashes), and a fallback/pause path on feed failure.
 - Borrow cap and supply cap enforcement.
 
 ### Flash Loan Guards
@@ -561,7 +562,7 @@ Derive severity from **impact × likelihood** (the convention used by Code4rena,
 
 ### Finding Format
 Pin every code link to the **exact audited commit** so line references don't drift as the repo changes. Use a full GitHub permalink (`/blob/<commit-sha>/...#Lx-Ly`), not a branch-relative `file#Lx` reference.
-```markdown
+````markdown
 ### [H-01] Title of Finding
 
 **Severity:** High — Impact: High (theft of all vault assets) · Likelihood: Medium (requires being first depositor)
@@ -590,7 +591,7 @@ Specific code fix with diff or replacement code.
 
 **Team Response:**
 (filled by the audited team)
-```
+````
 
 ### Report Structure
 1. Executive Summary (scope, duration, findings count by severity)
@@ -627,7 +628,7 @@ forge selectors list
 
 # Coverage-guided fuzzing
 echidna . --contract TestContract --test-mode assertion --test-limit 100000
-medusa fuzz --target . --test-limit 100000 --workers 8
+medusa fuzz --test-limit 100000 --workers 8
 
 # Coverage
 forge coverage --report summary

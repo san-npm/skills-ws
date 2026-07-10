@@ -3,7 +3,7 @@
 The Ophis MCP server at `https://mcp.ophis.fi/mcp` exposes 12 tools. Every response is JSON in a single text block. All amounts are in atoms (the token's smallest unit). Read tools are safe to call freely; `submit_order` is the only state-changing tool.
 
 ## parse_intent
-Parse a plain-English swap request into a structured intent.
+Parse a natural language swap request into a structured intent.
 - Input: `text` (string, 1 to 280 chars).
 - Output: `{ intent: "swap" | "unknown", entities: [{ type: "sellToken" | "buyToken" | "amount" | "chain", value, raw, start, end }] }`.
 

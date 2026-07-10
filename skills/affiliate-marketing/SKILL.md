@@ -11,7 +11,7 @@ description: "Affiliate/partner program design, commission economics, fraud-resi
 
 **In-house vs network:**
 
-| Factor | In-house | Network (ShareASale, Impact, CJ, etc.) |
+| Factor | In-house | Network (Awin, Impact, CJ, etc.) |
 |--------|----------|-----------------------------------|
 | Setup cost | Higher (build/integrate tracking) | Lower (platform onboarding fee) |
 | Ongoing cost | SaaS tracker fee + payment ops + fraud ops + tax/1099 ops + eng maintenance | Network override (commonly ~20-30% on top of commission) + per-payout fees |
@@ -22,7 +22,7 @@ description: "Affiliate/partner program design, commission economics, fraud-resi
 
 **"In-house = free" is a myth.** Even self-hosting, you pay: SaaS tracker subscription (or build/maintain a click table), payment rails (PayPal/Wise/Tipalti fees, FX, reversals), fraud review labor, tax compliance (W-9/W-8BEN collection, 1099-NEC/1042-S filing), sanctions screening, and ongoing engineering. Budget 3-8% of affiliate GMV for ops on top of commissions; networks bundle most of this into their override.
 
-**Recommendation:** Start in-house with a SaaS tracker (Rewardful, PartnerStack, FirstPromoter, Tolt) so you keep first-party data and brand control. Add a network only when you need volume recruitment in a marketplace and can absorb the override. Prices/overrides change — verify current network rates at impact.com / shareasale.com and tracker pricing on each vendor's site (as of Jun 2026).
+**Recommendation:** Start in-house with a SaaS tracker (Rewardful, PartnerStack, FirstPromoter, Tolt) so you keep first-party data and brand control. Add a network only when you need volume recruitment in a marketplace and can absorb the override. Prices/overrides change: verify current network rates at awin.com / impact.com and tracker pricing on each vendor's site (as of Jul 2026); note ShareASale was folded into Awin and its platform closed in late 2025.
 
 ### 2. Commission Models
 
@@ -239,7 +239,7 @@ and walk through the program.
 **FTC disclosure (US) — Endorsement Guides, updated 2023 and actively enforced through 2026:**
 - Affiliates MUST disclose a material connection clearly and conspicuously, *before/near* the link, in the same medium (in-video for video, in-stream for audio), not only in a description or "link in bio."
 - A bare `#ad`/`#sponsored` can be sufficient if unavoidable; vague terms like `#collab`, `#sp`, `#ambassador`, or `#partner` are not. Platform "paid partnership" toggles do not replace a clear disclosure.
-- The brand can be liable for affiliates' deceptive claims. The FTC's 2023 rule allows civil penalties for fake/incentivized reviews and undisclosed insider endorsements — your contract must require truthful, substantiated claims and ban fake reviews and "review gating." Primary source: FTC Endorsement Guides + the Rule on Consumer Reviews and Testimonials (ftc.gov).
+- The brand can be liable for affiliates' deceptive claims. The FTC's 2024 Consumer Reviews and Testimonials Rule (effective October 2024) allows civil penalties for fake/incentivized reviews and undisclosed insider endorsements; your contract must require truthful, substantiated claims and ban fake reviews and "review gating." Primary source: FTC Endorsement Guides + the Rule on Consumer Reviews and Testimonials (ftc.gov).
 - Put disclosure obligations, an approved-claims list, and audit rights in the affiliate agreement, and monitor (don't just promise to monitor — the FTC expects active monitoring).
 
 **Privacy & consent (table stakes by 2026 — do not ship cookie tracking without this):**
