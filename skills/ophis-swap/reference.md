@@ -1,6 +1,6 @@
 # Ophis MCP tool reference
 
-The Ophis MCP server at `https://mcp.ophis.fi/mcp` exposes 12 tools. Every response is JSON in a single text block. All amounts are in atoms (the token's smallest unit). Read tools are safe to call freely; `submit_order` is the only state-changing tool.
+The Ophis MCP server at `https://mcp.ophis.fi/mcp` exposes the tools below. Every response is JSON in a single text block. All amounts are in atoms (the token's smallest unit). Read tools are safe to call freely; `submit_order` is the only state-changing tool. The live server also exposes `validate_order` and `get_integrator_earnings`; call `tools/list` at runtime for the authoritative set. Canonical companion skills (quote, order status, gasless cancel, surplus report) live in the Ophis skill family at `https://ophis.fi/.well-known/agent-skills/ophis/`.
 
 ## parse_intent
 Parse a natural language swap request into a structured intent.
