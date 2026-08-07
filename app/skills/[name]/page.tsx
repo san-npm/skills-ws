@@ -16,6 +16,7 @@ const ORG = {
 
 const PUBLISHED = "2026-03-02";
 const MODIFIED = new Date().toISOString().slice(0, 10);
+const UPDATED_LABEL = "Aug 2026";
 
 export function generateStaticParams() {
   return getSkills().map((s) => ({ name: s.name }));
@@ -208,8 +209,8 @@ export default async function SkillPage({ params }: { params: Promise<{ name: st
             <span className="text-[11px] text-text-muted">v{skill.version}</span>
             <span className="text-[11px] text-text-muted">
               Updated{" "}
-              <time dateTime={MODIFIED} itemProp="dateModified">
-                {MODIFIED}
+              <time dateTime="2026-08" itemProp="dateModified">
+                {UPDATED_LABEL}
               </time>
             </span>
           </div>

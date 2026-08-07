@@ -23,7 +23,7 @@
         "Prioritize a backlog of experiment ideas",
         "Interpret test results and make ship/no-ship decisions"
       ],
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "888888",
       "platforms": [
         "openclaw",
@@ -52,7 +52,7 @@
         "Create a cash flow forecast model",
         "Design a tax compliance checklist for EU SMEs"
       ],
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "888888",
       "platforms": [
         "openclaw",
@@ -81,7 +81,7 @@
         "Set up affiliate tracking with proper attribution",
         "Recruit and onboard the first 50 affiliates"
       ],
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "888888",
       "platforms": [
         "openclaw",
@@ -96,7 +96,7 @@
       "name": "ai-agent-building",
       "description": "Build production AI agents — LangGraph state machines, CrewAI teams, tool design, memory, RAG, MCP, multi-agent orchestration, evals, cost control, and safety. Use when building LangGraph/CrewAI agents, designing or validating tools, wiring RAG or MCP, adding human-in-the-loop, or running agent evals and safety reviews.",
       "category": "dev",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "8B5CF6",
       "platforms": [
         "openclaw",
@@ -149,7 +149,7 @@
     },
     {
       "name": "api-design",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Production HTTP API design — REST conventions, pagination, error models, versioning, rate limiting, auth, and idempotency. Use when designing or reviewing public/internal HTTP APIs, OpenAPI contracts, pagination, error models, rate limits, auth, or idempotent write endpoints.",
       "color": "3B82F6",
       "category": "dev",
@@ -178,7 +178,7 @@
     },
     {
       "name": "ascii-banner",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Build animated ASCII/Unicode banners for CLI tools and web UIs — frame animation, ANSI color, terminal capability detection, flicker-free rendering, accessibility, and canvas/WebGL ASCII shaders. Use when adding a CLI startup banner, building terminal-aesthetic web UIs, converting images/3D scenes to ASCII, or making banner animation TTY-safe.",
       "color": "888888",
       "category": "design",
@@ -209,7 +209,7 @@
     },
     {
       "name": "auth-implementation",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Secure authentication & authorization — OAuth 2.1/OIDC with PKCE & state, JWT/JWKS verification, hashed-rotating refresh tokens, sessions/BFF, passkeys/WebAuthn, MFA/TOTP, RBAC/ABAC, password hashing, and CSRF. Use when implementing or reviewing auth, authz, MFA, passkeys, OAuth/OIDC, sessions, tokens, or access control.",
       "color": "DC2626",
       "category": "dev",
@@ -248,7 +248,7 @@
       "name": "aws-production-deploy",
       "description": "Production AWS infra-as-code in Terraform & CDK: 3-tier VPC, ECS Fargate, Aurora, CloudFront/S3/WAF, OIDC CI/CD, monitoring, security hardening. Use when deploying a web app to AWS for production, writing/reviewing Terraform or CDK, setting up GitHub Actions OIDC deploys, or hardening an AWS account (remote state, GuardDuty, KMS, IAM).",
       "category": "operations",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "FF9900",
       "platforms": [
         "openclaw",
@@ -291,7 +291,7 @@
         "Analyze and compare Bing vs Google rankings",
         "Optimize content for Bing search algorithm"
       ],
-      "version": "1.0.0",
+      "version": "2.0.0",
       "color": "888888",
       "platforms": [
         "openclaw",
@@ -304,7 +304,7 @@
     },
     {
       "name": "blog-engine",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "End-to-end pipeline for one long-form, answer-engine-ready blog post — brief, primary-source research, intent mapping, outline, draft, on-page + AI-search optimization, JSON-LD, internal links, QA, and refresh, with 50+ headline formulas and 8 post-type templates. Use when researching, outlining, drafting, optimizing, or refreshing a blog post or SEO article.",
       "color": "EC4899",
       "category": "marketing",
@@ -333,7 +333,7 @@
     },
     {
       "name": "brand-strategy",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Frameworks and templates for building and managing a cohesive brand system. Use when defining or auditing brand positioning, messaging hierarchy, voice/tone, visual identity, brand architecture, naming, or brand guidelines for a product or company.",
       "color": "A855F7",
       "category": "marketing",
@@ -378,7 +378,7 @@
         "Create partnership pitch decks and one-pagers",
         "Set up co-marketing agreement templates"
       ],
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "888888",
       "platforms": [
         "openclaw",
@@ -393,7 +393,7 @@
       "name": "ci-cd-pipeline",
       "description": "Architect and audit end-to-end CI/CD systems: reusable workflows, testing strategy, OIDC cloud deploys, SLSA provenance, canary/rollback, reversible migrations, and monorepo orchestration. Use for pipeline architecture, security reviews, deployment strategy, or cross-repository CI design. For copy-ready GitHub Actions implementation, use `cicd-pipelines`.",
       "category": "operations",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "2088FF",
       "platforms": [
         "openclaw",
@@ -420,7 +420,7 @@
     },
     {
       "name": "cicd-pipelines",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Implement production GitHub Actions with copy-ready workflow YAML for caching, OIDC, Docker builds, deployment, rollback, and release automation. Use when writing or debugging `.github/workflows` in one repository. For CI/CD architecture, governance, or multi-repository strategy, use `ci-cd-pipeline`.",
       "color": "F97316",
       "category": "dev",
@@ -465,7 +465,7 @@
         "Build LinkedIn outreach for B2B lead gen",
         "Personalize outreach using prospect data"
       ],
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "888888",
       "platforms": [
         "openclaw",
@@ -478,7 +478,7 @@
     },
     {
       "name": "community-building",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Playbook to build, grow, moderate, and measure online communities (Discord, Slack, Circle, Reddit, GitHub Discussions) from zero to 10,000+ members: onboarding, engagement rituals, trust & safety SOPs, metrics, and a 30/90-day launch plan. Use when launching/scaling a community, fixing low engagement/retention, or writing moderation rules.",
       "color": "22C55E",
       "category": "growth",
@@ -523,7 +523,7 @@
         "Analyze competitor pricing strategies",
         "Run a win/loss analysis on recent deals"
       ],
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "888888",
       "platforms": [
         "openclaw",
@@ -536,7 +536,7 @@
     },
     {
       "name": "content-strategy",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Content program strategy — topic clusters, entity-first briefs, 0-5 scoring rubrics, editorial calendar operating model, gap analysis, repurposing, and AI-era discovery (AI Overviews, ChatGPT Search, Perplexity). Use when planning a content program, writing briefs, prioritizing a backlog, or auditing content for organic + AI search.",
       "color": "6366F1",
       "category": "marketing",
@@ -565,7 +565,7 @@
     },
     {
       "name": "copywriting",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Copywriting — headline frameworks (PAS/AIDA/4U/BAB), page-by-page playbooks, CTA optimization, voice calibration, before/after rewrites, AI-snippet-friendly leads. Use when writing or revising landing pages, ads, emails, or product copy.",
       "color": "F59E0B",
       "category": "marketing",
@@ -593,7 +593,7 @@
     },
     {
       "name": "crm-builder",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Architect vendor-neutral CRM systems: data models, pipeline semantics, lifecycle definitions, lead scoring, deduplication, migration, and governance. Use when designing a CRM from first principles or specifying its schema and operating model. For HubSpot, Salesforce, or Pipedrive configuration, use `crm-operations`.",
       "color": "2563EB",
       "category": "conversion",
@@ -639,7 +639,7 @@
         "Build revenue forecasting dashboards",
         "Create data cleanup workflows for CRM hygiene"
       ],
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "888888",
       "platforms": [
         "openclaw",
@@ -668,7 +668,7 @@
         "Compare attribution models for decision-making",
         "Build an LTV:CAC dashboard for board reporting"
       ],
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "888888",
       "platforms": [
         "openclaw",
@@ -681,7 +681,7 @@
     },
     {
       "name": "customer-feedback",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Design and operate a Voice of Customer program — NPS/CSAT/CES collection, survey instrumentation, feedback data model, AI-assisted tagging, RICE+ prioritization, and roadmap integration. Use when standing up VoC, normalizing satisfaction metrics, writing survey copy/triggers, deduping feedback to accounts, or running churn/beta loops.",
       "color": "14B8A6",
       "category": "growth",
@@ -726,7 +726,7 @@
         "Write SQL queries for funnel analysis",
         "Create a data-driven board presentation"
       ],
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "888888",
       "platforms": [
         "openclaw",
@@ -755,7 +755,7 @@
         "Set up a data catalog for a growing team",
         "Build GDPR-compliant data handling workflows"
       ],
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "888888",
       "platforms": [
         "openclaw",
@@ -768,7 +768,7 @@
     },
     {
       "name": "database-design",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Relational schema design and data modeling — normalization, denormalization, indexing strategy, safe migrations, N+1 fixes, and PostgreSQL patterns for production. Use when designing or evolving a schema, choosing indexes, writing a zero-downtime migration, modeling relationships, or deciding when to denormalize.",
       "color": "8B5CF6",
       "category": "dev",
@@ -797,7 +797,7 @@
     },
     {
       "name": "defi-integration",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Build Solidity/TypeScript DeFi integrations — Uniswap V3/V4, Aave V3, Compound V3, Curve, 1inch/Velora, ERC-4626 vaults: swaps, lending, liquidity, flash loans, yield. Use when writing contract or wallet code that swaps, LPs, borrows, or flash-loans; simulate, set slippage from a live quote, confirm with the user before mainnet.",
       "color": "06B6D4",
       "category": "web3",
@@ -831,7 +831,7 @@
     },
     {
       "name": "design-system",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Build and audit React/Tailwind design systems: design tokens, CVA component libraries, Storybook 10 docs/tests, WCAG 2.2 accessibility, theming, Figma-to-code token pipelines, npm publishing. Use when building or reviewing a component library, token pipeline, Storybook setup, theming, or Figma handoff on React 18/19 + Tailwind v4.",
       "color": "D946EF",
       "category": "design",
@@ -869,7 +869,7 @@
       "name": "docker-production",
       "description": "Production Docker: multi-stage builds, security hardening, BuildKit cache/secrets, Compose Spec, SBOM/provenance/signing, networking, logging, and private registry. Use when writing Dockerfiles, hardening images, debugging containers, or shipping containers to production.",
       "category": "operations",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "2496ED",
       "platforms": [
         "openclaw",
@@ -896,7 +896,7 @@
     },
     {
       "name": "email-sequence",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Lifecycle email sequences — welcome/onboarding/nurture/re-engagement/cart/winback flows, plus deliverability and 2026 bulk-sender compliance (Google/Yahoo/Microsoft: SPF+DKIM+DMARC, RFC 8058 one-click unsubscribe). Use when the user mentions drip campaign, nurture, lifecycle email, email automation, or email deliverability/authentication.",
       "color": "8B5CF6",
       "category": "marketing",
@@ -924,7 +924,7 @@
     },
     {
       "name": "eu-legal-compliance",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "EU digital/data law for product & engineering teams — GDPR, DSA, DMA, EU AI Act, ePrivacy, NIS2, consumer protection, EAA — with article refs, mid-2026 deadlines, penalty tiers, and inline DSAR/DPIA/RoPA/cookie/SCC/AI-classifier checklists. Use when building consent flows, handling DSAR/breach duties, classifying AI systems, or planning an EU compliance roadmap. Not legal advice.",
       "color": "0EA5E9",
       "category": "operations",
@@ -953,7 +953,7 @@
     },
     {
       "name": "eu-tax-accounting",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "EU corporate tax, VAT/OSS/IOSS, payroll, filing deadlines, e-invoicing, and cross-border rules (ATAD, Pillar Two, DAC) across all 27 member states. Use when scoping where to register, cross-border VAT, payroll cost by country, or compliance checklists. Orientation only, not filing advice. See `eu-legal-compliance`, `accounting-finance`.",
       "color": "0369A1",
       "category": "operations",
@@ -994,7 +994,7 @@
     },
     {
       "name": "git-workflow",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Git branching strategies, Conventional Commits, hooks, code review, and release/monorepo CI. Use when designing branch strategy, enforcing commit conventions, wiring Husky/commitlint, automating releases (semantic-release/release-please), setting up CODEOWNERS/monorepo CI, or deciding rebase vs cherry-pick vs force-push.",
       "color": "6366F1",
       "category": "dev",
@@ -1040,7 +1040,7 @@
         "Build automated Looker Studio reports",
         "Create audience segments for remarketing"
       ],
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "888888",
       "platforms": [
         "openclaw",
@@ -1053,7 +1053,7 @@
     },
     {
       "name": "growth-hacking",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Growth strategy and experimentation — AARRR funnels, viral/referral loop economics, PLG onboarding, experiment design, and growth metrics, with responsible-growth and privacy guardrails. Use when modeling viral/referral loops, building activation or PLG onboarding funnels, designing growth experiments, or standing up growth dashboards.",
       "color": "22C55E",
       "category": "marketing",
@@ -1082,7 +1082,7 @@
     },
     {
       "name": "hiring-team-building",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Hire and build EU teams: country-by-country labor law (probation, notice, leave, works councils), structured interviews and scorecards, ESOP/equity tax by jurisdiction, cross-border remote setup, team design. Use when writing JDs, designing interviews, drafting offers or contracts, setting up cross-border/remote work, or granting equity in the EU.",
       "color": "D946EF",
       "category": "operations",
@@ -1111,7 +1111,7 @@
     },
     {
       "name": "influencer-marketing",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Influencer/creator marketing playbook: tier strategy, a 2026 budgeting model, vetting scorecard, outreach, contracts, FTC/ASA/EU compliance, and ROI/incrementality measurement. Use when planning, pricing, vetting, contracting, briefing, or measuring creator campaigns across Instagram, TikTok, YouTube, or LinkedIn.",
       "color": "F59E0B",
       "category": "marketing",
@@ -1140,7 +1140,7 @@
     },
     {
       "name": "landing-page-builder",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Build and revise high-converting SaaS/product/service/lead-gen landing pages: intake, copy, responsive layout, CTAs, proof sections, FAQ, and implementation-ready HTML/Tailwind/React. Use when asked to build, design, write, or improve a landing page, hero, or marketing page, or to turn an offer or brief into shippable page code.",
       "color": "3B82F6",
       "category": "design",
@@ -1169,7 +1169,7 @@
     },
     {
       "name": "lead-scoring",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Design, calibrate, and implement CRM/warehouse lead & account scoring — fit + engagement models, MQL/SQL thresholds, SDR routing, decay rules, BANT/MEDDIC mapping. Use when building or tuning lead scoring in HubSpot/Salesforce/Marketo, setting MQL thresholds, validating scores against won/lost data, or adding privacy guardrails.",
       "color": "DC2626",
       "category": "conversion",
@@ -1198,7 +1198,7 @@
     },
     {
       "name": "local-seo",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Local SEO across Google Business Profile, Apple Business Connect, Bing Places, citations, reviews, location pages, map-pack and AI-Overview local visibility. Use when working on multi-location SEO, single-location optimization, or local pack ranking.",
       "color": "059669",
       "category": "marketing",
@@ -1227,7 +1227,7 @@
     },
     {
       "name": "marketing-analytics",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Marketing measurement on GA4/GTM: event taxonomy, ecommerce dataLayer, key events, Consent Mode v2, server-side tagging/Measurement Protocol, UTMs, 2026 attribution, BigQuery SQL, dashboards. Use when setting up GA4/GTM, UTMs, key-event/conversion tracking, attribution, dashboards, funnel/cohort analysis, BigQuery exports, or consent compliance.",
       "color": "7C3AED",
       "category": "marketing",
@@ -1256,7 +1256,7 @@
     },
     {
       "name": "marketplace-launch",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Launch and rank a SaaS/app/tool on marketplaces, review sites, and directories — Product Hunt, AppSumo, G2, Capterra, indie/AI directories — for visibility, reviews, and acquisition. Use when running a Product Hunt launch, an AppSumo lifetime deal, a G2/Capterra review campaign, a directory push, or a multi-channel launch calendar.",
       "color": "F97316",
       "category": "growth",
@@ -1293,7 +1293,7 @@
       "name": "mcp-client",
       "category": "dev",
       "description": "Consume MCP (Model Context Protocol) servers over stdio (local) or Streamable HTTP (remote): initialize handshake, call tools, read resources, get prompts, pagination/timeouts/errors, OAuth/bearer auth, plus Claude Desktop/Code, Cursor, OpenClaw config. Use when wiring an agent to an MCP server or debugging a transport/auth failure.",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "00C853",
       "platforms": [
         "openclaw",
@@ -1320,7 +1320,7 @@
       "name": "mcp-server-builder",
       "category": "dev",
       "description": "Build production MCP servers: tool/resource/prompt schemas (Zod/Pydantic), Streamable HTTP + stdio (spec 2025-11-25, SSE legacy), OAuth 2.1 bearer auth, FastMCP (Python) and @modelcontextprotocol/sdk (TS), Stripe + x402 v2 monetization, deploy. Use when shipping, monetizing, or deploying an MCP server or wrapping a REST API as tools.",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "FF6D00",
       "platforms": [
         "openclaw",
@@ -1347,7 +1347,7 @@
       "name": "monitoring-observability",
       "description": "Production monitoring & observability stack — structured logging, Prometheus/PromQL, Grafana-as-code, OpenTelemetry tracing, tail sampling, SLOs/error budgets, incident response. Use when instrumenting a service, designing metrics/alerts/SLOs, debugging an incident, wiring traces-to-logs, or choosing Datadog vs self-hosted.",
       "category": "operations",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "F46800",
       "platforms": [
         "openclaw",
@@ -1374,7 +1374,7 @@
     },
     {
       "name": "mvp-launcher",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Ship MVPs fast: validation frameworks, scoping, build-vs-buy, realistic budgets, tech-stack selection, 3-week sprints, launch checklists, analytics/legal setup, and post-launch playbooks. Use when scoping, building, or launching an MVP and deciding what to build vs buy, what to cut, and how to validate and instrument it.",
       "color": "F59E0B",
       "category": "dev",
@@ -1407,7 +1407,7 @@
       "name": "nextjs-performance",
       "description": "Next.js (App Router, v15/16) performance: Core Web Vitals, rendering/caching strategy, bundle analysis, images, fonts, edge middleware, and RUM-driven audits. Use when a Next.js app is slow, fails LCP/INP/CLS, has a bloated bundle, or you must pick SSG/ISR/SSR/streaming or migrate to Cache Components ('use cache').",
       "category": "dev",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "000000",
       "platforms": [
         "openclaw",
@@ -1434,7 +1434,7 @@
     },
     {
       "name": "nextjs-stack",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Production SaaS blueprint wiring Next.js 16 App Router + React 19, Tailwind v4/shadcn, Prisma 7/Postgres, Clerk/Supabase Auth, Stripe, Vercel, and Sentry into one architecture. Use when scaffolding a full-stack SaaS, choosing the App Router/RSC/state/ORM/payments layers, or reviewing one for security and serverless correctness.",
       "color": "000000",
       "category": "dev",
@@ -1465,7 +1465,7 @@
     },
     {
       "name": "onchain-analytics",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "On-chain EVM data analysis — Dune (DuneSQL/Trino), Etherscan V2 multichain API, The Graph, Alchemy/Infura RPC, token/holder/whale flows, DeFi & NFT metrics, mempool/MEV, dashboards. Use when querying blockchain data, building crypto dashboards, computing TVL/volume/holder distribution, or profiling wallets.",
       "color": "14B8A6",
       "category": "web3",
@@ -1499,7 +1499,7 @@
     },
     {
       "name": "page-cro",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Landing page CRO — 100-point audit checklist, heatmap analysis, statistical testing, conversion optimization. Use when auditing or optimizing a landing/marketing page. For popups see `popup-cro`; for signup flows see `signup-flow-cro`.",
       "color": "EF4444",
       "category": "conversion",
@@ -1528,7 +1528,7 @@
     },
     {
       "name": "paid-ads",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Paid advertising on Google (PMax, AI Max), Meta (Advantage+ Shopping/Sales), LinkedIn (Accelerate), TikTok (Symphony), X — campaign strategy, ad copy, audience targeting, ROAS/CPA. Use when user mentions PPC, paid media, ad creative, retargeting, or campaign optimization.",
       "color": "F97316",
       "category": "marketing",
@@ -1592,7 +1592,7 @@
     },
     {
       "name": "popup-cro",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Popup, modal, slide-in, and banner conversion optimization — exit intent, lead capture, cookie consent, mobile-friendly (Google interstitial-safe). Use when user mentions popup, modal, overlay, slide-in, exit intent, lead-capture, or announcement banner.",
       "color": "A855F7",
       "category": "conversion",
@@ -1623,7 +1623,7 @@
       "name": "postgres-mastery",
       "description": "Advanced PostgreSQL — index strategies, EXPLAIN ANALYZE, partitioning, pgvector, connection pooling, zero-downtime migrations, backups, and replication. Use when diagnosing slow queries, designing indexes, planning a migration, tuning PgBouncer, adding pgvector search, or setting up backups/replication.",
       "category": "dev",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "336791",
       "platforms": [
         "openclaw",
@@ -1650,7 +1650,7 @@
     },
     {
       "name": "pr-media-outreach",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "End-to-end PR and media outreach playbook: press releases, journalist pitching, source-request platforms, crisis comms, earned/paid/contributed media, entity visibility in AI search, and PR measurement. Use when drafting a launch, pitching reporters, responding to a crisis, placing bylines, or reporting PR results.",
       "color": "EC4899",
       "category": "marketing",
@@ -1730,7 +1730,7 @@
         "Set up a PLG metrics dashboard with PQL scoring",
         "Add a sales-assist layer on top of an existing PLG motion"
       ],
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "8B5CF6",
       "platforms": [
         "openclaw",
@@ -1743,7 +1743,7 @@
     },
     {
       "name": "programmatic-seo",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Build template-driven SEO pages at scale (Next.js/Astro) that survive Google's scaled-content-abuse and site-reputation-abuse policies: page patterns, data pipelines, canonical/index management, schema, indexing monitoring. Use when user mentions programmatic SEO, pSEO, or directory/location/comparison/integration pages at scale.",
       "color": "0EA5E9",
       "category": "marketing",
@@ -1772,7 +1772,7 @@
     },
     {
       "name": "project-management",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "End-to-end software project management: charter, throughput-based sprint planning, OKRs, RAID logs, ADR/DACI decisions, dependency contracts, release gates, retros. Use when planning a project/sprint, scoping/estimating, running ceremonies, tracking risks/dependencies, writing status updates, or picking Jira/Linear/GitHub Projects.",
       "color": "2563EB",
       "category": "operations",
@@ -1801,7 +1801,7 @@
     },
     {
       "name": "prompt-engineering",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Production prompt engineering across OpenAI, Anthropic, Gemini, local, and agentic coding tools: structure, few-shot, structured output, chaining, evals, injection defense, RAG, caching, reasoning controls. Use when designing prompts, debugging LLM quality/refusals, building evals, enforcing structured output, or defending against prompt injection.",
       "color": "F472B6",
       "category": "dev",
@@ -1846,7 +1846,7 @@
         "Run brand-safe Reddit engagement without spammy behavior",
         "Decide when to skip risky or low-fit Reddit threads"
       ],
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "FF6B35",
       "platforms": [
         "openclaw",
@@ -1875,7 +1875,7 @@
         "Design a churn prediction early warning system",
         "Create a win-back email campaign for churned users"
       ],
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "888888",
       "platforms": [
         "openclaw",
@@ -1904,7 +1904,7 @@
         "Audit and optimize the GTM tech stack",
         "Build handoff processes between teams"
       ],
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "888888",
       "platforms": [
         "openclaw",
@@ -1919,7 +1919,7 @@
       "name": "saas-billing",
       "category": "dev",
       "description": "Express/Node SaaS billing with Stripe — subscriptions, usage billing (`billing.meterEvents`), webhooks, API key provisioning, dunning runbook, Adaptive Pricing, Stripe Tax. Use when building SaaS billing on an Express/Node backend; for Next.js see `stripe-billing`.",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "6772E5",
       "platforms": [
         "openclaw",
@@ -1944,7 +1944,7 @@
     },
     {
       "name": "sales-funnel",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Design, instrument, and optimize sales/marketing funnels: TOFU/MOFU/BOFU + retention, blueprints by motion (PLG, sales-led B2B, ecommerce, creator, marketplace), GA4/CDP events, CRM lifecycle, objection handling, and privacy-safe measurement. Use when building/auditing a funnel, planning lead magnets, instrumenting events, or diagnosing drop-off.",
       "color": "D946EF",
       "category": "conversion",
@@ -1990,7 +1990,7 @@
         "Debug rich results and structured data errors",
         "Optimize CTR using search appearance data"
       ],
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "888888",
       "platforms": [
         "openclaw",
@@ -2003,7 +2003,7 @@
     },
     {
       "name": "security-hardening",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Defensive code patterns — OWASP Top 10 with real fixes, authN/authZ, CORS, CSP `strict-dynamic` + Trusted Types, rate limiting, dependency security, supply-chain provenance (SLSA/sigstore), AI-app risks (prompt injection, LLM data leakage), incident response. Use when hardening application code.",
       "color": "DC2626",
       "category": "dev",
@@ -2048,7 +2048,7 @@
         "Interpret a Shannon pentest report and triage findings",
         "Create regression tests for each discovered vulnerability"
       ],
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "FF4444",
       "platforms": [
         "openclaw",
@@ -2077,7 +2077,7 @@
         "Validate email sender authenticity via header analysis",
         "Detect typosquatting domains impersonating your brand"
       ],
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "D6FF34",
       "platforms": [
         "openclaw",
@@ -2090,7 +2090,7 @@
     },
     {
       "name": "seo-geo",
-      "version": "1.0.0",
+      "version": "3.0.0",
       "description": "SEO + GEO (Generative Engine Optimization): technical audits, schema (JSON-LD), Core Web Vitals (LCP/INP/CLS), E-E-A-T, hreflang, and AI-search citation tuning for Google AI Overviews/AI Mode, Bing Copilot, ChatGPT Search, Claude, Perplexity, Gemini. Primary-source crawler + robots.txt rules. Use when improving search visibility, AI citations, indexing, meta tags, structured data, keyword clustering, or competitor analysis.",
       "color": "10B981",
       "category": "marketing",
@@ -2120,7 +2120,7 @@
     },
     {
       "name": "signup-flow-cro",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Signup flow CRO — single vs multi-step analysis, social/passkey login impact, progressive profiling, friction audit, and 20+ A/B test ideas. Use when designing or optimizing signup, onboarding form, or registration funnel. For general pages see `page-cro`; for popups see `popup-cro`.",
       "color": "14B8A6",
       "category": "conversion",
@@ -2206,7 +2206,7 @@
         "Build a community-led growth strategy",
         "Create a viral content playbook for TikTok"
       ],
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "888888",
       "platforms": [
         "openclaw",
@@ -2219,7 +2219,7 @@
     },
     {
       "name": "social-media-kit",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Produce a ready-to-ship social content kit — platform-spec'd posts, hooks, hashtag sets, a repurposing matrix, a calendar, and an FTC/music/giveaway compliance checklist. Use when packaging a launch/campaign kit, repurposing a long-form asset across platforms, or building a content calendar. For viral/algorithm tactics see social-media-growth.",
       "color": "E11D48",
       "category": "marketing",
@@ -2248,7 +2248,7 @@
     },
     {
       "name": "solidity-dev",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Develop Solidity contracts with Foundry and Hardhat: project setup, implementation patterns, tests, deployment, compiler configuration, OpenZeppelin integration, and gas optimization. Use when writing, testing, deploying, or optimizing contracts. For a security audit and findings report, use `smart-contract-auditor`.",
       "color": "7C3AED",
       "category": "web3",
@@ -2284,7 +2284,7 @@
       "name": "stripe-billing",
       "description": "Production Stripe billing on Next.js App Router: subscriptions, Billing Meters usage, idempotent webhooks, portal, Stripe Tax + Adaptive Pricing, migrations, Test Clocks. Pins apiVersion 2025-09-30.clover (Clover line). Use when building or reviewing Stripe subscription/usage billing in Next.js; for Express/Node see `saas-billing`.",
       "category": "dev",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "635BFF",
       "platforms": [
         "openclaw",
@@ -2313,7 +2313,7 @@
       "name": "telegram-mini-apps",
       "category": "dev",
       "description": "Build & ship production Telegram Mini Apps with Stars (XTR) payments on Next.js — @telegram-apps/sdk v3 (cloudStorage, biometry, fullscreen, shareStory) with isAvailable() guards, server-side initData HMAC validation, grammY bot webhooks, and serverless-safe rate limiting. Use when building, debugging, or deploying a Telegram Mini App / TWA or Stars billing.",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "26A5E4",
       "platforms": [
         "openclaw",
@@ -2382,7 +2382,7 @@
     },
     {
       "name": "ui-ux-pro-max",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Senior UI/UX design intelligence for web/app UI — design tokens, semantic color + contrast, type scales, component anatomy/states, WCAG 2.2 AA audits, dark mode, and responsive/container-query layouts. Use when designing, auditing, or implementing UI, picking palettes/fonts, fixing accessibility, or reviewing AI-generated UI.",
       "color": "F472B6",
       "category": "design",
@@ -2411,7 +2411,7 @@
     },
     {
       "name": "virustotal",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Use VirusTotal CLI (`vt`) and Python (`vt-py`) for URL, file, domain, IP, Intelligence, LiveHunt, Retrohunt, relationship, and private-scanning workflows. Use when the requested tool or data source is specifically VirusTotal. For broader multi-source trust decisions, use `security-sentinel`.",
       "color": "3B82F6",
       "category": "dev",
@@ -2440,7 +2440,7 @@
     },
     {
       "name": "wallet-integration",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Web3 wallet integration for React/Next.js dApps — RainbowKit, ConnectKit, WalletConnect, wagmi v2/viem, contract reads/writes, EIP-712 signing, chain switching, and SSR-safe hydration. Use when connecting wallets, sending transactions, signing messages, or fixing wallet hydration/precision/security issues.",
       "color": "EC4899",
       "category": "web3",
@@ -2476,7 +2476,7 @@
     },
     {
       "name": "web-performance",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "Core Web Vitals (LCP/INP/CLS) optimization, bundle analysis, caching, image/font loading, RUM field measurement, and server-side performance for modern web apps. Use when improving page speed, fixing failing Web Vitals, setting performance budgets, or auditing front-end/server perf.",
       "color": "EF4444",
       "category": "dev",
@@ -2505,7 +2505,7 @@
     },
     {
       "name": "webinar-events",
-      "version": "1.0.0",
+      "version": "1.11.0",
       "description": "End-to-end webinar and virtual-event funnel design — platform selection, registration pages, reminder sequences, live content, replay, conversion, and repurposing. Use when planning, promoting, or optimizing a webinar or its lead funnel, choosing a webinar platform, or writing reminder/follow-up emails to lift attendance and conversion.",
       "color": "7C3AED",
       "category": "marketing",
@@ -2550,7 +2550,7 @@
         "Configure regional targeting for multi-city businesses",
         "Optimize content for Yandex ranking factors"
       ],
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "888888",
       "platforms": [
         "openclaw",
@@ -2580,7 +2580,7 @@
         "Read wallet balances, token prices, and gas",
         "Check a wallet fee-rebate tier"
       ],
-      "version": "1.0.0",
+      "version": "1.11.0",
       "color": "5827E0",
       "platforms": [
         "openclaw",
