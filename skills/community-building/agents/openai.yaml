@@ -1,0 +1,4 @@
+interface:
+  display_name: "Community Building"
+  short_description: "Playbook to build, grow, moderate, and measure online communitie"
+  default_prompt: "Use $community-building to help with this request."

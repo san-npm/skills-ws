@@ -1,0 +1,4 @@
+interface:
+  display_name: "Polymarket Trading"
+  short_description: "Analyze sports prediction markets on Polymarket: scan bookmaker"
+  default_prompt: "Use $polymarket-trading to help with this request."

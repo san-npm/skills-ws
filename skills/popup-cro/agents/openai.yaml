@@ -1,0 +1,4 @@
+interface:
+  display_name: "Popup Cro"
+  short_description: "Popup, modal, slide-in, and banner conversion optimization"
+  default_prompt: "Use $popup-cro to help with this request."

@@ -17,7 +17,6 @@ const CYAN = "\x1b[36m";
 const YELLOW = "\x1b[33m";
 const WHITE = "\x1b[37m";
 const GRAY = "\x1b[90m";
-const BG = "\x1b[48;5;233m";
 
 // ── Banner ───────────────────────────────────────────────────
 
@@ -33,13 +32,6 @@ const LOGO = [
 // Color roles (ANSI) — semantic, not literal
 const C_BLOCK = "\x1b[36m";      // cyan — filled blocks ███
 const C_SHADOW = "\x1b[90m";     // gray — shadow characters ╔═╗║╚╝
-const C_DOT = "\x1b[32m";        // green — the dot in .ws
-const C_ACCENT = "\x1b[35m";     // magenta — highlight pulse
-
-function isShadowChar(ch) {
-  return "╔═╗║╚╝╝╗╝".includes(ch) || ch === "╝";
-}
-
 function colorizeLine(line) {
   let out = "";
   for (const ch of line) {

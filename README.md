@@ -69,7 +69,7 @@ UI/UX Pro Max, design systems, landing page builder, ASCII banner.
 3. Your AI assistant reads it on startup and gains that expertise
 4. Ask your assistant to do anything related to that domain — it now knows the best practices, patterns, and workflows
 
-Skills are markdown instructions with zero runtime dependencies. One skill (`polymarket-trading`) bundles an optional helper script under `scripts/`; agents only run it with your approval, and it reads credentials from your environment or keychain, never from hardcoded values.
+Skills use progressive disclosure: a compact `SKILL.md` entrypoint routes the agent to topic-specific `references/`, deterministic `scripts/`, or reusable `assets/` only when needed. Every skill also includes `agents/openai.yaml` interface metadata. The optional `polymarket-trading` scanner runs only with your approval and reads credentials from your environment or keychain, never from hardcoded values.
 
 ---
 
@@ -151,12 +151,12 @@ skills-ws/
 ├── components/             # React components
 │   ├── AsciiBackground.tsx # Three.js WebGL → ASCII canvas
 │   ├── SkillsGrid.tsx      # Searchable/filterable skill grid
-│   ├── SkillContent.tsx    # Markdown renderer
+│   ├── SkillContent.tsx    # Markdown renderer + safe resource links
 │   ├── InstallBox.tsx      # Copy-to-clipboard install command
 │   └── NpmDownloads.tsx    # Live npm download counter
 ├── lib/
 │   └── skills.ts           # Skill data access + TypeScript interfaces
-├── skills/                 # Raw SKILL.md files (86 directories)
+├── skills/                 # 86 complete skill bundles
 ├── public/
 │   ├── skills.json         # Skills database (86 skills, all metadata + content)
 │   ├── llms.txt            # LLM-readable skill index
@@ -212,11 +212,11 @@ npm run indexnow -- /faq /skills/seo  # submit specific paths only
 
 ## Security
 
-Skills are markdown instruction files; the CLI only copies them, it never executes skill content.
+Skills are instruction and resource bundles; the CLI only copies them and never executes skill content.
 
 - Zero runtime dependencies in the npm package (no supply chain risk)
 - All skills built in-house, no third-party content
-- Pre-release security scans: hidden-Unicode injection, secrets, dangerous patterns
+- Pre-release validation: metadata, context budgets, resource links, hidden-risk patterns, remote installer safety, and client-secret exposure
 - Environment-only credentials (nothing hardcoded)
 - One documented exception to markdown-only: `polymarket-trading` ships an optional `scripts/scan.mjs` helper, run only with your approval
 - Releases are published by the maintainer with 2FA; npm trusted publishing (OIDC) with provenance attestation is planned

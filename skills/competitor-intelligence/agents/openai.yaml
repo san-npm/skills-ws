@@ -1,0 +1,4 @@
+interface:
+  display_name: "Competitor Intelligence"
+  short_description: "Competitive intelligence end to end: competitor discovery, featu"
+  default_prompt: "Use $competitor-intelligence to help with this request."

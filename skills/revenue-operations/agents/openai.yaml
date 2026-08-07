@@ -1,0 +1,4 @@
+interface:
+  display_name: "Revenue Operations"
+  short_description: "RevOps for B2B SaaS workflows and guidance"
+  default_prompt: "Use $revenue-operations to help with this request."

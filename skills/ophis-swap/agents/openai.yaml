@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ophis Swap"
+  short_description: "Use when the user wants to swap, trade, buy, sell, or convert to"
+  default_prompt: "Use $ophis-swap to help with this request."

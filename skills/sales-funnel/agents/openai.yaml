@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sales Funnel"
+  short_description: "Design, instrument, and optimize sales/marketing funnels: TOFU/M"
+  default_prompt: "Use $sales-funnel to help with this request."

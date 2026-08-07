@@ -1,0 +1,4 @@
+interface:
+  display_name: "Accounting Finance"
+  short_description: "Operator finance for SMEs/startups: GAAP/IFRS P&L, 13-week cash/"
+  default_prompt: "Use $accounting-finance to help with this request."

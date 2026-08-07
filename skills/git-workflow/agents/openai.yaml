@@ -1,0 +1,4 @@
+interface:
+  display_name: "Git Workflow"
+  short_description: "Git branching strategies, Conventional Commits, hooks, code revi"
+  default_prompt: "Use $git-workflow to help with this request."

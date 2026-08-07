@@ -1,0 +1,4 @@
+interface:
+  display_name: "Monitoring Observability"
+  short_description: "Production monitoring & observability stack"
+  default_prompt: "Use $monitoring-observability to help with this request."

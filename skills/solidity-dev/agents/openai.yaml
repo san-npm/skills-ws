@@ -1,0 +1,4 @@
+interface:
+  display_name: "Solidity Dev"
+  short_description: "Develop Solidity contracts with Foundry and Hardhat: project set"
+  default_prompt: "Use $solidity-dev to help with this request."

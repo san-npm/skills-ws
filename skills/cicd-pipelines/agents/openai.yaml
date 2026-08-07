@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cicd Pipelines"
+  short_description: "Implement production GitHub Actions with copy-ready workflow YAM"
+  default_prompt: "Use $cicd-pipelines to help with this request."

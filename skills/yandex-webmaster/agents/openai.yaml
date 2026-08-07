@@ -1,0 +1,4 @@
+interface:
+  display_name: "Yandex Webmaster"
+  short_description: "Yandex Webmaster setup, Yandex-specific SEO, regional/geo target"
+  default_prompt: "Use $yandex-webmaster to help with this request."

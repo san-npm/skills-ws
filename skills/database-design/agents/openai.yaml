@@ -1,0 +1,4 @@
+interface:
+  display_name: "Database Design"
+  short_description: "Relational schema design and data modeling"
+  default_prompt: "Use $database-design to help with this request."

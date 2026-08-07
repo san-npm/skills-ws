@@ -222,7 +222,7 @@ function fuzzyMatch(a, b) {
  * Search Polymarket for a game and try to find a moneyline market.
  * Returns { found, tokenId, pmPrice, marketQuestion, slug } or { found: false }
  */
-async function findPMMarket(homeTeam, awayTeam, favoriteTeam, sportMeta) {
+async function findPMMarket(homeTeam, awayTeam, favoriteTeam) {
   // Extract short team names (last word = mascot) for better PM search
   const shortHome = homeTeam.split(' ').pop();
   const shortAway = awayTeam.split(' ').pop();
@@ -244,7 +244,6 @@ async function findPMMarket(homeTeam, awayTeam, favoriteTeam, sportMeta) {
 
       for (const ev of events) {
         // Check if event title contains both teams or the favorite
-        const title = (ev.title || '').toLowerCase();
         const hasHome = fuzzyMatch(ev.title || '', homeTeam);
         const hasAway = fuzzyMatch(ev.title || '', awayTeam);
         const hasFav = fuzzyMatch(ev.title || '', favoriteTeam);
@@ -287,7 +286,7 @@ async function findPMMarket(homeTeam, awayTeam, favoriteTeam, sportMeta) {
           }
         }
       }
-    } catch (e) {
+    } catch {
       // Search failed, try next strategy
       continue;
     }
@@ -320,7 +319,7 @@ async function main() {
   let apiKey;
   try {
     apiKey = getOddsApiKey();
-  } catch (e) {
+  } catch {
     console.error('❌ Failed to get Odds API key.');
     console.error('   Set ODDS_API_KEY env var (or use macOS keychain fallback).');
     process.exit(1);
@@ -374,7 +373,7 @@ async function main() {
       // 4. Search Polymarket
       process.stdout.write(`    🔎 ${favorite.team} (${(favorite.impliedProb * 100).toFixed(1)}%)... `);
 
-      const pm = await findPMMarket(homeTeam, awayTeam, favorite.team, meta);
+      const pm = await findPMMarket(homeTeam, awayTeam, favorite.team);
 
       if (!pm.found) {
         console.log('not on PM');

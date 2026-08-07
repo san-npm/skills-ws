@@ -1,0 +1,4 @@
+interface:
+  display_name: "Hiring Team Building"
+  short_description: "Hire and build EU teams: country-by-country labor law (probation"
+  default_prompt: "Use $hiring-team-building to help with this request."

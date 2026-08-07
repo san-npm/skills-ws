@@ -1,0 +1,4 @@
+interface:
+  display_name: "Email Sequence"
+  short_description: "Lifecycle email sequences"
+  default_prompt: "Use $email-sequence to help with this request."

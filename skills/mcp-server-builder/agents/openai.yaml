@@ -1,0 +1,4 @@
+interface:
+  display_name: "MCP Server Builder"
+  short_description: "Build production MCP servers: tool/resource/prompt schemas (Zod/"
+  default_prompt: "Use $mcp-server-builder to help with this request."

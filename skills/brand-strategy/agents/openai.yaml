@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brand Strategy"
+  short_description: "Frameworks and templates for building and managing a cohesive br"
+  default_prompt: "Use $brand-strategy to help with this request."

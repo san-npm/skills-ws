@@ -1,0 +1,4 @@
+interface:
+  display_name: "CRM Operations"
+  short_description: "Operate HubSpot, Salesforce, and Pipedrive with platform-specifi"
+  default_prompt: "Use $crm-operations to help with this request."

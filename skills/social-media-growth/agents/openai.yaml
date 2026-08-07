@@ -1,0 +1,4 @@
+interface:
+  display_name: "Social Media Growth"
+  short_description: "Organic growth on LinkedIn, X, Instagram, TikTok, and YouTube"
+  default_prompt: "Use $social-media-growth to help with this request."

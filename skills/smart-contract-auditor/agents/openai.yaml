@@ -1,0 +1,4 @@
+interface:
+  display_name: "Smart Contract Auditor"
+  short_description: "EVM/Solidity security auditing: static analysis (Slither, Aderyn"
+  default_prompt: "Use $smart-contract-auditor to help with this request."

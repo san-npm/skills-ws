@@ -1,0 +1,4 @@
+interface:
+  display_name: "Blog Engine"
+  short_description: "End-to-end pipeline for one long-form, answer-engine-ready blog"
+  default_prompt: "Use $blog-engine to help with this request."

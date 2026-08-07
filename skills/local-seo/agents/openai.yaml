@@ -1,0 +1,4 @@
+interface:
+  display_name: "Local SEO"
+  short_description: "Local SEO across Google Business Profile, Apple Business Connect"
+  default_prompt: "Use $local-seo to help with this request."

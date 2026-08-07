@@ -1,0 +1,4 @@
+interface:
+  display_name: "MCP Client"
+  short_description: "Consume MCP (Model Context Protocol) servers over stdio (local)"
+  default_prompt: "Use $mcp-client to help with this request."

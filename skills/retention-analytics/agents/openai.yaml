@@ -1,0 +1,4 @@
+interface:
+  display_name: "Retention Analytics"
+  short_description: "Churn analysis, cohort retention (classic/rolling/bracket + reve"
+  default_prompt: "Use $retention-analytics to help with this request."

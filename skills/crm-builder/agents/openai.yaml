@@ -1,0 +1,4 @@
+interface:
+  display_name: "CRM Builder"
+  short_description: "Architect vendor-neutral CRM systems: data models, pipeline sema"
+  default_prompt: "Use $crm-builder to help with this request."

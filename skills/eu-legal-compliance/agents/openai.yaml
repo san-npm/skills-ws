@@ -1,0 +1,4 @@
+interface:
+  display_name: "Eu Legal Compliance"
+  short_description: "EU digital/data law for product & engineering teams"
+  default_prompt: "Use $eu-legal-compliance to help with this request."

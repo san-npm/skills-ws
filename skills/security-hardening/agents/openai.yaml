@@ -1,0 +1,4 @@
+interface:
+  display_name: "Security Hardening"
+  short_description: "Defensive code patterns workflows and guidance"
+  default_prompt: "Use $security-hardening to help with this request."

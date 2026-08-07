@@ -1,0 +1,4 @@
+interface:
+  display_name: "Paid Ads"
+  short_description: "Paid advertising on Google (PMax, AI Max), Meta (Advantage+ Shop"
+  default_prompt: "Use $paid-ads to help with this request."

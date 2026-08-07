@@ -1,0 +1,4 @@
+interface:
+  display_name: "Security Sentinel"
+  short_description: "Perform multi-source runtime threat triage for unknown links, se"
+  default_prompt: "Use $security-sentinel to help with this request."

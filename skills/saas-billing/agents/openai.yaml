@@ -1,0 +1,4 @@
+interface:
+  display_name: "Saas Billing"
+  short_description: "Express/Node SaaS billing with Stripe"
+  default_prompt: "Use $saas-billing to help with this request."

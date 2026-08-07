@@ -1,0 +1,4 @@
+interface:
+  display_name: "Customer Feedback"
+  short_description: "Design and operate a Voice of Customer program"
+  default_prompt: "Use $customer-feedback to help with this request."

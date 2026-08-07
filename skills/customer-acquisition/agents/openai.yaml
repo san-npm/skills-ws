@@ -1,0 +1,4 @@
+interface:
+  display_name: "Customer Acquisition"
+  short_description: "CAC optimization, channel-mix modeling, multi-touch + incrementa"
+  default_prompt: "Use $customer-acquisition to help with this request."

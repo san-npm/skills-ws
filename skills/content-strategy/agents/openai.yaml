@@ -1,0 +1,4 @@
+interface:
+  display_name: "Content Strategy"
+  short_description: "Content program strategy workflows and guidance"
+  default_prompt: "Use $content-strategy to help with this request."

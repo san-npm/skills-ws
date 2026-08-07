@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI Agent Building"
+  short_description: "Build production AI agents"
+  default_prompt: "Use $ai-agent-building to help with this request."

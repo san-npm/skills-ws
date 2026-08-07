@@ -1,0 +1,4 @@
+interface:
+  display_name: "Page Cro"
+  short_description: "Landing page CRO workflows and guidance"
+  default_prompt: "Use $page-cro to help with this request."

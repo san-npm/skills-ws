@@ -1,0 +1,4 @@
+interface:
+  display_name: "Business Development"
+  short_description: "BD strategy for B2B SaaS: partner scoring, compliance-safe outre"
+  default_prompt: "Use $business-development to help with this request."

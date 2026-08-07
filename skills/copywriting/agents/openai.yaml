@@ -1,0 +1,4 @@
+interface:
+  display_name: "Copywriting"
+  short_description: "Copywriting workflows and guidance"
+  default_prompt: "Use $copywriting to help with this request."

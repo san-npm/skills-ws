@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pr Media Outreach"
+  short_description: "End-to-end PR and media outreach playbook: press releases, journ"
+  default_prompt: "Use $pr-media-outreach to help with this request."

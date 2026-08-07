@@ -1,0 +1,4 @@
+interface:
+  display_name: "Aleph Cloud Self Deployment"
+  short_description: "Deploy and operate VMs on Aleph Cloud with the aleph-client CLI"
+  default_prompt: "Use $aleph-cloud-self-deployment to help with this request."

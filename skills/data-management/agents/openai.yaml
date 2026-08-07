@@ -1,0 +1,4 @@
+interface:
+  display_name: "Data Management"
+  short_description: "Data governance, ELT/ETL pipeline design, warehouse modeling, da"
+  default_prompt: "Use $data-management to help with this request."

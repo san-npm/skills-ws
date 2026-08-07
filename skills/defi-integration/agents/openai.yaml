@@ -1,0 +1,4 @@
+interface:
+  display_name: "Defi Integration"
+  short_description: "Build Solidity/TypeScript DeFi integrations"
+  default_prompt: "Use $defi-integration to help with this request."

@@ -254,7 +254,7 @@ export default async function SkillPage({ params }: { params: Promise<{ name: st
           <>
             <hr className="border-border my-8" />
             <div itemProp="articleBody">
-              <SkillContent content={skill.content} />
+              <SkillContent content={skill.content} skillName={skill.name} />
             </div>
           </>
         )}

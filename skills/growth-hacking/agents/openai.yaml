@@ -1,0 +1,4 @@
+interface:
+  display_name: "Growth Hacking"
+  short_description: "Growth strategy and experimentation"
+  default_prompt: "Use $growth-hacking to help with this request."

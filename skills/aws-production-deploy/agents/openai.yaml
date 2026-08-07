@@ -1,0 +1,4 @@
+interface:
+  display_name: "AWS Production Deploy"
+  short_description: "Production AWS infra-as-code in Terraform & CDK: 3-tier VPC, ECS"
+  default_prompt: "Use $aws-production-deploy to help with this request."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Onchain Analytics"
+  short_description: "On-chain EVM data analysis"
+  default_prompt: "Use $onchain-analytics to help with this request."

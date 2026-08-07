@@ -1,0 +1,4 @@
+interface:
+  display_name: "API Design"
+  short_description: "Production HTTP API design"
+  default_prompt: "Use $api-design to help with this request."

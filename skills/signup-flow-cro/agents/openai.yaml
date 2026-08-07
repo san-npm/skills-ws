@@ -1,0 +1,4 @@
+interface:
+  display_name: "Signup Flow Cro"
+  short_description: "Signup flow CRO workflows and guidance"
+  default_prompt: "Use $signup-flow-cro to help with this request."

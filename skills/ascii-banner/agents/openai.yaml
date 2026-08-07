@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ascii Banner"
+  short_description: "Build animated ASCII/Unicode banners for CLI tools and web UIs"
+  default_prompt: "Use $ascii-banner to help with this request."

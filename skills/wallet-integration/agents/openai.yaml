@@ -1,0 +1,4 @@
+interface:
+  display_name: "Wallet Integration"
+  short_description: "Web3 wallet integration for React/Next"
+  default_prompt: "Use $wallet-integration to help with this request."

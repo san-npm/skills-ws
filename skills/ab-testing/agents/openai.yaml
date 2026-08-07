@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ab Testing"
+  short_description: "Experimentation guidance: A/B test design, sample-size/MDE calcu"
+  default_prompt: "Use $ab-testing to help with this request."

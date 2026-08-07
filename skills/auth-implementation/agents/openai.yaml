@@ -1,0 +1,4 @@
+interface:
+  display_name: "Auth Implementation"
+  short_description: "Secure authentication & authorization"
+  default_prompt: "Use $auth-implementation to help with this request."

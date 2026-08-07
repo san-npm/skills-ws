@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Management"
+  short_description: "End-to-end software project management: charter, throughput-base"
+  default_prompt: "Use $project-management to help with this request."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Docker Production"
+  short_description: "Production Docker: multi-stage builds, security hardening, Build"
+  default_prompt: "Use $docker-production to help with this request."

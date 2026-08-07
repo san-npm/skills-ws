@@ -1,6 +1,6 @@
 ---
 name: crm-builder
-description: "Architect CRM systems — data/object model, pipeline stages with entry/exit criteria, lifecycle definitions, lead scoring, dedupe, migration, and GDPR/CCPA-compliant data governance. Use when designing a CRM schema, sales pipeline, lead routing, lifecycle automation, reporting model, or CRM migration."
+description: "Architect vendor-neutral CRM systems: data models, pipeline semantics, lifecycle definitions, lead scoring, deduplication, migration, and governance. Use when designing a CRM from first principles or specifying its schema and operating model. For HubSpot, Salesforce, or Pipedrive configuration, use `crm-operations`."
 ---
 
 # CRM Builder

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Search Console"
+  short_description: "Google Search Console expert workflows: Page indexing diagnosis"
+  default_prompt: "Use $search-console to help with this request."

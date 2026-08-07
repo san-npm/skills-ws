@@ -1,0 +1,10 @@
+## 🧩 Framework / stack implementation notes
+
+The HTML/CSS/JS above is illustrative. Apply the *principles* (semantic markup, one primary CTA, inline critical CSS, deferred JS, consent-gated analytics) in your stack:
+
+- **Static HTML / Astro / 11ty:** inline critical CSS in `<head>`, `defer` scripts, ship AVIF/WebP with explicit `width`/`height`. Easiest path to great Core Web Vitals.
+- **React / Next.js:** prefer **Server Components / SSR or SSG** for hero + above-the-fold so LCP isn't blocked on hydration; lazy-load below-fold with `next/dynamic`; use `next/image` (auto AVIF/WebP, sizing → no CLS) and `next/font` (no layout shift). Hydration is the usual **INP** culprit — minimize client JS, split bundles, and stream. Run experiments with an edge-decided variant cookie (`middleware`) to avoid a flash of the control.
+- **Shopify:** edit the theme via Liquid sections/blocks; you usually can't fully inline critical CSS — instead trim apps (each injects render-blocking JS), use the theme's responsive `image_url`/`image_tag` filters, and prefer **native A/B** in Shopify or an app like Intelligems/Visually over a redirect test (redirects hurt LCP and can cause flicker).
+- **Webflow / Framer / Unbounce / Instapage:** keep the DOM lean (these can over-nest divs and bloat CSS), compress images in-platform, limit embeds/interactions, and use the platform's built-in A/B (Optimize-style) rather than client-side flicker hacks.
+- **Experimentation platforms (2026):** server-side/edge assignment beats client-side redirects for speed and anti-flicker. Options include **GrowthBook** (open-source, feature-flag + stats), **Optimizely**, **VWO**, **AB Tasty**, Shopify-native, or your own flag service. Whatever you use, fire a single exposure event with the variant id and join it to conversion server-side.
+- **Analytics:** GA4 (with **Consent Mode v2**) for funnels/events; PostHog or Matomo if you want self-hosted/cookieless-friendly; Microsoft Clarity (free) or Hotjar for heatmaps/replays — all still **consent-gated** per the privacy section, with replay **input masking** on.

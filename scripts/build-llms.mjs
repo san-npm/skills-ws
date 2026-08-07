@@ -10,6 +10,27 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const SITE = 'https://www.skills.ws';
 
+async function markdownResources(skillName) {
+  const skillDir = path.join(ROOT, 'skills', skillName);
+  const files = [];
+  async function walk(directory) {
+    for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
+      const target = path.join(directory, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name !== 'agents' && entry.name !== 'assets') await walk(target);
+      } else if (entry.name.endsWith('.md') && entry.name !== 'SKILL.md') {
+        files.push(target);
+      }
+    }
+  }
+  await walk(skillDir);
+  files.sort();
+  return Promise.all(files.map(async (file) => ({
+    name: path.relative(skillDir, file),
+    content: await fs.readFile(file, 'utf8'),
+  })));
+}
+
 const { skills } = JSON.parse(await fs.readFile(path.join(ROOT, 'skills.json'), 'utf-8'));
 const sorted = [...skills].sort((a, b) => a.name.localeCompare(b.name));
 const today = new Date().toISOString().slice(0, 10);
@@ -29,7 +50,7 @@ short.push(`- [llms-full.txt](${SITE}/llms-full.txt): Full content of every skil
 short.push(`- [skills.json](${SITE}/skills.json): Machine-readable catalog.`);
 short.push(`- [sitemap.xml](${SITE}/sitemap.xml): All indexable URLs.`);
 short.push('');
-await fs.writeFile(path.join(ROOT, 'public', 'llms.txt'), short.join('\n'));
+await fs.writeFile(path.join(ROOT, 'public', 'llms.txt'), short.join('\n').replace(/[ \t]+$/gm, ''));
 
 // ── llms-full.txt ────────────────────────────────────────────
 const full = [];
@@ -49,8 +70,12 @@ for (const s of sorted) {
   }
   full.push('');
   if (s.content) full.push(s.content.trim(), '');
+  const resources = await markdownResources(s.name);
+  for (const resource of resources) {
+    full.push(`### Resource: ${resource.name}`, '', resource.content.trim(), '');
+  }
   full.push('---', '');
 }
-await fs.writeFile(path.join(ROOT, 'public', 'llms-full.txt'), full.join('\n'));
+await fs.writeFile(path.join(ROOT, 'public', 'llms-full.txt'), full.join('\n').replace(/[ \t]+$/gm, ''));
 
 console.log(`llms.txt + llms-full.txt regenerated for ${sorted.length} skills`);

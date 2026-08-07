@@ -1,0 +1,4 @@
+interface:
+  display_name: "Data Analytics"
+  short_description: "BI metric definitions, warehouse SQL (funnels, cohorts, retentio"
+  default_prompt: "Use $data-analytics to help with this request."

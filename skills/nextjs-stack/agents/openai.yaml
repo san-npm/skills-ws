@@ -1,0 +1,4 @@
+interface:
+  display_name: "Nextjs Stack"
+  short_description: "Production SaaS blueprint wiring Next"
+  default_prompt: "Use $nextjs-stack to help with this request."

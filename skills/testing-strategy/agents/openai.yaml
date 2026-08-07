@@ -1,0 +1,4 @@
+interface:
+  display_name: "Testing Strategy"
+  short_description: "Test strategy for production codebases: testing pyramid, framewo"
+  default_prompt: "Use $testing-strategy to help with this request."

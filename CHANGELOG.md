@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.11.0] - 2026-08-07
+
+### Full-catalog architecture and release-integrity upgrade
+
+- Refactored every skill above 500 lines into a compact `SKILL.md` router with directly linked, topic-specific references; all 86 entrypoints now remain below the context-budget ceiling.
+- Added `agents/openai.yaml` interface metadata to all 86 skills.
+- Removed the Telegram Mini App pattern that exposed a BotFather credential through a `NEXT_PUBLIC_*` variable; local signed fixtures now keep the development token server-side.
+- Replaced remote-download-to-shell pipelines with download, review, verification, and execution steps.
+- Clarified overlapping triggers for CI/CD, CRM, Solidity, VirusTotal, and runtime-security skills.
+- Published complete skill directories—including references, scripts, assets, and interface metadata—through `/.well-known/agent-skills/`.
+- Made frontend resource links resolve to published files and included reference content in `llms-full.txt`.
+- Added structural, security-pattern, resource-link, metadata, line-budget, and freshness validation to the test gate.
+- Updated the EU AI Act Digital Omnibus status to its 27 July 2026 entry into force.
+
 ## [1.10.0] - 2026-07-10
 
 ### Full-catalog best-practices and security audit (Jul 2026)

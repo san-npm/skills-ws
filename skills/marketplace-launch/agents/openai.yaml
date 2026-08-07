@@ -1,0 +1,4 @@
+interface:
+  display_name: "Marketplace Launch"
+  short_description: "Launch and rank a SaaS/app/tool on marketplaces, review sites, a"
+  default_prompt: "Use $marketplace-launch to help with this request."

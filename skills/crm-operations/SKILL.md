@@ -1,6 +1,6 @@
 ---
 name: crm-operations
-description: "CRM setup, pipeline automation, lead routing/scoring, forecasting, data hygiene, and compliance for HubSpot, Salesforce, and Pipedrive — with platform-specific recipes. Use when configuring properties/objects, building workflows/Flows, calibrating lead scoring, designing assignment rules, or fixing CRM data governance."
+description: "Operate HubSpot, Salesforce, and Pipedrive with platform-specific recipes for properties, workflows, routing, scoring, forecasting, and data hygiene. Use when configuring or repairing an existing CRM platform. For vendor-neutral CRM architecture and schemas, use `crm-builder`."
 ---
 
 # CRM Operations

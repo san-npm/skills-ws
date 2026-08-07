@@ -3,7 +3,7 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-export default function SkillContent({ content }: { content: string }) {
+export default function SkillContent({ content, skillName }: { content: string; skillName: string }) {
   return (
     <div className="skill-content font-sans text-[14px] leading-relaxed text-text-dim">
       <ReactMarkdown
@@ -50,7 +50,13 @@ export default function SkillContent({ content }: { content: string }) {
             </pre>
           ),
           a: ({ href, children }) => {
-            const safeHref = href && /^https?:\/\//i.test(href) ? href : "#";
+            const isExternal = Boolean(href && /^https?:\/\//i.test(href));
+            const isSkillResource = Boolean(href && /^(?:references\/|scripts\/|assets\/|reference\.md$)/.test(href) && !href.includes(".."));
+            const safeHref = isExternal
+              ? href
+              : isSkillResource
+                ? `/.well-known/agent-skills/${encodeURIComponent(skillName)}/${href}`
+                : "#";
             return (
               <a href={safeHref} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
                 {children}

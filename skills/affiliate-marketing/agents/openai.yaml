@@ -1,0 +1,4 @@
+interface:
+  display_name: "Affiliate Marketing"
+  short_description: "Affiliate/partner program design, commission economics, fraud-re"
+  default_prompt: "Use $affiliate-marketing to help with this request."

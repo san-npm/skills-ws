@@ -1,0 +1,4 @@
+interface:
+  display_name: "Mvp Launcher"
+  short_description: "Ship MVPs fast: validation frameworks, scoping, build-vs-buy, re"
+  default_prompt: "Use $mvp-launcher to help with this request."

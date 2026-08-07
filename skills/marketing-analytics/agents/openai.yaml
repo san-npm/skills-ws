@@ -1,0 +1,4 @@
+interface:
+  display_name: "Marketing Analytics"
+  short_description: "Marketing measurement on GA4/GTM: event taxonomy, ecommerce data"
+  default_prompt: "Use $marketing-analytics to help with this request."

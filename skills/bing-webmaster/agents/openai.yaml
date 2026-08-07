@@ -1,0 +1,4 @@
+interface:
+  display_name: "Bing Webmaster"
+  short_description: "Bing Webmaster Tools setup, IndexNow protocol, URL submission, b"
+  default_prompt: "Use $bing-webmaster to help with this request."

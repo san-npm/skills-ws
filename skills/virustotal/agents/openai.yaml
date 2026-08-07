@@ -1,0 +1,4 @@
+interface:
+  display_name: "Virustotal"
+  short_description: "Use VirusTotal CLI (`vt`) and Python (`vt-py`) for URL, file, do"
+  default_prompt: "Use $virustotal to help with this request."

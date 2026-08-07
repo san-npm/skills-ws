@@ -1,0 +1,4 @@
+interface:
+  display_name: "UI UX Pro Max"
+  short_description: "Senior UI/UX design intelligence for web/app UI"
+  default_prompt: "Use $ui-ux-pro-max to help with this request."

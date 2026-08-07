@@ -1,0 +1,4 @@
+interface:
+  display_name: "Eu Tax Accounting"
+  short_description: "EU corporate tax, VAT/OSS/IOSS, payroll, filing deadlines, e-inv"
+  default_prompt: "Use $eu-tax-accounting to help with this request."

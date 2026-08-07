@@ -33,6 +33,10 @@ function assert(condition, message) {
 
 console.log("\nskills-ws CLI tests\n");
 
+// Build the public Agent Skills tree so resource-distribution assertions inspect
+// exactly what the frontend publishes.
+await exec("node", [join(ROOT, "scripts", "build-agent-skills.mjs")], { cwd: ROOT, timeout: 30000 });
+
 // ── Test 1: Skills directory exists and has skills ─────────
 console.log("Skills directory:");
 try {
@@ -62,6 +66,15 @@ for (const name of skillDirs) {
 }
 assert(allHaveSkillMd, "every skill directory has a SKILL.md");
 assert(allHaveFrontmatter, "every SKILL.md has YAML frontmatter");
+
+try {
+  await stat(join(ROOT, "public", ".well-known", "agent-skills", "polymarket-trading", "scripts", "scan.mjs"));
+  await stat(join(ROOT, "public", ".well-known", "agent-skills", "ophis-swap", "reference.md"));
+  await stat(join(ROOT, "public", ".well-known", "agent-skills", "telegram-mini-apps", "references"));
+  assert(true, "frontend distribution includes scripts and references");
+} catch (err) {
+  assert(false, `frontend distribution includes complete skill directories: ${err.message}`);
+}
 
 // ── Test 3: CLI bin exists and is valid JS ─────────────────
 console.log("\nCLI binary:");

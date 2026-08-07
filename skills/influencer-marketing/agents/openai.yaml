@@ -1,0 +1,4 @@
+interface:
+  display_name: "Influencer Marketing"
+  short_description: "Influencer/creator marketing playbook: tier strategy, a 2026 bud"
+  default_prompt: "Use $influencer-marketing to help with this request."

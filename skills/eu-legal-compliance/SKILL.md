@@ -184,7 +184,7 @@ Required for controllers/processors with ≥250 employees, **or** where processi
 | **2 Dec 2027** | **Annex III high-risk** systems (deferred from 2 Aug 2026 by the Digital Omnibus) |
 | **2 Aug 2028** | **Annex I high-risk** systems (AI that is a safety component of, or itself, a product already covered by EU product-safety law, e.g. machinery, medical devices, toys); deferred from 2 Aug 2027 by the Digital Omnibus |
 
-> Treat dates as the *current* schedule (as of Jun 2026). The **Digital Omnibus on AI** was adopted in June 2026 and enters into force on the third day after Official Journal publication (expected Jul 2026); it also adds prohibitions on AI that generates non-consensual intimate content or CSAM. Verify against the EUR-Lex text before relying on a date for go-live planning.
+> Treat dates as the current schedule verified on 7 Aug 2026. The **Digital Omnibus on AI** entered into force on **27 Jul 2026**; it also adds prohibitions on AI that generates non-consensual intimate content or CSAM. Verify against the current EUR-Lex text before relying on a date for go-live planning.
 
 | Risk Level | Examples | Requirements |
 |------------|----------|-------------|
@@ -311,4 +311,3 @@ Trigger: report **significant incidents** (serious operational disruption / fina
 | 🔜 upcoming | 2 Aug 2028 | **AI Act:** **Annex I** (regulated-product) high-risk systems (deferred from 2 Aug 2027) |
 
 > **Verify before relying on a date.** Confirm against the primary sources: EUR-Lex (regulation texts), the EU AI Act timeline (artificialintelligenceact.eu), the EDPB (edpb.europa.eu) for GDPR/transfer guidance, your national DPA and NIS2/EAA competent authorities, and the Commission's adequacy/DPF pages. Directive deadlines and penalty levels can differ by member state.
-

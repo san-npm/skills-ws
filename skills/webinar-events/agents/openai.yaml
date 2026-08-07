@@ -1,0 +1,4 @@
+interface:
+  display_name: "Webinar Events"
+  short_description: "End-to-end webinar and virtual-event funnel design"
+  default_prompt: "Use $webinar-events to help with this request."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Telegram Mini Apps"
+  short_description: "Build & ship production Telegram Mini Apps with Stars (XTR) paym"
+  default_prompt: "Use $telegram-mini-apps to help with this request."

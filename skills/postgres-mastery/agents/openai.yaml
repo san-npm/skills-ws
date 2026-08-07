@@ -1,0 +1,4 @@
+interface:
+  display_name: "Postgres Mastery"
+  short_description: "Advanced PostgreSQL workflows and guidance"
+  default_prompt: "Use $postgres-mastery to help with this request."

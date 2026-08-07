@@ -1,0 +1,4 @@
+interface:
+  display_name: "Programmatic SEO"
+  short_description: "Build template-driven SEO pages at scale (Next"
+  default_prompt: "Use $programmatic-seo to help with this request."

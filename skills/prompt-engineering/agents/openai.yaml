@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prompt Engineering"
+  short_description: "Production prompt engineering across OpenAI, Anthropic, Gemini"
+  default_prompt: "Use $prompt-engineering to help with this request."

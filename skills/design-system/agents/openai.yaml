@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design System"
+  short_description: "Build and audit React/Tailwind design systems: design tokens, CV"
+  default_prompt: "Use $design-system to help with this request."

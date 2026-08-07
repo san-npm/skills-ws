@@ -1,0 +1,4 @@
+interface:
+  display_name: "Stripe Billing"
+  short_description: "Production Stripe billing on Next"
+  default_prompt: "Use $stripe-billing to help with this request."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Social Media Kit"
+  short_description: "Produce a ready-to-ship social content kit"
+  default_prompt: "Use $social-media-kit to help with this request."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pricing Optimization"
+  short_description: "SaaS pricing strategy and billing implementation"
+  default_prompt: "Use $pricing-optimization to help with this request."

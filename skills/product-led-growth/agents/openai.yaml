@@ -1,0 +1,4 @@
+interface:
+  display_name: "Product Led Growth"
+  short_description: "Product-led growth playbooks"
+  default_prompt: "Use $product-led-growth to help with this request."

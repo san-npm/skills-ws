@@ -1,6 +1,6 @@
 {
   "name": "skills-ws",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "scripts": {
     "dev": "next dev",
     "prebuild": "node scripts/build-agent-skills.mjs && node scripts/build-llms.mjs",
@@ -8,7 +8,7 @@
     "start": "next start",
     "indexnow": "node scripts/indexnow-submit.mjs",
     "lint": "eslint .",
-    "test": "node test/cli.test.mjs",
+    "test": "node scripts/validate-skills.mjs && node test/cli.test.mjs",
     "publish:npm": "node scripts/publish-npm.mjs",
     "publish:npm:dry": "node scripts/publish-npm.mjs --dry-run"
   },

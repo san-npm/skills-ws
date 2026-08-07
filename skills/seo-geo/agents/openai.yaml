@@ -1,0 +1,4 @@
+interface:
+  display_name: "SEO Geo"
+  short_description: "SEO + GEO (Generative Engine Optimization): technical audits, sc"
+  default_prompt: "Use $seo-geo to help with this request."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Google Analytics"
+  short_description: "GA4 implementation and analysis: event taxonomy, custom dimensio"
+  default_prompt: "Use $google-analytics to help with this request."

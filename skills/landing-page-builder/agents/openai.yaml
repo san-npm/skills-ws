@@ -1,0 +1,4 @@
+interface:
+  display_name: "Landing Page Builder"
+  short_description: "Build and revise high-converting SaaS/product/service/lead-gen l"
+  default_prompt: "Use $landing-page-builder to help with this request."

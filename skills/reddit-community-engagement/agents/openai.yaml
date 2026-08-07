@@ -1,0 +1,4 @@
+interface:
+  display_name: "Reddit Community Engagement"
+  short_description: "Transparent, rules-compliant Reddit engagement: research subredd"
+  default_prompt: "Use $reddit-community-engagement to help with this request."

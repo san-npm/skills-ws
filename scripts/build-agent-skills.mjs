@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Generate the /.well-known/agent-skills/ tree from skills/<name>/SKILL.md:
+// Generate the /.well-known/agent-skills/ tree from complete skills/<name>/ directories:
 //   - index.json  (agentskills.io discovery schema 0.2.0)
-//   - <name>/SKILL.md  (copy of the canonical skill file)
+//   - <name>/**  (SKILL.md plus agents, references, scripts, and assets)
 // Runs before `next build`. The output lands under public/ so Next.js copies
 // it verbatim into the static-export `out/` directory.
 
@@ -31,7 +31,8 @@ async function main() {
   const indexSkills = [];
 
   for (const name of names) {
-    const src = path.join(SKILLS_DIR, name, 'SKILL.md');
+    const srcDir = path.join(SKILLS_DIR, name);
+    const src = path.join(srcDir, 'SKILL.md');
     let md;
     try {
       md = await fs.readFile(src, 'utf-8');
@@ -40,8 +41,7 @@ async function main() {
     }
 
     const destDir = path.join(OUT_DIR, name);
-    await fs.mkdir(destDir, { recursive: true });
-    await fs.writeFile(path.join(destDir, 'SKILL.md'), md);
+    await fs.cp(srcDir, destDir, { recursive: true });
 
     const digest = 'sha256:' + createHash('sha256').update(md).digest('hex');
     const meta = byName.get(name) || {};

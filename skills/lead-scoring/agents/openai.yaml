@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lead Scoring"
+  short_description: "Design, calibrate, and implement CRM/warehouse lead & account sc"
+  default_prompt: "Use $lead-scoring to help with this request."

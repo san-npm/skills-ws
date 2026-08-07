@@ -1,0 +1,4 @@
+interface:
+  display_name: "Web Performance"
+  short_description: "Core Web Vitals (LCP/INP/CLS) optimization, bundle analysis, cac"
+  default_prompt: "Use $web-performance to help with this request."

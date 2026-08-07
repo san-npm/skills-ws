@@ -1,6 +1,6 @@
 ---
 name: virustotal
-description: "URL, file, domain, and IP threat lookups via VirusTotal CLI (`vt`) and Python (`vt-py`): hash-first lookups, reputation/triage, batch scanning, sandbox/relationship pivots, Intelligence search, LiveHunt/Retrohunt, Private Scanning. Use when checking IOCs, triaging malware/phishing, or auditing URLs/domains. Runtime threats: `security-sentinel`."
+description: "Use VirusTotal CLI (`vt`) and Python (`vt-py`) for URL, file, domain, IP, Intelligence, LiveHunt, Retrohunt, relationship, and private-scanning workflows. Use when the requested tool or data source is specifically VirusTotal. For broader multi-source trust decisions, use `security-sentinel`."
 ---
 
 # VirusTotal Scanner

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cold Outreach"
+  short_description: "B2B cold email and LinkedIn outreach: deliverability (SPF/DKIM/D"
+  default_prompt: "Use $cold-outreach to help with this request."
