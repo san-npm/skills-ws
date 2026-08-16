@@ -13,6 +13,19 @@ function prefersMarkdown(accept: string | null): boolean {
   return /(^|,)\s*text\/markdown\b/i.test(accept);
 }
 
+function varyOnAccept(response: NextResponse): NextResponse {
+  const existing = response.headers.get('Vary');
+  const values = existing
+    ? existing.split(',').map((value) => value.trim()).filter(Boolean)
+    : [];
+
+  if (!values.some((value) => value.toLowerCase() === 'accept')) {
+    values.push('Accept');
+  }
+  response.headers.set('Vary', values.join(', '));
+  return response;
+}
+
 export function proxy(req: NextRequest) {
   if (req.method === 'GET' && prefersMarkdown(req.headers.get('accept'))) {
     const skillMatch = req.nextUrl.pathname.match(/^\/skills\/([a-z0-9-]+)\/?$/i);
@@ -21,12 +34,14 @@ export function proxy(req: NextRequest) {
         `/.well-known/agent-skills/${skillMatch[1].toLowerCase()}/SKILL.md`,
         req.nextUrl.origin,
       );
-      return NextResponse.rewrite(target);
+      const response = NextResponse.redirect(target, 307);
+      response.headers.set('Cache-Control', 'private, no-store');
+      return varyOnAccept(response);
     }
 
     if (req.nextUrl.pathname === '/') {
       const target = new URL('/index.md', req.nextUrl.origin);
-      return NextResponse.rewrite(target);
+      return varyOnAccept(NextResponse.rewrite(target));
     }
   }
   return NextResponse.next();
