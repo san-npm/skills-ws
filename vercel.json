@@ -9,6 +9,24 @@
       ]
     },
     {
+      "source": "/",
+      "headers": [
+        {
+          "key": "Vary",
+          "value": "Accept, RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Router-Segment-Prefetch"
+        }
+      ]
+    },
+    {
+      "source": "/skills/(.*)",
+      "headers": [
+        {
+          "key": "Vary",
+          "value": "Accept, RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Router-Segment-Prefetch"
+        }
+      ]
+    },
+    {
       "source": "/.well-known/api-catalog",
       "headers": [
         { "key": "Content-Type", "value": "application/linkset+json; charset=utf-8" },
