@@ -4,7 +4,7 @@
 
 Skills work with OpenClaw, Claude Code, Cursor, Codex, GitHub Copilot, and any agent that supports the SKILL.md standard. Install with: `npx skills-ws install all` (or `npx skills-ws install <name>` for one skill).
 
-Last updated: 2026-08-07
+Last updated: 2026-08-16
 
 ## Skills
 

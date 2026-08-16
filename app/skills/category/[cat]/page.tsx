@@ -7,6 +7,10 @@ import { skillDisplayName, categoryDisplayName } from "@/lib/display";
 const BASE_URL = "https://www.skills.ws";
 const MODIFIED = new Date().toISOString().slice(0, 10);
 
+interface CategoryPageProps {
+  params: Promise<{ cat: string }>;
+}
+
 const CATEGORY_DESCRIPTIONS: Record<string, string> = {
   marketing: "Marketing agent skills for AI coding assistants — brand strategy, copywriting, content strategy, paid ads, PR, influencer marketing, email sequences, and more.",
   growth: "Growth engineering agent skills — growth hacking, customer acquisition, retention analytics, product-led growth, viral mechanics, and funnel optimization.",
@@ -22,15 +26,16 @@ export function generateStaticParams() {
   return getCategories().map((cat) => ({ cat }));
 }
 
-export function generateMetadata({ params }: { params: { cat: string } }): Metadata {
+export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
+  const { cat } = await params;
   const cats = getCategories();
-  if (!cats.includes(params.cat)) return notFound();
+  if (!cats.includes(cat)) return notFound();
 
-  const display = categoryDisplayName(params.cat);
-  const skills = getSkills().filter((s) => s.category === params.cat);
-  const description = CATEGORY_DESCRIPTIONS[params.cat] ??
+  const display = categoryDisplayName(cat);
+  const skills = getSkills().filter((s) => s.category === cat);
+  const description = CATEGORY_DESCRIPTIONS[cat] ??
     `${display} agent skills for AI coding assistants. ${skills.length} skills covering ${display.toLowerCase()} workflows.`;
-  const url = `${BASE_URL}/skills/category/${params.cat}`;
+  const url = `${BASE_URL}/skills/category/${cat}`;
 
   return {
     title: `${display} Skills — Agent Skills for AI Coding Assistants`,
@@ -61,15 +66,16 @@ export function generateMetadata({ params }: { params: { cat: string } }): Metad
   };
 }
 
-export default function CategoryPage({ params }: { params: { cat: string } }) {
+export default async function CategoryPage({ params }: CategoryPageProps) {
+  const { cat } = await params;
   const cats = getCategories();
-  if (!cats.includes(params.cat)) notFound();
+  if (!cats.includes(cat)) notFound();
 
-  const display = categoryDisplayName(params.cat);
-  const url = `${BASE_URL}/skills/category/${params.cat}`;
-  const skills = getSkills().filter((s) => s.category === params.cat);
-  const colors = categoryColors[params.cat] ?? { text: "text-text-main", bg: "bg-border/10" };
-  const description = CATEGORY_DESCRIPTIONS[params.cat] ??
+  const display = categoryDisplayName(cat);
+  const url = `${BASE_URL}/skills/category/${cat}`;
+  const skills = getSkills().filter((s) => s.category === cat);
+  const colors = categoryColors[cat] ?? { text: "text-text-main", bg: "bg-border/10" };
+  const description = CATEGORY_DESCRIPTIONS[cat] ??
     `${display} agent skills for AI coding assistants.`;
 
   const collectionSchema = {

@@ -2,7 +2,12 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getSkills, getSkill, categoryColors } from "@/lib/skills";
-import { skillDisplayName, categoryDisplayName, answerFirstDescription } from "@/lib/display";
+import {
+  skillDisplayName,
+  categoryDisplayName,
+  answerFirstDescription,
+  serpDescription,
+} from "@/lib/display";
 import InstallBox from "@/components/InstallBox";
 import SkillContent from "@/components/SkillContent";
 
@@ -29,7 +34,7 @@ export async function generateMetadata({ params }: { params: Promise<{ name: str
 
   const display = skillDisplayName(skill.name);
   const title = `${display} skill — Agent Skill for AI Coding Assistants`;
-  const description = answerFirstDescription(skill.name, skill.description);
+  const description = serpDescription(skill.description);
   const url = `${BASE_URL}/skills/${skill.name}`;
 
   return {
@@ -61,7 +66,7 @@ export async function generateMetadata({ params }: { params: Promise<{ name: str
     twitter: {
       card: "summary_large_image",
       title: `${display} — skills.ws`,
-      description: skill.description,
+      description,
       images: [`${BASE_URL}/og.png`],
     },
     alternates: { canonical: url },

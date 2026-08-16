@@ -2,12 +2,13 @@ import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
-import { getSkills } from "@/lib/skills";
+import { getCatalogVersion, getSkills } from "@/lib/skills";
 import WebMcpTools from "@/components/WebMcpTools";
 import "./globals.css";
 
 const BASE_URL = "https://www.skills.ws";
 const skillCount = getSkills().length;
+const catalogVersion = getCatalogVersion();
 
 // Bing Webmaster Tools verification. Optional: the site is already verified via
 // "Import from Google Search Console", but setting BING_SITE_VERIFICATION (the
@@ -161,7 +162,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
 
-        {/* WebSite Schema with SearchAction */}
+        {/* WebSite Schema */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -176,14 +177,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 "@type": "Organization",
                 name: "Commit Media",
                 url: "https://openletz.com",
-              },
-              potentialAction: {
-                "@type": "SearchAction",
-                target: {
-                  "@type": "EntryPoint",
-                  urlTemplate: `${BASE_URL}/?q={search_term_string}`,
-                },
-                "query-input": "required name=search_term_string",
               },
             }).replace(/</g, "\\u003c"),
           }}
@@ -201,7 +194,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               operatingSystem: "Any",
               url: BASE_URL,
               downloadUrl: "https://www.npmjs.com/package/skills-ws",
-              softwareVersion: "1.6.1",
+              softwareVersion: catalogVersion,
               description:
                 `CLI tool to install agent skills for AI coding assistants. ${skillCount} skills for marketing, growth, web3, dev, design & operations.`,
               offers: {
@@ -214,43 +207,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 name: "Commit Media",
                 url: "https://openletz.com",
               },
-            }).replace(/</g, "\\u003c"),
-          }}
-        />
-
-        {/* BreadcrumbList Schema */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "BreadcrumbList",
-              itemListElement: [
-                {
-                  "@type": "ListItem",
-                  position: 1,
-                  name: "Home",
-                  item: BASE_URL,
-                },
-                {
-                  "@type": "ListItem",
-                  position: 2,
-                  name: "Skills",
-                  item: `${BASE_URL}/#skills`,
-                },
-                {
-                  "@type": "ListItem",
-                  position: 3,
-                  name: "Docs",
-                  item: `${BASE_URL}/docs`,
-                },
-                {
-                  "@type": "ListItem",
-                  position: 4,
-                  name: "CLI",
-                  item: `${BASE_URL}/cli`,
-                },
-              ],
             }).replace(/</g, "\\u003c"),
           }}
         />
