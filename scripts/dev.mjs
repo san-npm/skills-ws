@@ -9,8 +9,16 @@ const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const BUILD_AGENT_SKILLS = path.join(ROOT, 'scripts', 'build-agent-skills.mjs');
 const NEXT_BIN = path.join(ROOT, 'node_modules', 'next', 'dist', 'bin', 'next');
 const WATCH_TARGETS = [
-  path.join(ROOT, 'skills'),
-  path.join(ROOT, 'public', 'skills.json'),
+  {
+    path: path.join(ROOT, 'skills'),
+    recursive: true,
+    matches: () => true,
+  },
+  {
+    path: path.join(ROOT, 'public'),
+    recursive: false,
+    matches: (filename) => filename === null || filename.toString() === 'skills.json',
+  },
 ];
 
 function generateAgentSkills() {
@@ -56,7 +64,8 @@ function rebuild() {
 }
 
 const watchers = WATCH_TARGETS.map((target) =>
-  watch(target, { recursive: target.endsWith('skills') }, () => {
+  watch(target.path, { recursive: target.recursive }, (_eventType, filename) => {
+    if (!target.matches(filename)) return;
     clearTimeout(rebuildTimer);
     rebuildTimer = setTimeout(rebuild, 100);
   }),

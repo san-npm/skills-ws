@@ -69,5 +69,31 @@
         }
       ]
     }
+  ],
+  "routes": [
+    {
+      "src": "^/$",
+      "continue": true,
+      "transforms": [
+        {
+          "type": "response.headers",
+          "op": "append",
+          "target": { "key": "Vary" },
+          "args": "Accept"
+        }
+      ]
+    },
+    {
+      "src": "^/skills/[^/]+/?$",
+      "continue": true,
+      "transforms": [
+        {
+          "type": "response.headers",
+          "op": "append",
+          "target": { "key": "Vary" },
+          "args": "Accept"
+        }
+      ]
+    }
   ]
 }
