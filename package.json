@@ -2,7 +2,7 @@
   "name": "skills-ws",
   "version": "1.11.0",
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/dev.mjs",
     "prebuild": "node scripts/build-agent-skills.mjs && node scripts/build-llms.mjs",
     "build": "next build",
     "start": "next start",
