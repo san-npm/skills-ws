@@ -9,24 +9,6 @@
       ]
     },
     {
-      "source": "/",
-      "headers": [
-        {
-          "key": "Vary",
-          "value": "Accept, RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Router-Segment-Prefetch"
-        }
-      ]
-    },
-    {
-      "source": "/skills/(.*)",
-      "headers": [
-        {
-          "key": "Vary",
-          "value": "Accept, RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Router-Segment-Prefetch"
-        }
-      ]
-    },
-    {
       "source": "/.well-known/api-catalog",
       "headers": [
         { "key": "Content-Type", "value": "application/linkset+json; charset=utf-8" },
@@ -84,6 +66,32 @@
         {
           "key": "Link",
           "value": "</llms.txt>; rel=\"describedby\"; type=\"text/plain\", </llms-full.txt>; rel=\"alternate\"; type=\"text/plain\", </.well-known/api-catalog>; rel=\"http://www.iana.org/assignments/relation/api-catalog\"; type=\"application/linkset+json\", </.well-known/agent-skills/index.json>; rel=\"https://agentskills.io/rel/skills-index\"; type=\"application/json\", </sitemap.xml>; rel=\"sitemap\"; type=\"application/xml\""
+        }
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "src": "^/$",
+      "continue": true,
+      "transforms": [
+        {
+          "type": "response.headers",
+          "op": "append",
+          "target": { "key": "Vary" },
+          "args": "Accept"
+        }
+      ]
+    },
+    {
+      "src": "^/skills/[^/]+/?$",
+      "continue": true,
+      "transforms": [
+        {
+          "type": "response.headers",
+          "op": "append",
+          "target": { "key": "Vary" },
+          "args": "Accept"
         }
       ]
     }
