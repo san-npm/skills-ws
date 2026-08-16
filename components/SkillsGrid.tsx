@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import type { Skill } from "@/lib/skills";
+import type { SkillSummary } from "@/lib/skills";
 import { categoryColors } from "@/lib/skills";
 
 export default function SkillsGrid({
   skills,
   categories,
 }: {
-  skills: Skill[];
+  skills: SkillSummary[];
   categories: string[];
 }) {
   const [search, setSearch] = useState("");

@@ -55,3 +55,15 @@ export function answerFirstDescription(slug: string, rawDescription: string): st
   }
   return `${name} is an agent skill for AI coding assistants (Claude Code, OpenClaw, Cursor, Codex). ${trimmed} ${installNote}`;
 }
+
+export function serpDescription(rawDescription: string, maxLength = 160): string {
+  const normalized = rawDescription.replace(/\s+/g, " ").trim();
+  if (normalized.length <= maxLength) return normalized;
+
+  const candidate = normalized.slice(0, maxLength - 1);
+  const lastSpace = candidate.lastIndexOf(" ");
+  const clipped = (lastSpace > maxLength * 0.7 ? candidate.slice(0, lastSpace) : candidate)
+    .replace(/[,:;\s—–-]+$/u, "");
+
+  return `${clipped}…`;
+}

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getSkills, getCategories } from "@/lib/skills";
+import { getSkills, getSkillSummaries, getCategories } from "@/lib/skills";
 import { skillDisplayName, categoryDisplayName } from "@/lib/display";
 import InstallBox from "@/components/InstallBox";
 import SkillsGrid from "@/components/SkillsGrid";
@@ -20,6 +20,7 @@ const platforms = ["OpenClaw", "Claude Code", "Cursor", "Codex"];
 
 export default function Home() {
   const skills = getSkills();
+  const skillSummaries = getSkillSummaries();
   const categories = getCategories();
 
   const itemListSchema = {
@@ -67,7 +68,7 @@ export default function Home() {
       </header>
 
       <div className="relative z-10">
-        <SkillsGrid skills={skills} categories={categories} />
+        <SkillsGrid skills={skillSummaries} categories={categories} />
       </div>
 
       <div className="bg-bg-card border border-border rounded-xl px-6 py-6 mt-12">

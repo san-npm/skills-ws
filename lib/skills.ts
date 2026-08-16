@@ -23,8 +23,26 @@ export interface SkillsConfig {
   skills: Skill[];
 }
 
+export type SkillSummary = Pick<
+  Skill,
+  "name" | "version" | "description" | "category"
+>;
+
 export function getSkills(): Skill[] {
   return (skillsData as SkillsConfig).skills;
+}
+
+export function getCatalogVersion(): string {
+  return (skillsData as SkillsConfig).version;
+}
+
+export function getSkillSummaries(): SkillSummary[] {
+  return getSkills().map(({ name, version, description, category }) => ({
+    name,
+    version,
+    description,
+    category,
+  }));
 }
 
 export function getSkill(name: string): Skill | undefined {
