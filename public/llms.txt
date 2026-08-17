@@ -1,10 +1,10 @@
 # skills.ws
 
-> 86 agent skills for AI coding assistants. Marketing, growth, web3, dev, design, security, ops, and EU compliance.
+> 87 agent skills for AI coding assistants. Marketing, growth, web3, dev, design, security, ops, and EU compliance.
 
 Skills work with OpenClaw, Claude Code, Cursor, Codex, GitHub Copilot, and any agent that supports the SKILL.md standard. Install with: `npx skills-ws install all` (or `npx skills-ws install <name>` for one skill).
 
-Last updated: 2026-08-16
+Last updated: 2026-08-17
 
 ## Skills
 
@@ -44,6 +44,7 @@ Last updated: 2026-08-16
 - [git-workflow](https://www.skills.ws/skills/git-workflow): Git branching strategies, Conventional Commits, hooks, code review, and release/monorepo CI. Use when designing branch strategy, enforcing commit conventions, wiring Husky/commitlint, automating releases (semantic-release/release-please), setting up CODEOWNERS/monorepo CI, or deciding rebase vs cherry-pick vs force-push.
 - [google-analytics](https://www.skills.ws/skills/google-analytics): GA4 implementation and analysis: event taxonomy, custom dimensions, key events (the 2024 rename of conversions), Google Ads import, GTM + Consent Mode v2, audiences, BigQuery export, and the Data API. Use when setting up GA4, fixing tracking/conversions, building Looker Studio reports, or querying analytics programmatically.
 - [growth-hacking](https://www.skills.ws/skills/growth-hacking): Growth strategy and experimentation — AARRR funnels, viral/referral loop economics, PLG onboarding, experiment design, and growth metrics, with responsible-growth and privacy guardrails. Use when modeling viral/referral loops, building activation or PLG onboarding funnels, designing growth experiments, or standing up growth dashboards.
+- [hermes-tweet](https://www.skills.ws/skills/hermes-tweet): Use when installing, configuring, or operating Hermes Tweet in Hermes Agent. Trigger for catalog-guided X/Twitter search, timelines, follower exports, monitoring, posting, replies, or troubleshooting its read and action tools.
 - [hiring-team-building](https://www.skills.ws/skills/hiring-team-building): Hire and build EU teams: country-by-country labor law (probation, notice, leave, works councils), structured interviews and scorecards, ESOP/equity tax by jurisdiction, cross-border remote setup, team design. Use when writing JDs, designing interviews, drafting offers or contracts, setting up cross-border/remote work, or granting equity in the EU.
 - [influencer-marketing](https://www.skills.ws/skills/influencer-marketing): Influencer/creator marketing playbook: tier strategy, a 2026 budgeting model, vetting scorecard, outreach, contracts, FTC/ASA/EU compliance, and ROI/incrementality measurement. Use when planning, pricing, vetting, contracting, briefing, or measuring creator campaigns across Instagram, TikTok, YouTube, or LinkedIn.
 - [landing-page-builder](https://www.skills.ws/skills/landing-page-builder): Build and revise high-converting SaaS/product/service/lead-gen landing pages: intake, copy, responsive layout, CTAs, proof sections, FAQ, and implementation-ready HTML/Tailwind/React. Use when asked to build, design, write, or improve a landing page, hero, or marketing page, or to turn an offer or brief into shippable page code.

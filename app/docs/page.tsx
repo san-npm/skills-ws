@@ -65,7 +65,7 @@ const howToSchema = {
       "@type": "HowToStep",
       position: 2,
       name: "Run the installer",
-      text: "Execute npx skills-ws install all to install all 86 skills, or npx skills-ws install name to install just one.",
+      text: "Execute npx skills-ws install all to install all 87 skills, or npx skills-ws install name to install just one.",
       url: "https://www.skills.ws/cli",
     },
     {

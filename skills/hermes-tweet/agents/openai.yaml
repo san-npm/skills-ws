@@ -1,0 +1,4 @@
+interface:
+  display_name: "Hermes Tweet"
+  short_description: "Operate X/Twitter tools safely in Hermes Agent"
+  default_prompt: "Use $hermes-tweet to configure Hermes Tweet or plan a read-first, approval-gated X/Twitter workflow in Hermes Agent."
