@@ -21,9 +21,14 @@ Stasho is in alpha. Limits below are operational values, not a contract.
 This is the default. One anonymous HTTP request, no key, no CORS (server-side only, so run it from your shell or backend, never from browser JS).
 
 ```bash
+rm -f site.zip                             # zip UPDATES an archive in place; a stale one republishes deleted files
 cd dist && zip -r ../site.zip . && cd ..   # index.html must be at the ZIP ROOT
-curl -sS -F artifact=@site.zip -F source=my-agent https://api.stasho.xyz/api/drop
+curl -sS --fail-with-body -w '\nHTTP %{http_code}\n' \
+  -F artifact=@site.zip --form-string source=my-agent \
+  https://api.stasho.xyz/api/drop
 ```
+
+`--fail-with-body` is what makes a failed publish *look* failed: plain `curl -sS` exits 0 on a 400 or a 503 and prints the error body, so an agent that only checks the exit code reports a live site that does not exist. Non-zero exit means the drop did not happen, and the trailing `HTTP <code>` line picks your row out of the table below. Use `--form-string` for `source`, not `-F`: `@` is a legal character in an attribution, and `-F source=@alice` makes curl upload a file named `alice` instead of sending the text.
 
 ```json
 {
@@ -66,7 +71,7 @@ Limits: 10 MB zipped, 40 MB extracted, 1000 files max, 4-hour claim window. IPv6
 
 An IPFS gateway serves your files literally. There is no server to fall back on, and this is the most common "the deploy is broken" report when the deploy is fine.
 
-- **Extension-less URLs 404.** `/about` does not resolve to `about.html`. Configure the generator to emit `.html` suffixes (VitePress: `cleanUrls: false`; Next.js static export already does this). A directory link like `/blog/` works when `blog/index.html` exists.
+- **Extension-less URLs 404.** `/about` does not resolve to `about.html`. Configure the generator to emit `.html` suffixes (VitePress: `cleanUrls: false`; Next.js: `trailingSlash: true`, which emits `about/index.html` and links to `/about/`. A default Next.js export writes `about.html` but still links to `/about`, which 404s here). A directory link like `/blog/` works when `blog/index.html` exists.
 - **Client-routed deep links 404.** An SPA that handles `/dashboard/settings` in JavaScript breaks when that URL is loaded directly. Use hash routing, pre-render every route to a file, or tell the user deep links only work through in-app navigation.
 - **Relative asset paths.** A build that assumes it is served from the domain root is fine here (drops serve from a subdomain root), but a build hardcoding an absolute base path from another host is not.
 

@@ -21,7 +21,15 @@ const ORG = {
 
 const PUBLISHED = "2026-03-02";
 const MODIFIED = new Date().toISOString().slice(0, 10);
-const UPDATED_LABEL = "Sep 2026";
+// Both the visible label and the <time dateTime> below come from MODIFIED, the
+// same value the JSON-LD publishes as dateModified. A hand-bumped label drifted
+// from the machine-readable month and showed crawlers a different date.
+const UPDATED_MONTH = MODIFIED.slice(0, 7);
+const UPDATED_LABEL = `${
+  ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][
+    Number(UPDATED_MONTH.slice(5)) - 1
+  ]
+} ${UPDATED_MONTH.slice(0, 4)}`;
 
 export function generateStaticParams() {
   return getSkills().map((s) => ({ name: s.name }));
@@ -214,7 +222,7 @@ export default async function SkillPage({ params }: { params: Promise<{ name: st
             <span className="text-[11px] text-text-muted">v{skill.version}</span>
             <span className="text-[11px] text-text-muted">
               Updated{" "}
-              <time dateTime="2026-08" itemProp="dateModified">
+              <time dateTime={UPDATED_MONTH} itemProp="dateModified">
                 {UPDATED_LABEL}
               </time>
             </span>
