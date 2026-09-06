@@ -1,0 +1,4 @@
+interface:
+  display_name: "Stasho Deploy"
+  short_description: "Publish a static site to IPFS with Stasho, no account needed"
+  default_prompt: "Use $stasho-deploy to help with this request."

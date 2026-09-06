@@ -1,6 +1,6 @@
 # skills.ws
 
-Agent skills for AI coding assistants. 86 skills across 8 categories — built for OpenClaw, Claude Code, Cursor, Codex, and any agent that supports the SKILL.md format.
+Agent skills for AI coding assistants. 87 skills across 8 categories — built for OpenClaw, Claude Code, Cursor, Codex, and any agent that supports the SKILL.md format.
 
 **Website:** [skills.ws](https://skills.ws) | **npm:** [skills-ws](https://www.npmjs.com/package/skills-ws) | **Docs:** [llms-full.txt](https://skills.ws/llms-full.txt)
 
@@ -30,8 +30,8 @@ Git workflow, CI/CD, API design, database design, testing, web performance, secu
 ### Growth (11)
 Social media, community building, customer feedback, business development, cold outreach, competitor intelligence, affiliate marketing, product-led growth.
 
-### Operations (11)
-EU legal compliance (GDPR, AI Act, DSA), hiring/team building, project management, CRM, accounting, revenue ops, Docker, AWS, monitoring.
+### Operations (12)
+EU legal compliance (GDPR, AI Act, DSA), hiring/team building, project management, CRM, accounting, revenue ops, Docker, AWS, monitoring, Stasho static hosting.
 
 ### Conversion (8)
 Signup flows, popups, A/B testing, pricing optimization, lead scoring, page CRO, sales funnels, CRM builder.
@@ -158,7 +158,7 @@ skills-ws/
 │   └── skills.ts           # Skill data access + TypeScript interfaces
 ├── skills/                 # 86 complete skill bundles
 ├── public/
-│   ├── skills.json         # Skills database (86 skills, all metadata + content)
+│   ├── skills.json         # Skills database (87 skills, all metadata + content)
 │   ├── llms.txt            # LLM-readable skill index
 │   ├── llms-full.txt       # Full content dump for LLMs
 │   ├── robots.txt          # Crawl directives

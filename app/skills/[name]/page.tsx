@@ -21,7 +21,7 @@ const ORG = {
 
 const PUBLISHED = "2026-03-02";
 const MODIFIED = new Date().toISOString().slice(0, 10);
-const UPDATED_LABEL = "Aug 2026";
+const UPDATED_LABEL = "Sep 2026";
 
 export function generateStaticParams() {
   return getSkills().map((s) => ({ name: s.name }));
