@@ -91,8 +91,16 @@ async function main() {
         added++;
       }
     }
-    await writeFile(full, JSON.stringify(cat, null, 2) + "\n", "utf8");
-    console.log(`[${catalogPath}] version=${version} updated=${updated} added=${added} total=${cat.skills.length}`);
+    // Content revision date, stamped only when something actually changed.
+    // The site's "Updated" label reads this: deriving it from the build clock
+    // relabelled all 87 skills on every unrelated deploy.
+    if (updated || added || !cat.revised) {
+      cat.revised = new Date().toISOString().slice(0, 10);
+    }
+    // Keep `revised` beside `version` rather than after the skills array.
+    const ordered = { version: cat.version, revised: cat.revised, ...cat };
+    await writeFile(full, JSON.stringify(ordered, null, 2) + "\n", "utf8");
+    console.log(`[${catalogPath}] version=${version} revised=${cat.revised} updated=${updated} added=${added} total=${cat.skills.length}`);
   }
 }
 

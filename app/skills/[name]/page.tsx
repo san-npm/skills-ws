@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getSkills, getSkill, categoryColors } from "@/lib/skills";
+import { getSkills, getSkill, getCatalogRevised, categoryColors } from "@/lib/skills";
 import {
   skillDisplayName,
   categoryDisplayName,
@@ -20,10 +20,12 @@ const ORG = {
 } as const;
 
 const PUBLISHED = "2026-03-02";
-const MODIFIED = new Date().toISOString().slice(0, 10);
-// Both the visible label and the <time dateTime> below come from MODIFIED, the
-// same value the JSON-LD publishes as dateModified. A hand-bumped label drifted
-// from the machine-readable month and showed crawlers a different date.
+// Content revision date from the catalog, not the build clock: deriving this
+// from `new Date()` relabelled all 87 skills as freshly updated on every
+// unrelated deploy, and told crawlers the same. The visible label, the
+// <time dateTime> below, and the JSON-LD dateModified all read this one value,
+// so the month a reader sees is the month a crawler gets.
+const MODIFIED = getCatalogRevised();
 const UPDATED_MONTH = MODIFIED.slice(0, 7);
 const UPDATED_LABEL = `${
   ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][

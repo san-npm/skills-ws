@@ -30,6 +30,8 @@ curl -sS --fail-with-body -w '\nHTTP %{http_code}\n' \
 
 `--fail-with-body` is what makes a failed publish *look* failed: plain `curl -sS` exits 0 on a 400 or a 503 and prints the error body, so an agent that only checks the exit code reports a live site that does not exist. Non-zero exit means the drop did not happen, and the trailing `HTTP <code>` line picks your row out of the table below. Use `--form-string` for `source`, not `-F`: `@` is a legal character in an attribution, and `-F source=@alice` makes curl upload a file named `alice` instead of sending the text.
 
+`--fail-with-body` needs curl 7.76 (2021). On an older one, Ubuntu 20.04 ships 7.68 and Debian 11 ships 7.74, it aborts with an unknown-option error before uploading anything; swap in plain `-f`, which still fails the publish loudly but discards the error body, so lean on the `HTTP <code>` line for the reason.
+
 ```json
 {
   "dropId": "drop_...",
