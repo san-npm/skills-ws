@@ -1,10 +1,10 @@
 # skills.ws
 
-> 86 agent skills for AI coding assistants. Marketing, growth, web3, dev, design, security, ops, and EU compliance.
+> 87 agent skills for AI coding assistants. Marketing, growth, web3, dev, design, security, ops, and EU compliance.
 
 Skills work with OpenClaw, Claude Code, Cursor, Codex, GitHub Copilot, and any agent that supports the SKILL.md standard. Install with: `npx skills-ws install all` (or `npx skills-ws install <name>` for one skill).
 
-Last updated: 2026-08-16
+Last updated: 2026-09-06
 
 ## Skills
 
@@ -85,6 +85,7 @@ Last updated: 2026-08-16
 - [social-media-growth](https://www.skills.ws/skills/social-media-growth): Organic growth on LinkedIn, X, Instagram, TikTok, and YouTube — format mix, cadence, hooks, a native-analytics verification workflow, use-case playbooks, and platform-policy guardrails. Use when planning a content calendar, diagnosing flat reach, choosing formats, or auditing growth tactics for compliance and brand risk.
 - [social-media-kit](https://www.skills.ws/skills/social-media-kit): Produce a ready-to-ship social content kit — platform-spec'd posts, hooks, hashtag sets, a repurposing matrix, a calendar, and an FTC/music/giveaway compliance checklist. Use when packaging a launch/campaign kit, repurposing a long-form asset across platforms, or building a content calendar. For viral/algorithm tactics see social-media-growth.
 - [solidity-dev](https://www.skills.ws/skills/solidity-dev): Develop Solidity contracts with Foundry and Hardhat: project setup, implementation patterns, tests, deployment, compiler configuration, OpenZeppelin integration, and gas optimization. Use when writing, testing, deploying, or optimizing contracts. For a security audit and findings report, use `smart-contract-auditor`.
+- [stasho-deploy](https://www.skills.ws/skills/stasho-deploy): Use when you have built a static site (or any folder with an index.html) and need to put it online, publish a build to IPFS, get a shareable URL for a demo or preview, hand a user an ownership link for a site you generated, or set up push-to-deploy, a custom domain, or a rollback for a static project. Drives Stasho (stasho.xyz): drag-or-POST a folder, get a live HTTPS URL and a content-addressed CID in seconds, no account and no API key for the anonymous path.
 - [stripe-billing](https://www.skills.ws/skills/stripe-billing): Production Stripe billing on Next.js App Router: subscriptions, Billing Meters usage, idempotent webhooks, portal, Stripe Tax + Adaptive Pricing, migrations, Test Clocks. Pins apiVersion 2025-09-30.clover (Clover line). Use when building or reviewing Stripe subscription/usage billing in Next.js; for Express/Node see `saas-billing`.
 - [telegram-mini-apps](https://www.skills.ws/skills/telegram-mini-apps): Build & ship production Telegram Mini Apps with Stars (XTR) payments on Next.js — @telegram-apps/sdk v3 (cloudStorage, biometry, fullscreen, shareStory) with isAvailable() guards, server-side initData HMAC validation, grammY bot webhooks, and serverless-safe rate limiting. Use when building, debugging, or deploying a Telegram Mini App / TWA or Stars billing.
 - [testing-strategy](https://www.skills.ws/skills/testing-strategy): Test strategy for production codebases: testing pyramid, framework choice, mocking, factories, DB isolation per ORM, coverage gates, CI sharding, flaky-test triage, visual/contract/mutation testing, performance/SLOs, observability. Use when designing or auditing a test strategy, setting coverage/CI gates, fixing flaky tests, or reviewing AI-generated tests.

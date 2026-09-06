@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.12.0] - 2026-09-06
+
+### New skill: `stasho-deploy` (operations)
+
+- Added `stasho-deploy`: publishing a static build to IPFS through Stasho (`stasho.xyz`). Covers the anonymous Drop API (`POST https://api.stasho.xyz/api/drop`, no account, no key, server-side only), the zip layout and size/rate limits, the full error-status table, and the 4-hour claim window.
+- Documented the two rules that decide whether a publish is usable: `index.html` must sit at the zip root, and both the live URL and the claim link have to reach the user, since an unclaimed drop is a preview, not hosting. The claim token is a bearer credential in the URL fragment, so the skill treats it as one.
+- Covered the IPFS serving quirks that make a working deploy look broken: extension-less URLs and client-routed deep links 404 on a gateway, and both are fixed before publishing, not after.
+- `reference.md` carries the repo-connected path: custom-domain DNS records and statuses (including why `FINALIZING` can run 40+ minutes after a redeploy), build settings and the workflow PR, environment-variable rules (build-time, not secrets), the deployment-failure table, alpha quotas, and the Aleph recovery model.
+- Catalog now at 87 skills; skill-page freshness label moved to Sep 2026.
+
 ## [1.11.0] - 2026-08-07
 
 ### Full-catalog architecture and release-integrity upgrade
