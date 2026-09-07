@@ -29,15 +29,84 @@ function fingerprint(skill) {
   return createHash("sha256").update(JSON.stringify(stable)).digest("hex").slice(0, 12);
 }
 
-/** Last commit date touching a skill's SKILL.md. Seeds `revised` on the first
- *  run so 87 skills get their real history instead of one uniform stamp. */
-function gitDate(name) {
+function git(args) {
+  return execFileSync("git", args, { cwd: ROOT, encoding: "utf8", maxBuffer: 128 * 1024 * 1024 });
+}
+
+/** Last commit date touching a skill's SKILL.md. Fallback seed only, for a
+ *  checkout with no catalog history to read. */
+function skillFileDate(name) {
   try {
-    const out = execFileSync("git", ["log", "-1", "--format=%cs", "--", `skills/${name}/SKILL.md`],
-      { cwd: ROOT, encoding: "utf8" }).trim();
-    return out || TODAY;
+    return git(["log", "-1", "--format=%cs", "--", `skills/${name}/SKILL.md`]).trim() || TODAY;
   } catch {
     return TODAY;
+  }
+}
+
+/** When each skill's rendered object last changed, read from the canonical
+ *  catalog's own history.
+ *
+ *  Seeding from SKILL.md alone under-reported every change that landed in the
+ *  catalog rather than the Markdown: `version`, `features`, `category` and the
+ *  rest are rendered on the page but live only here. ab-testing is the worked
+ *  example -- its SKILL.md last moved 2026-07-10, but 3653e2d normalised its
+ *  displayed version on 2026-08-07, and a SKILL.md-only seed would have frozen
+ *  the wrong date permanently, since the fingerprint then matches and never
+ *  restamps.
+ *
+ *  For each skill, walk the catalog's commits newest-first while the
+ *  fingerprint still equals the current one; the oldest commit that still
+ *  matches is when the object reached its present value. */
+function seedFromCatalogHistory(current) {
+  let log;
+  try {
+    log = git(["log", "--format=%H %cs", "--", CANONICAL]).trim();
+  } catch {
+    return new Map();
+  }
+  if (!log) return new Map();
+
+  const commits = log.split("\n").map((line) => {
+    const [sha, date] = line.split(" ");
+    return { sha, date };
+  });
+
+  // fingerprints[i] = Map(name -> fingerprint) as of commits[i]
+  const fingerprints = commits.map(({ sha }) => {
+    const m = new Map();
+    try {
+      const past = JSON.parse(git(["show", `${sha}:${CANONICAL}`]));
+      for (const s of past.skills || []) m.set(s.name, fingerprint(s));
+    } catch {
+      // A commit where the catalog was absent or unparseable reads as "differs
+      // from today", which ends the walk at the commit after it. That is the
+      // right answer: the object cannot be shown to have existed before it.
+    }
+    return m;
+  });
+
+  const seeds = new Map();
+  for (const [name, fp] of current) {
+    let last = null;
+    for (let i = 0; i < commits.length; i++) {
+      if (fingerprints[i].get(name) !== fp) break;
+      last = commits[i];
+    }
+    // last === null means HEAD's catalog already differs from the working copy,
+    // i.e. this run is the change.
+    seeds.set(name, last ? last.date : TODAY);
+  }
+  return seeds;
+}
+
+/** Skill names in the canonical catalog at HEAD, for spotting additions and
+ *  removals. A removal changes both published catalogs and every generated
+ *  skill list, but leaves each surviving skill's own date untouched. */
+function committedNames() {
+  try {
+    return new Set((JSON.parse(git(["show", `HEAD:${CANONICAL}`])).skills || []).map((s) => s.name));
+  } catch {
+    return null;
   }
 }
 
@@ -127,11 +196,17 @@ async function main() {
   // Per-skill revision dates. A single catalog-wide stamp relabelled all 87
   // pages, and published the same wrong dateModified, whenever one skill
   // changed.
+  const prints = new Map(skills.map((s) => [s.name, fingerprint(s)]));
+  const needSeed = skills.some((s) => !s.rev || !s.revised);
+  const seeds = needSeed ? seedFromCatalogHistory(prints) : new Map();
+
   let restamped = 0;
+  let seeded = 0;
   for (const s of skills) {
-    const fp = fingerprint(s);
-    if (!s.rev) {
-      s.revised = s.revised || gitDate(s.name);
+    const fp = prints.get(s.name);
+    if (!s.rev || !s.revised) {
+      s.revised = seeds.get(s.name) || skillFileDate(s.name);
+      seeded++;
     } else if (s.rev !== fp) {
       s.revised = TODAY;
       restamped++;
@@ -139,12 +214,23 @@ async function main() {
     s.rev = fp;
   }
 
-  const revised = skills.reduce((max, s) => (s.revised > max ? s.revised : max), "");
+  // Catalog-level revision. The max of the surviving skills cannot see a
+  // removal: dropping a skill rewrites both catalogs and every generated list
+  // while leaving each remaining skill's own date alone, and dropping the
+  // newest one would drag this value backwards. Any change to the membership
+  // is a change to the catalog, and the value never regresses.
+  const before = committedNames();
+  const now = new Set(skills.map((s) => s.name));
+  const membershipChanged =
+    before !== null && (before.size !== now.size || [...now].some((n) => !before.has(n)));
+  const newest = skills.reduce((max, s) => (s.revised > max ? s.revised : max), "");
+  const previous = canonical.revised || "";
+  const revised = membershipChanged ? TODAY : (newest > previous ? newest : previous);
 
   for (const catalogPath of COPIES) {
     const out = { ...canonical, version, revised, skills };
     await writeFile(join(ROOT, catalogPath), JSON.stringify(out, null, 2) + "\n", "utf8");
-    console.log(`[${catalogPath}] version=${version} revised=${revised} updated=${updated} added=${added} restamped=${restamped} total=${skills.length}`);
+    console.log(`[${catalogPath}] version=${version} revised=${revised} updated=${updated} added=${added} restamped=${restamped} seeded=${seeded} total=${skills.length}`);
   }
 }
 
