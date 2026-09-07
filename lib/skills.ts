@@ -11,6 +11,10 @@ export interface Skill {
   useCases?: string[];
   content?: string;
   installs?: number;
+  /** Date this skill's rendered content last changed (scripts/regen-catalog.mjs). */
+  revised: string;
+  /** Fingerprint of the rendered fields, used to decide when `revised` moves. */
+  rev?: string;
   premium?: boolean;
 }
 
@@ -35,11 +39,6 @@ export function getSkills(): Skill[] {
 
 export function getCatalogVersion(): string {
   return (skillsData as SkillsConfig).version;
-}
-
-/** Date the catalog content last changed, stamped by scripts/regen-catalog.mjs. */
-export function getCatalogRevised(): string {
-  return (skillsData as SkillsConfig).revised;
 }
 
 export function getSkillSummaries(): SkillSummary[] {
