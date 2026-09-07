@@ -31,9 +31,11 @@ async function markdownResources(skillName) {
   })));
 }
 
-const { skills } = JSON.parse(await fs.readFile(path.join(ROOT, 'skills.json'), 'utf-8'));
+const { skills, revised } = JSON.parse(await fs.readFile(path.join(ROOT, 'skills.json'), 'utf-8'));
 const sorted = [...skills].sort((a, b) => a.name.localeCompare(b.name));
-const today = new Date().toISOString().slice(0, 10);
+// The catalog's own revision date, not the build clock: prebuild runs on every
+// deploy, so `new Date()` advertised a fresh catalog on days nothing changed.
+const today = revised;
 
 // ── llms.txt ─────────────────────────────────────────────────
 const short = [];

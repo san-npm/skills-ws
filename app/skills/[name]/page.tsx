@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getSkills, getSkill, getCatalogRevised, categoryColors } from "@/lib/skills";
+import { getSkills, getSkill, categoryColors } from "@/lib/skills";
 import {
   skillDisplayName,
   categoryDisplayName,
@@ -20,18 +20,19 @@ const ORG = {
 } as const;
 
 const PUBLISHED = "2026-03-02";
-// Content revision date from the catalog, not the build clock: deriving this
-// from `new Date()` relabelled all 87 skills as freshly updated on every
-// unrelated deploy, and told crawlers the same. The visible label, the
-// <time dateTime> below, and the JSON-LD dateModified all read this one value,
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+// Each skill carries its own revision date, stamped by scripts/regen-catalog.mjs
+// when that skill's rendered content actually changes. Two earlier versions of
+// this were wrong in the same direction: a build-time `new Date()` relabelled
+// all 87 pages on every deploy, and a catalog-wide date relabelled all 87
+// whenever any one skill changed. The visible label, the <time dateTime>, the
+// OpenGraph modifiedTime and the JSON-LD dateModified all read this one value,
 // so the month a reader sees is the month a crawler gets.
-const MODIFIED = getCatalogRevised();
-const UPDATED_MONTH = MODIFIED.slice(0, 7);
-const UPDATED_LABEL = `${
-  ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][
-    Number(UPDATED_MONTH.slice(5)) - 1
-  ]
-} ${UPDATED_MONTH.slice(0, 4)}`;
+function updated(revised: string) {
+  const month = revised.slice(0, 7);
+  return { month, label: `${MONTHS[Number(month.slice(5)) - 1]} ${month.slice(0, 4)}` };
+}
 
 export function generateStaticParams() {
   return getSkills().map((s) => ({ name: s.name }));
@@ -69,7 +70,7 @@ export async function generateMetadata({ params }: { params: Promise<{ name: str
       type: "article",
       siteName: "skills.ws",
       publishedTime: PUBLISHED,
-      modifiedTime: MODIFIED,
+      modifiedTime: skill.revised,
       authors: ["https://openletz.com"],
       images: [{ url: `${BASE_URL}/og.png`, width: 1200, height: 630, alt: `${display} agent skill` }],
     },
@@ -109,7 +110,7 @@ export default async function SkillPage({ params }: { params: Promise<{ name: st
       url,
       mainEntityOfPage: { "@type": "WebPage", "@id": url },
       datePublished: PUBLISHED,
-      dateModified: MODIFIED,
+      dateModified: skill.revised,
       inLanguage: "en",
       keywords: [display, skill.category, "AI skill", "SKILL.md", ...skill.platforms].join(", "),
       author: ORG,
@@ -224,8 +225,8 @@ export default async function SkillPage({ params }: { params: Promise<{ name: st
             <span className="text-[11px] text-text-muted">v{skill.version}</span>
             <span className="text-[11px] text-text-muted">
               Updated{" "}
-              <time dateTime={UPDATED_MONTH} itemProp="dateModified">
-                {UPDATED_LABEL}
+              <time dateTime={updated(skill.revised).month} itemProp="dateModified">
+                {updated(skill.revised).label}
               </time>
             </span>
           </div>
